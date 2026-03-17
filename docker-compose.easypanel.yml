@@ -1,0 +1,72 @@
+services:
+  # ─────────────────────────────────────────────
+  # 1. PostgreSQL Database
+  # ─────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gestorprint_admin
+      POSTGRES_PASSWORD: gestorprint_password
+      POSTGRES_DB: gestorprint_db
+    volumes:
+      - gestorprint_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U gestorprint_admin -d gestorprint_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # 2. Backend (API)
+  # ─────────────────────────────────────────────
+  backend:
+    # ALTERE PARA SEU USUARIO GITHUB:
+    image: ghcr.io/edgardjunior/gestorprint-backend:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://gestorprint_admin:gestorprint_password@db:5432/gestorprint_db?schema=public
+      MP_ACCESS_TOKEN: APP_USR-8902396773483884-031523-0311d237a5192b9a709be9b382319523-3267435502
+      MP_PUBLIC_KEY: APP_USR-7a191a24-fe97-41c8-9390-b4b4763b9d0e
+      JWT_SECRET: gestorprint_secret_key_2024
+      PORT: 3000
+    volumes:
+      - gestorprint_uploads:/app/uploads
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─────────────────────────────────────────────
+  # 3. WhatsApp AI Agent
+  # ─────────────────────────────────────────────
+  whatsapp-ai:
+    # ALTERE PARA SEU USUARIO GITHUB:
+    image: ghcr.io/edgardjunior/gestorprint-whatsapp-ai:latest
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      PORT: 3005
+      ERP_API_URL: http://backend:3000/api
+    # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 3005
+
+    # ─────────────────────────────────────────────
+    # 4. Frontend (Web)
+    # ─────────────────────────────────────────────
+  frontend:
+    # ALTERE PARA SEU USUARIO GITHUB:
+    image: ghcr.io/edgardjunior/gestorprint-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 80
+
+volumes:
+  gestorprint_postgres_data:
+  gestorprint_uploads:

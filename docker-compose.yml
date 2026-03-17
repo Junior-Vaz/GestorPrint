@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # ─────────────────────────────────────────────
+  # 1. PostgreSQL Database
+  # ─────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: gestorprint_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gestorprint_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gestorprint_password}
+      POSTGRES_DB: ${POSTGRES_DB:-gestorprint_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - gestorprint_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gestorprint_admin} -d ${POSTGRES_DB:-gestorprint_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # 2. Backend (NestJS API)
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gestorprint_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gestorprint_admin}:${POSTGRES_PASSWORD:-gestorprint_password}@db:5432/${POSTGRES_DB:-gestorprint_db}?schema=public
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
+      PORT: 3000
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - gestorprint_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ─────────────────────────────────────────────
+  # 3. WhatsApp AI Agent
+  # ─────────────────────────────────────────────
+  whatsapp-ai:
+    build:
+      context: ./whatsapp-ai
+      dockerfile: Dockerfile
+    container_name: gestorprint_whatsapp_ai
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      PORT: 3005
+      ERP_API_URL: http://backend:3000/api
+    ports:
+      - "${WHATSAPP_AI_PORT:-3005}:3005"
+
+  # ─────────────────────────────────────────────
+  # 4. Frontend (Vue.js + Nginx)
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    container_name: gestorprint_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+
+volumes:
+  gestorprint_postgres_data:
+  gestorprint_uploads:

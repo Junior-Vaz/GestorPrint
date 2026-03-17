@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+*.log
+.git
+ai-error-dump.log
+test-*.ts
+test-*.js
