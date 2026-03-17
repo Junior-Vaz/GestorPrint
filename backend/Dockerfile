@@ -6,6 +6,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+# Instalamos dependências do sistema necessárias para o Prisma no Alpine
+RUN apk add --no-cache openssl libc6-compat
 RUN npm ci
 
 COPY . .
