@@ -21,7 +21,7 @@ services:
   # 2. Backend (API)
   # ─────────────────────────────────────────────
   backend:
-    image: ghcr.io/junior-vaz/gestorprint-backend:de095eee3bace734fed17676ead96c5ac70df805
+    image: ghcr.io/junior-vaz/gestorprint-backend:8834dd0d49dd17a1287bcbfdf9bda570d904954e
     restart: unless-stopped
     depends_on:
       db:
