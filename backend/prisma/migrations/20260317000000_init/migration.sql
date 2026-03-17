@@ -1,4 +1,4 @@
-﻿-- CreateTable
+-- CreateTable
 CREATE TABLE "Customer" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE "Attachment" (
 -- CreateTable
 CREATE TABLE "Settings" (
     "id" INTEGER NOT NULL DEFAULT 1,
-    "companyName" TEXT NOT NULL DEFAULT 'Minha Gr├ífica',
+    "companyName" TEXT NOT NULL DEFAULT 'Minha Grafica',
     "cnpj" TEXT,
     "phone" TEXT,
     "email" TEXT,
@@ -203,7 +203,7 @@ CREATE TABLE "AiConfig" (
     "evolutionUrl" TEXT DEFAULT 'https://api.cslsoftwares.com.br',
     "evolutionKey" TEXT,
     "evolutionInstance" TEXT DEFAULT 'gestorprint',
-    "agentPrompt" TEXT DEFAULT 'Voc├¬ ├® um atendente inteligente da nossa gr├ífica...',
+    "agentPrompt" TEXT DEFAULT 'Voce e um atendente inteligente da nossa grafica...',
     "allowedProductTypes" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     "allowFileUploads" BOOLEAN NOT NULL DEFAULT true,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -258,4 +258,3 @@ ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_orderId_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "Expense" ADD CONSTRAINT "Expense_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
