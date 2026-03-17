@@ -9,9 +9,11 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+# Fornecemos uma URL dummy para que o Prisma possa gerar o cliente (o valor real será usado no deploy)
+ENV DATABASE_URL="postgresql://db:db@localhost:5432/db"
+
 # Gera prisma client para termos os tipos durante o build
-# Fornecemos uma URL dummy para que o comando não falhe por falta da env
-RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres" npx prisma generate
+RUN npx prisma generate
 
 RUN npm run build
 
