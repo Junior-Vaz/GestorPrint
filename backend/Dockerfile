@@ -11,8 +11,7 @@ RUN apk add --no-cache openssl libc6-compat
 RUN npm ci
 
 COPY . .
-# Fornecemos uma URL dummy para que o Prisma possa gerar o cliente (o valor real será usado no deploy)
-ENV DATABASE_URL="postgresql://db:db@localhost:5432/db"
+# Gera prisma client para termos os tipos durante o build
 
 # Gera prisma client para termos os tipos durante o build
 RUN npx prisma generate
@@ -38,7 +37,6 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
-COPY prisma.config.js ./
 
 # Cria pasta de uploads
 RUN mkdir -p /app/uploads
