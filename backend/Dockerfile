@@ -10,7 +10,8 @@ RUN npm ci
 
 COPY . .
 # Gera prisma client para termos os tipos durante o build
-RUN npx prisma generate
+# Fornecemos uma URL dummy para que o comando não falhe por falta da env
+RUN DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres" npx prisma generate
 
 RUN npm run build
 
