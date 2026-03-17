@@ -38,6 +38,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
+COPY prisma.config.js ./
 
 # Cria pasta de uploads
 RUN mkdir -p /app/uploads
