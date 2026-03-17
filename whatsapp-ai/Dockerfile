@@ -8,7 +8,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # Copia todo o source (tsx compila on-the-fly)
 COPY . .
