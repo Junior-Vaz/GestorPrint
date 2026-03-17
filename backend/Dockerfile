@@ -26,6 +26,10 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
+# Instalamos dependências do sistema também na imagem de produção
+# wget é necessário para o healthcheck no Alpine
+RUN apk add --no-cache openssl libc6-compat wget
+
 ENV NODE_ENV=production
 
 COPY package*.json ./
