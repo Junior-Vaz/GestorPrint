@@ -8,9 +8,11 @@ WORKDIR /app
 COPY package*.json ./
 # Instalamos dependências do sistema necessárias para o Prisma no Alpine
 RUN apk add --no-cache openssl libc6-compat
+ENV CACHE_BUST=1
 RUN npm ci
 
 COPY . .
+
 
 # Gera prisma client para termos os tipos durante o build
 RUN npx prisma generate
