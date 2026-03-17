@@ -36,7 +36,7 @@ const categories = [
 
 const fetchSuppliers = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/suppliers')
+    const res = await fetch('/api/suppliers')
     if (res.ok) suppliers.value = await res.json()
   } catch (e) {
     console.error('Failed to fetch suppliers', e)
@@ -71,8 +71,8 @@ const openModal = (supplier: Supplier | null = null) => {
 const saveSupplier = async () => {
   const method = editingSupplier.value ? 'PATCH' : 'POST'
   const url = editingSupplier.value 
-    ? `http://localhost:3000/api/suppliers/${editingSupplier.value.id}` 
-    : 'http://localhost:3000/api/suppliers'
+    ? `/api/suppliers/${editingSupplier.value.id}` 
+    : '/api/suppliers'
 
   try {
     const res = await fetch(url, {
@@ -92,7 +92,7 @@ const saveSupplier = async () => {
 const deleteSupplier = async (id: number) => {
   if (!confirm('Excluir este fornecedor?')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/suppliers/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' })
     if (res.ok) fetchSuppliers()
   } catch (e) {
     console.error('Failed to delete supplier', e)

@@ -44,7 +44,7 @@ const openModal = (customer?: Customer) => {
 const fetchCustomers = async () => {
   loading.value = true
   try {
-    const res = await fetch('http://localhost:3000/api/customers')
+    const res = await fetch('/api/customers')
     if (res.ok) {
       customers.value = await res.json()
     }
@@ -61,8 +61,8 @@ const handleSave = async () => {
   try {
     const method = isEditing.value ? 'PATCH' : 'POST'
     const url = isEditing.value 
-      ? `http://localhost:3000/api/customers/${editingId.value}`
-      : 'http://localhost:3000/api/customers'
+      ? `/api/customers/${editingId.value}`
+      : '/api/customers'
 
     const res = await fetch(url, {
       method,
@@ -83,7 +83,7 @@ const handleSave = async () => {
 const deleteCustomer = async (id: number) => {
   if (!confirm('Tem certeza que deseja excluir este cliente? Isso pode afetar orçamentos e pedidos vinculados.')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/customers/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchCustomers()
   } catch (e) {
     console.error('Error deleting customer', e)

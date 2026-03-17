@@ -17,7 +17,7 @@ const sangriaForm = ref({
 })
 
 const exportReport = () => {
-  window.open('http://localhost:3000/api/reports/export/csv', '_blank')
+  window.open('/api/reports/export/csv', '_blank')
 }
 
 const transactions = ref<any[]>([])
@@ -26,8 +26,8 @@ const fetchFinancialData = async () => {
   stats.value.loading = true
   try {
     const [statsRes, histRes] = await Promise.all([
-      fetch('http://localhost:3000/api/reports/summary'),
-      fetch('http://localhost:3000/api/payments/history')
+      fetch('/api/reports/summary'),
+      fetch('/api/payments/history')
     ])
 
     if (statsRes.ok) {
@@ -47,7 +47,7 @@ const fetchFinancialData = async () => {
 const saveSangria = async () => {
   if (sangriaForm.value.amount <= 0) return
   try {
-    const res = await fetch('http://localhost:3000/api/expenses', {
+    const res = await fetch('/api/expenses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -70,7 +70,7 @@ const saveSangria = async () => {
 const confirmPayment = async (id: number) => {
   if (!confirm('Deseja confirmar o pagamento manual desta transação?')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/payments/confirm/${id}`, { method: 'POST' })
+    const res = await fetch(`/api/payments/confirm/${id}`, { method: 'POST' })
     if (res.ok) {
       await fetchFinancialData()
     }

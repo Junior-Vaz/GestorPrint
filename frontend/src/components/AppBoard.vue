@@ -89,7 +89,7 @@ const updateOrderStatusLocal = async (newOrders: Order[], newStatus: string) => 
     movedOrder.status = newStatus;
     
     try {
-      const res = await fetch(`http://localhost:3000/api/orders/${movedOrder.id}`, {
+      const res = await fetch(`/api/orders/${movedOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -104,7 +104,7 @@ const updateOrderStatusLocal = async (newOrders: Order[], newStatus: string) => 
 
 onMounted(async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/orders');
+    const res = await fetch('/api/orders');
     if (res.ok) {
       orders.value = await res.json()
     }
@@ -114,7 +114,7 @@ onMounted(async () => {
     loading.value = false
   }
 
-  socket.value = io('http://localhost:3000')
+  socket.value = io()
   socket.value.on('connect', () => connectionStatus.value = 'ON')
   socket.value.on('disconnect', () => connectionStatus.value = 'OFF')
   socket.value.on('new_order', (newOrder: Order) => {
@@ -139,7 +139,7 @@ onUnmounted(() => {
 })
 
 const createTestOrder = async () => {
-  await fetch('http://localhost:3000/api/orders', {
+  await fetch('/api/orders', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -158,7 +158,7 @@ const confirmPix = (orderId: number) => {
 const generatePix = async (orderId: number) => {
   isConfirmingPix.value = false
   try {
-    const res = await fetch(`http://localhost:3000/api/payments/create/${orderId}?type=PIX`, {
+    const res = await fetch(`/api/payments/create/${orderId}?type=PIX`, {
       method: 'POST'
     })
     if (res.ok) {
@@ -182,12 +182,12 @@ const verifyPaymentDirectly = async (orderId: number) => {
   if (verifyingOrderId.value) return
   verifyingOrderId.value = orderId
   try {
-    const orderRes = await fetch(`http://localhost:3000/api/orders/${orderId}`)
+    const orderRes = await fetch(`/api/orders/${orderId}`)
     if (orderRes.ok) {
       const orderData = await orderRes.json()
       const lastTx = orderData.transactions?.find((t: any) => t.status === 'PENDING')
       if (lastTx) {
-        const res = await fetch(`http://localhost:3000/api/payments/check/${lastTx.id}`)
+        const res = await fetch(`/api/payments/check/${lastTx.id}`)
         if (res.ok) {
           const data = await res.json()
           if (data.status === 'PAID') {
@@ -211,7 +211,7 @@ const verifyPaymentDirectly = async (orderId: number) => {
 const deleteOrder = async (id: number) => {
   if (!confirm('Deseja excluir permanentemente este pedido?')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/orders/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' })
     if (res.ok) {
       orders.value = orders.value.filter(o => o.id !== id)
     }
@@ -233,7 +233,7 @@ const handleFileUpload = async (event: any, orderId: number) => {
   formData.append('file', file);
 
   try {
-    const res = await fetch(`http://localhost:3000/api/files/upload/${orderId}`, {
+    const res = await fetch(`/api/files/upload/${orderId}`, {
       method: 'POST',
       body: formData
     });
@@ -251,12 +251,12 @@ const handleFileUpload = async (event: any, orderId: number) => {
 }
 
 const downloadFile = (filename: string) => {
-  window.open(`http://localhost:3000/api/files/${filename}`, '_blank');
+  window.open(`/api/files/${filename}`, '_blank');
 }
 
 const deleteAttachment = async (id: number, orderId: number) => {
   try {
-    const res = await fetch(`http://localhost:3000/api/files/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/files/${id}`, { method: 'DELETE' });
     if (res.ok) {
       const order = orders.value.find(o => o.id === orderId);
       if (order && order.attachments) {
@@ -291,7 +291,7 @@ const openOrderDetails = (order: Order) => {
 }
 
 const downloadReceipt = (orderId: number) => {
-  window.open(`http://localhost:3000/api/orders/${orderId}/receipt`, '_blank');
+  window.open(`/api/orders/${orderId}/receipt`, '_blank');
 }
 
 const closeOrderDetails = () => {
@@ -300,7 +300,7 @@ const closeOrderDetails = () => {
 }
 
 const getPreviewUrl = (filename: string) => {
-  return `http://localhost:3000/api/files/${filename}`
+  return `/api/files/${filename}`
 }
 
 const isImage = (mimetype: string) => {

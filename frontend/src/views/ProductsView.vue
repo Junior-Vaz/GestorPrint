@@ -60,9 +60,9 @@ const fetchAll = async () => {
   loading.value = true
   try {
     const [pRes, tRes, sRes] = await Promise.all([
-      fetch('http://localhost:3000/api/products'),
-      fetch('http://localhost:3000/api/product-types'),
-      fetch('http://localhost:3000/api/suppliers'),
+      fetch('/api/products'),
+      fetch('/api/product-types'),
+      fetch('/api/suppliers'),
     ])
     if (pRes.ok) products.value = await pRes.json()
     if (tRes.ok) productTypes.value = await tRes.json()
@@ -94,15 +94,15 @@ const saveProduct = async () => {
   if (!form.value.name || !form.value.typeId || form.value.unitPrice <= 0) return
   const method = isEditing.value ? 'PATCH' : 'POST'
   const url = isEditing.value
-    ? `http://localhost:3000/api/products/${editingId.value}`
-    : 'http://localhost:3000/api/products'
+    ? `/api/products/${editingId.value}`
+    : '/api/products'
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form.value) })
   if (res.ok) { showProductModal.value = false; await fetchAll() }
 }
 
 const deleteProduct = async (id: number) => {
   if (!confirm('Excluir este insumo?')) return
-  await fetch(`http://localhost:3000/api/products/${id}`, { method: 'DELETE' })
+  await fetch(`/api/products/${id}`, { method: 'DELETE' })
   await fetchAll()
 }
 
@@ -122,15 +122,15 @@ const saveType = async () => {
   if (!typeForm.value.name) return
   const method = editingTypeId.value ? 'PATCH' : 'POST'
   const url = editingTypeId.value
-    ? `http://localhost:3000/api/product-types/${editingTypeId.value}`
-    : 'http://localhost:3000/api/product-types'
+    ? `/api/product-types/${editingTypeId.value}`
+    : '/api/product-types'
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(typeForm.value) })
   if (res.ok) { showTypeModal.value = false; await fetchAll() }
 }
 
 const deleteType = async (id: number) => {
   if (!confirm('Excluir este tipo?')) return
-  const res = await fetch(`http://localhost:3000/api/product-types/${id}`, { method: 'DELETE' })
+  const res = await fetch(`/api/product-types/${id}`, { method: 'DELETE' })
   if (!res.ok) { const e = await res.json(); alert(e.message || 'Erro ao excluir') }
   await fetchAll()
 }
@@ -141,7 +141,7 @@ const adjustStock = async (product: Product) => {
   if (qtyStr === null) return
   const qty = parseFloat(qtyStr)
   if (isNaN(qty)) { alert('Valor inválido'); return }
-  await fetch(`http://localhost:3000/api/products/${product.id}/stock`, {
+  await fetch(`/api/products/${product.id}/stock`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ quantity: qty, type: qty > 0 ? 'PURCHASE' : 'ADJUSTMENT', reason: 'Ajuste manual' })

@@ -49,7 +49,7 @@ const openModal = (user?: User) => {
 const fetchUsers = async () => {
   loading.value = true
   try {
-    const res = await fetch('http://localhost:3000/api/users')
+    const res = await fetch('/api/users')
     if (res.ok) {
       users.value = await res.json()
     }
@@ -70,8 +70,8 @@ const handleSave = async () => {
   try {
     const method = isEditing.value ? 'PATCH' : 'POST'
     const url = isEditing.value 
-      ? `http://localhost:3000/api/users/${editingId.value}`
-      : 'http://localhost:3000/api/users'
+      ? `/api/users/${editingId.value}`
+      : '/api/users'
 
     const payload: any = { ...newUser.value }
     if (isEditing.value && !payload.password) delete payload.password
@@ -94,7 +94,7 @@ const handleSave = async () => {
 const deleteUser = async (id: number) => {
   if (!confirm('Deseja realmente remover este colaborador do sistema?')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/users/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' })
     if (res.ok) {
       await fetchUsers()
     } else {

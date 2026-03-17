@@ -26,7 +26,7 @@ const logoInput = ref<HTMLInputElement | null>(null)
 const fetchSettings = async () => {
   loading.value = true
   try {
-    const res = await fetch('http://localhost:3000/api/settings')
+    const res = await fetch('/api/settings')
     if (res.ok) {
       settings.value = await res.json()
     }
@@ -40,7 +40,7 @@ const fetchSettings = async () => {
 const saveSettings = async () => {
   saving.value = true
   try {
-    const res = await fetch('http://localhost:3000/api/settings', {
+    const res = await fetch('/api/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings.value)
@@ -65,7 +65,7 @@ const handleLogoUpload = async (event: Event) => {
   formData.append('file', file)
 
   try {
-    const res = await fetch('http://localhost:3000/api/settings/logo', {
+    const res = await fetch('/api/settings/logo', {
       method: 'POST',
       body: formData
     })
@@ -104,7 +104,7 @@ onMounted(fetchSettings)
         <div class="flex flex-col md:flex-row items-center gap-6 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
           <div class="w-32 h-32 rounded-2xl border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden relative group shrink-0 shadow-sm">
             <template v-if="settings.logoUrl">
-              <img :src="`http://localhost:3000${settings.logoUrl}`" class="w-full h-full object-contain p-2" alt="Logo da Empresa" />
+              <img :src="settings.logoUrl" class="w-full h-full object-contain p-2" alt="Logo da Empresa" />
               <div class="absolute inset-0 bg-slate-900/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <button v-if="logoInput" @click.prevent="logoInput.click()" class="text-white text-xs font-bold px-3 py-1.5 bg-indigo-600 rounded-lg">Trocar</button>
               </div>

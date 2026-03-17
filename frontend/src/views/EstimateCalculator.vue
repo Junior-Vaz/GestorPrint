@@ -72,8 +72,8 @@ const fetchInitialData = async () => {
   loading.value = true
   try {
     const [pRes, cRes] = await Promise.all([
-      fetch('http://localhost:3000/api/products'),
-      fetch('http://localhost:3000/api/customers')
+      fetch('/api/products'),
+      fetch('/api/customers')
     ])
     
     if (pRes.ok) {
@@ -150,8 +150,8 @@ const handleSaveEstimate = async (convertToOrder = false) => {
 
     const method = isEditing.value ? 'PATCH' : 'POST'
     const url = isEditing.value 
-      ? `http://localhost:3000/api/estimates/${ui.editingEstimate.id}`
-      : 'http://localhost:3000/api/estimates'
+      ? `/api/estimates/${ui.editingEstimate.id}`
+      : '/api/estimates'
 
     const res = await fetch(url, {
       method,
@@ -178,7 +178,7 @@ const handleSaveEstimate = async (convertToOrder = false) => {
 
 const handleConvertToOrder = async (estimateId: number) => {
   try {
-    const res = await fetch(`http://localhost:3000/api/estimates/${estimateId}/convert`, {
+    const res = await fetch(`/api/estimates/${estimateId}/convert`, {
       method: 'POST'
     })
     if (res.ok) {
@@ -195,7 +195,7 @@ const generatePDF = () => {
     alert('Por favor, salve o orçamento primeiro para gerar o documento PDF oficial.')
     return
   }
-  window.open(`http://localhost:3000/api/estimates/${lastEstimateId.value}/pdf`, '_blank')
+  window.open(`/api/estimates/${lastEstimateId.value}/pdf`, '_blank')
 }
 
 onMounted(fetchInitialData)

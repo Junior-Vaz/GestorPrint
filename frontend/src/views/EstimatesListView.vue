@@ -20,7 +20,7 @@ const loading = ref(true)
 const fetchEstimates = async () => {
   loading.value = true
   try {
-    const res = await fetch('http://localhost:3000/api/estimates')
+    const res = await fetch('/api/estimates')
     if (res.ok) {
       estimates.value = await res.json()
     }
@@ -34,7 +34,7 @@ const fetchEstimates = async () => {
 const deleteEstimate = async (id: number) => {
   if (!confirm('Tem certeza que deseja excluir este orçamento?')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/estimates/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/estimates/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchEstimates()
   } catch (e) {
     console.error('Error deleting estimate', e)
@@ -42,13 +42,13 @@ const deleteEstimate = async (id: number) => {
 }
 
 const openPdf = (id: number) => {
-  window.open(`http://localhost:3000/api/estimates/${id}/pdf`, '_blank')
+  window.open(`/api/estimates/${id}/pdf`, '_blank')
 }
 
 const convertToOrder = async (id: number) => {
   if (!confirm('Deseja aprovar este orçamento e enviar para a produção?')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/estimates/${id}/convert`, { method: 'POST' })
+    const res = await fetch(`/api/estimates/${id}/convert`, { method: 'POST' })
     if (res.ok) await fetchEstimates()
   } catch (e) {
     console.error('Error converting estimate', e)
@@ -58,7 +58,7 @@ const convertToOrder = async (id: number) => {
 const sendViaWhatsApp = async (est: Estimate) => {
   try {
     // 1. Get payment link
-    const res = await fetch(`http://localhost:3000/api/estimates/${est.id}/payment`, { method: 'POST' })
+    const res = await fetch(`/api/estimates/${est.id}/payment`, { method: 'POST' })
     const payment = await res.json()
     const paymentUrl = payment.paymentUrl || ''
 

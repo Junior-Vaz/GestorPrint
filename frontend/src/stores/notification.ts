@@ -22,7 +22,7 @@ export const useNotificationStore = defineStore('notification', () => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/notifications');
+      const res = await fetch('/api/notifications');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -36,7 +36,7 @@ export const useNotificationStore = defineStore('notification', () => {
   const connectSocket = () => {
     if (socket.value) return;
 
-    socket.value = io('http://localhost:3000');
+    socket.value = io();
 
     socket.value.on('notification_received', (notification: AppNotification) => {
       // Avoid duplicates if already fetched
@@ -49,7 +49,7 @@ export const useNotificationStore = defineStore('notification', () => {
 
   const markAsRead = async (id: number) => {
     try {
-      await fetch(`http://localhost:3000/api/notifications/${id}/read`, { method: 'PATCH' });
+      await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
       const index = notifications.value.findIndex(n => n.id === id);
       if (index !== -1) notifications.value[index].read = true;
     } catch (error) {
@@ -59,7 +59,7 @@ export const useNotificationStore = defineStore('notification', () => {
 
   const markAllAsRead = async () => {
     try {
-      await fetch('http://localhost:3000/api/notifications/read-all', { method: 'POST' });
+      await fetch('/api/notifications/read-all', { method: 'POST' });
       notifications.value.forEach(n => n.read = true);
     } catch (error) {
       console.error('Error marking all as read:', error);

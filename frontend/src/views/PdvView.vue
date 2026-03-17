@@ -61,7 +61,7 @@ const sangriaForm = ref({
 const saveSangria = async () => {
   if (sangriaForm.value.amount <= 0) return
   try {
-    const res = await fetch('http://localhost:3000/api/expenses', {
+    const res = await fetch('/api/expenses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -96,9 +96,9 @@ const fetchAll = async () => {
   loading.value = true
   try {
     const [pRes, tRes, cRes] = await Promise.all([
-      fetch('http://localhost:3000/api/products'),
-      fetch('http://localhost:3000/api/product-types'),
-      fetch('http://localhost:3000/api/customers')
+      fetch('/api/products'),
+      fetch('/api/product-types'),
+      fetch('/api/customers')
     ])
     if (pRes.ok) products.value = await pRes.json()
     if (tRes.ok) productTypes.value = await tRes.json()
@@ -240,7 +240,7 @@ const finalizeSale = async () => {
       }
     }
 
-    const res = await fetch('http://localhost:3000/api/orders', {
+    const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData)
@@ -264,7 +264,7 @@ const finalizeSale = async () => {
   }
 }
 const printReceipt = (orderId: number) => {
-  window.open(`http://localhost:3000/api/orders/${orderId}/receipt`, '_blank')
+  window.open(`/api/orders/${orderId}/receipt`, '_blank')
 }
 
 const confirmPix = (orderId: number) => {
@@ -275,7 +275,7 @@ const confirmPix = (orderId: number) => {
 const payPix = async (orderId: number) => {
   isConfirmingPix.value = false
   try {
-    const res = await fetch(`http://localhost:3000/api/payments/create/${orderId}?type=PIX`, {
+    const res = await fetch(`/api/payments/create/${orderId}?type=PIX`, {
       method: 'POST'
     })
     if (res.ok) {

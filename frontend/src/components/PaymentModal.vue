@@ -20,7 +20,7 @@ const checkStatus = async () => {
   if (!props.transactionId || checking.value) return
   checking.value = true
   try {
-    const res = await fetch(`http://localhost:3000/api/payments/check/${props.transactionId}`)
+    const res = await fetch(`/api/payments/check/${props.transactionId}`)
     if (res.ok) {
       const data = await res.json()
       if (data.status === 'PAID') {

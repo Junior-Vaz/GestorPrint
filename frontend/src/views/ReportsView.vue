@@ -25,8 +25,8 @@ const fetchReports = async () => {
   loading.value = true
   try {
     const [sumRes, statsRes] = await Promise.all([
-      fetch(`http://localhost:3000/api/reports/summary?period=${selectedPeriod.value}`),
-      fetch(`http://localhost:3000/api/reports/stats?period=${selectedPeriod.value}`)
+      fetch(`/api/reports/summary?period=${selectedPeriod.value}`),
+      fetch(`/api/reports/stats?period=${selectedPeriod.value}`)
     ])
     
     if (sumRes.ok) summary.value = await sumRes.json()
@@ -39,7 +39,7 @@ const fetchReports = async () => {
 }
 
 const exportPdf = () => {
-  window.open(`http://localhost:3000/api/reports/export/pdf?period=${selectedPeriod.value}`, '_blank')
+  window.open(`/api/reports/export/pdf?period=${selectedPeriod.value}`, '_blank')
 }
 
 // Chart helper

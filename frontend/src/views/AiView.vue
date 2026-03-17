@@ -241,7 +241,7 @@ const config = ref({
 
 const fetchConfig = async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/mcp/config')
+    const response = await axios.get('/api/mcp/config')
     if (response.data) {
       config.value = { ...config.value, ...response.data }
     }
@@ -252,7 +252,7 @@ const fetchConfig = async () => {
 
 const fetchProductTypes = async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/product-types')
+    const response = await axios.get('/api/product-types')
     productTypes.value = response.data
   } catch (error) {
     console.error('Error fetching product types:', error)
@@ -262,7 +262,7 @@ const fetchProductTypes = async () => {
 const saveConfig = async () => {
   loading.value = true
   try {
-    await axios.patch('http://localhost:3000/api/mcp/config', config.value)
+    await axios.patch('/api/mcp/config', config.value)
     showToast('Configurações salvas com sucesso!', 'success')
   } catch (error) {
     showToast('Erro ao salvar configurações.', 'error')

@@ -28,12 +28,12 @@ const form = ref<Partial<Expense>>({
 })
 
 const exportCsv = () => {
-  window.open('http://localhost:3000/api/expenses/export/csv', '_blank')
+  window.open('/api/expenses/export/csv', '_blank')
 }
 
 const fetchExpenses = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/expenses')
+    const res = await fetch('/api/expenses')
     if (res.ok) expenses.value = await res.json()
   } catch (e) {
     console.error('Failed to fetch expenses', e)
@@ -42,7 +42,7 @@ const fetchExpenses = async () => {
 
 const fetchCategories = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/expense-categories')
+    const res = await fetch('/api/expense-categories')
     if (res.ok) {
       categories.value = await res.json()
       if (categories.value.length > 0 && !form.value.category) {
@@ -56,7 +56,7 @@ const fetchCategories = async () => {
 
 const fetchSuppliers = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/suppliers')
+    const res = await fetch('/api/suppliers')
     if (res.ok) suppliers.value = await res.json()
   } catch (e) {
     console.error('Failed to fetch suppliers', e)
@@ -66,7 +66,7 @@ const fetchSuppliers = async () => {
 const addCategory = async () => {
   if (!newCategoryName.value) return
   try {
-    const res = await fetch('http://localhost:3000/api/expense-categories', {
+    const res = await fetch('/api/expense-categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newCategoryName.value })
@@ -83,7 +83,7 @@ const addCategory = async () => {
 const deleteCategory = async (id: number) => {
   if (!confirm('Excluir esta categoria?')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/expense-categories/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/expense-categories/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchCategories()
   } catch (e) {
     console.error('Failed to delete category', e)
@@ -114,8 +114,8 @@ const openModal = (expense: Expense | null = null) => {
 const saveExpense = async () => {
   const method = editingExpense.value ? 'PATCH' : 'POST'
   const url = editingExpense.value 
-    ? `http://localhost:3000/api/expenses/${editingExpense.value.id}` 
-    : 'http://localhost:3000/api/expenses'
+    ? `/api/expenses/${editingExpense.value.id}` 
+    : '/api/expenses'
 
   try {
     const res = await fetch(url, {
@@ -135,7 +135,7 @@ const saveExpense = async () => {
 const deleteExpense = async (id: number) => {
   if (!confirm('Excluir esta despesa?')) return
   try {
-    const res = await fetch(`http://localhost:3000/api/expenses/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' })
     if (res.ok) fetchExpenses()
   } catch (e) {
     console.error('Failed to delete expense', e)

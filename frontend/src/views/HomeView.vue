@@ -33,10 +33,10 @@ const fetchStats = async () => {
   stats.value.loading = true
   try {
     const [cRes, oRes, eRes, rRes] = await Promise.all([
-      fetch('http://localhost:3000/api/customers'),
-      fetch('http://localhost:3000/api/orders'),
-      fetch('http://localhost:3000/api/estimates'),
-      fetch('http://localhost:3000/api/reports/summary'),
+      fetch('/api/customers'),
+      fetch('/api/orders'),
+      fetch('/api/estimates'),
+      fetch('/api/reports/summary'),
     ])
 
     if (cRes.ok) stats.value.customers = (await cRes.json()).length
@@ -59,13 +59,13 @@ const fetchStats = async () => {
       stats.value.netProfit = summary.netProfit
     }
 
-    const pRes = await fetch('http://localhost:3000/api/products')
+    const pRes = await fetch('/api/products')
     if (pRes.ok) {
       const products = await pRes.json()
       stats.value.lowStockItems = products.filter((p: any) => p.stock <= p.minStock)
     }
 
-    const sRes = await fetch('http://localhost:3000/api/settings')
+    const sRes = await fetch('/api/settings')
     if (sRes.ok) {
       const settings = await sRes.json()
       stats.value.companyName = settings.companyName
