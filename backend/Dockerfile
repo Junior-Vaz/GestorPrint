@@ -13,8 +13,9 @@ RUN npm ci
 COPY . .
 # Gera prisma client para termos os tipos durante o build
 
-# Gera prisma client para termos os tipos durante o build
+# Gera prisma client e transpila a config do prisma
 RUN npx prisma generate
+RUN npx tsc prisma.config.ts || true
 
 RUN npm run build
 
@@ -25,8 +26,6 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Instalamos dependências do sistema também na imagem de produção
-# wget é necessário para o healthcheck no Alpine
 RUN apk add --no-cache openssl libc6-compat wget
 
 ENV NODE_ENV=production
@@ -37,12 +36,10 @@ RUN npm ci
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
-COPY prisma.config.ts ./
-# Cria pasta de uploads
+COPY --from=builder /app/prisma.config.js ./
+
 RUN mkdir -p /app/uploads
 
 EXPOSE 3000
 
-# Roda migrate adicionando a URL no schema dinamicamente na inicialização
-# Isso contorna o problema do prisma.config.ts não ser lido no Alpine
-CMD sh -c "sed -i '/provider = \"postgresql\"/a \  url      = env(\"DATABASE_URL\")' prisma/schema.prisma && npx prisma migrate deploy && node dist/main"
+CMD sh -c "npx prisma migrate deploy && node dist/main"
