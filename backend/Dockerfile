@@ -17,7 +17,9 @@ COPY . .
 # Gera prisma client para termos os tipos durante o build
 RUN npx prisma generate
 
-RUN npm run build
+RUN npm run build || (echo "Build failed" && exit 1)
+RUN ls -la || true
+RUN ls -la dist || (echo "Dist folder not generated!" && exit 1)
 
 # ────────────────────────────────
 # Stage 2: Production
