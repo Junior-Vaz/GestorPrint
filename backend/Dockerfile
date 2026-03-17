@@ -43,5 +43,6 @@ RUN mkdir -p /app/uploads
 
 EXPOSE 3000
 
-# Roda migrate e inicia o servidor
-CMD sh -c "npx prisma migrate deploy && node dist/main"
+# Roda migrate adicionando a URL no schema dinamicamente na inicialização
+# Isso contorna o problema do prisma.config.ts não ser lido no Alpine
+CMD sh -c "sed -i '/provider = \"postgresql\"/a \  url      = env(\"DATABASE_URL\")' prisma/schema.prisma && npx prisma migrate deploy && node dist/main"
