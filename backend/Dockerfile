@@ -9,10 +9,10 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build
-
-# Gera prisma client para produção
+# Gera prisma client para termos os tipos durante o build
 RUN npx prisma generate
+
+RUN npm run build
 
 # ────────────────────────────────
 # Stage 2: Production
