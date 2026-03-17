@@ -59,7 +59,7 @@ services:
   # 4. Frontend (Web)
   # ─────────────────────────────────────────────
   frontend:
-    image: ghcr.io/junior-vaz/gestorprint-frontend:latest
+    image: ghcr.io/junior-vaz/gestorprint-frontend:7bb2d01d4cbfaa6689a5ca20d0191ae9f40a026b
     restart: unless-stopped
     depends_on:
       - backend
