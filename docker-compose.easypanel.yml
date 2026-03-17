@@ -21,8 +21,7 @@ services:
   # 2. Backend (API)
   # ─────────────────────────────────────────────
   backend:
-    # ALTERE PARA SEU USUARIO GITHUB:
-    image: ghcr.io/edgardjunior/gestorprint-backend:latest
+    image: ghcr.io/junior-vaz/gestorprint-backend:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -45,8 +44,7 @@ services:
   # 3. WhatsApp AI Agent
   # ─────────────────────────────────────────────
   whatsapp-ai:
-    # ALTERE PARA SEU USUARIO GITHUB:
-    image: ghcr.io/edgardjunior/gestorprint-whatsapp-ai:latest
+    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:latest
     restart: unless-stopped
     depends_on:
       backend:
@@ -56,12 +54,11 @@ services:
       ERP_API_URL: http://backend:3000/api
     # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 3005
 
-    # ─────────────────────────────────────────────
-    # 4. Frontend (Web)
-    # ─────────────────────────────────────────────
+  # ─────────────────────────────────────────────
+  # 4. Frontend (Web)
+  # ─────────────────────────────────────────────
   frontend:
-    # ALTERE PARA SEU USUARIO GITHUB:
-    image: ghcr.io/edgardjunior/gestorprint-frontend:latest
+    image: ghcr.io/junior-vaz/gestorprint-frontend:latest
     restart: unless-stopped
     depends_on:
       - backend
