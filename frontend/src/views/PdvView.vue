@@ -41,6 +41,8 @@ const saving = ref(false)
 const searchQuery = ref('')
 const activeType = ref<number | null>(null)
 const selectedCustomerId = ref<number | null>(null)
+const customerSearch = ref('')
+const showCustomerDropdown = ref(false)
 const cart = ref<CartItem[]>([])
 const discountAmount = ref(0)
 const discountIsPercent = ref(true)
@@ -109,8 +111,8 @@ const fetchAll = async () => {
       customers.value = await cRes.json()
       // Default to "Cliente Balcão" if exists
       const fallback = (customers.value as any[]).find(c => c.name.toLowerCase().includes('balcão'))
-      if (fallback) selectedCustomerId.value = fallback.id
-      else if (customers.value && customers.value.length > 0) selectedCustomerId.value = (customers.value[0] as any).id
+      if (fallback) { selectedCustomerId.value = fallback.id; customerSearch.value = fallback.name }
+      else if (customers.value && customers.value.length > 0) { selectedCustomerId.value = (customers.value[0] as any).id; customerSearch.value = (customers.value[0] as any).name }
     }
   } catch (e) {
     console.error(e)
@@ -120,6 +122,19 @@ const fetchAll = async () => {
 }
 
 onMounted(fetchAll)
+
+// Customer search (same pattern as EstimateCalculator)
+const filteredCustomers = computed(() => {
+  const q = customerSearch.value.toLowerCase().trim()
+  if (!q) return customers.value
+  return customers.value.filter(c => c.name.toLowerCase().includes(q))
+})
+
+const selectCustomer = (c: Customer) => {
+  selectedCustomerId.value = c.id
+  customerSearch.value = c.name
+  showCustomerDropdown.value = false
+}
 
 // Computed
 const filteredProducts = computed(() => {
@@ -446,11 +461,24 @@ const payPix = async (orderId: number) => {
       <div class="bg-indigo-950 p-6 rounded-t-[32px] border-t border-indigo-500/20 z-10">
         <!-- Customer & Discount -->
         <div class="grid grid-cols-2 gap-4 mb-4">
-          <div>
+          <div class="relative">
             <label class="block text-[10px] font-black text-indigo-300/60 uppercase tracking-widest mb-1.5">Cliente</label>
-            <select v-model="selectedCustomerId" class="w-full px-3 py-2.5 rounded-xl border border-indigo-900/50 bg-indigo-900/30 text-white focus:border-indigo-400 outline-none text-xs font-bold appearance-none">
-              <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+            <input
+              v-model="customerSearch"
+              @focus="showCustomerDropdown = true"
+              @blur="setTimeout(() => showCustomerDropdown = false, 150)"
+              type="text"
+              placeholder="Buscar cliente..."
+              class="w-full px-3 py-2.5 rounded-xl border border-indigo-900/50 bg-indigo-900/30 text-white placeholder-slate-500 focus:border-indigo-400 outline-none text-xs font-bold"
+            />
+            <div v-if="showCustomerDropdown && filteredCustomers.length > 0" class="absolute bottom-full mb-1 w-full bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
+              <button
+                v-for="c in filteredCustomers"
+                :key="c.id"
+                @mousedown.prevent="selectCustomer(c)"
+                class="w-full text-left px-3 py-2 text-xs font-bold text-white hover:bg-indigo-600 transition-colors first:rounded-t-xl last:rounded-b-xl"
+              >{{ c.name }}</button>
+            </div>
           </div>
           <div>
             <label class="flex items-center justify-between text-[10px] font-black text-indigo-300/60 uppercase tracking-widest mb-1.5 cursor-pointer">
