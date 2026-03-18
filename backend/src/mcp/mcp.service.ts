@@ -39,6 +39,11 @@ export class McpService {
   async getOrderStatus(orderId: number) {
     try {
       const order = await this.ordersService.findOne(orderId);
+      
+      if (!order) {
+        return { error: 'Pedido não encontrado' };
+      }
+
       return {
         id: order.id,
         status: order.status,
@@ -47,7 +52,7 @@ export class McpService {
         date: order.createdAt
       };
     } catch (e) {
-      return { error: 'Pedido não encontrado' };
+      return { error: 'Erro ao buscar pedido' };
     }
   }
 
