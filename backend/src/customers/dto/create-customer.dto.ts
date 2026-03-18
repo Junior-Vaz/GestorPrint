@@ -5,13 +5,13 @@ export class CreateCustomerDto {
   name: string;
 
   @ApiProperty({ example: 'joao@email.com', description: 'E-mail do cliente', required: false })
-  email?: string;
+  email?: string | null;
 
   @ApiProperty({ example: '(11) 99999-9999', description: 'Telefone de contato', required: false })
-  phone?: string;
+  phone?: string | null;
 
   @ApiProperty({ example: '123.456.789-00', description: 'CPF ou CNPJ do cliente', required: false })
-  document?: string;
+  document?: string | null;
 
   @ApiProperty({ example: '01001-000', description: 'CEP do cliente', required: false })
   zipCode?: string;

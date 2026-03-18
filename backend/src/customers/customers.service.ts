@@ -8,8 +8,11 @@ export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
   create(createCustomerDto: CreateCustomerDto) {
+    const data = { ...createCustomerDto };
+    if (data.document === "") data.document = null;
+    if (data.email === "") data.email = null;
     return this.prisma.customer.create({
-      data: createCustomerDto,
+      data,
     });
   }
 
@@ -26,9 +29,12 @@ export class CustomersService {
   }
 
   update(id: number, updateCustomerDto: UpdateCustomerDto) {
+    const data = { ...updateCustomerDto };
+    if (data.document === "") data.document = null;
+    if (data.email === "") data.email = null;
     return this.prisma.customer.update({
       where: { id },
-      data: updateCustomerDto,
+      data,
     });
   }
 
