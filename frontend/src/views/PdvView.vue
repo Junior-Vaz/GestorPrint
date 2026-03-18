@@ -41,8 +41,6 @@ const saving = ref(false)
 const searchQuery = ref('')
 const activeType = ref<number | null>(null)
 const selectedCustomerId = ref<number | null>(null)
-const customerSearch = ref('')
-const showCustomerDropdown = ref(false)
 const cart = ref<CartItem[]>([])
 const discountAmount = ref(0)
 const discountIsPercent = ref(true)
@@ -107,10 +105,13 @@ const fetchAll = async () => {
     ])
     if (pRes.ok) products.value = await pRes.json()
     if (tRes.ok) productTypes.value = await tRes.json()
+    if (cRes.ok) {
+      customers.value = await cRes.json()
       // Default to "Cliente Balcão" if exists
       const fallback = (customers.value as any[]).find(c => c.name.toLowerCase().includes('balcão'))
       if (fallback) selectedCustomerId.value = fallback.id
       else if (customers.value && customers.value.length > 0) selectedCustomerId.value = (customers.value[0] as any).id
+    }
   } catch (e) {
     console.error(e)
   } finally {
@@ -119,21 +120,6 @@ const fetchAll = async () => {
 }
 
 onMounted(fetchAll)
-
-// Customer search
-const filteredCustomers = computed(() => {
-  const q = customerSearch.value.toLowerCase().trim()
-  if (!q) return customers.value
-  return customers.value.filter(c => c.name.toLowerCase().includes(q))
-})
-
-const selectedCustomer = computed(() => customers.value.find(c => c.id === selectedCustomerId.value))
-
-const selectCustomer = (c: Customer) => {
-  selectedCustomerId.value = c.id
-  customerSearch.value = c.name
-  showCustomerDropdown.value = false
-}
 
 // Computed
 const filteredProducts = computed(() => {
@@ -269,7 +255,7 @@ const finalizeSale = async () => {
     if (res.ok) {
       const createdOrder = await res.json()
       lastOrderId.value = createdOrder.id
-      triggerToast('Venda finalizada com sucesso! 🚀')
+      triggerToast('Venda finalizada com sucesso! 🎉')
       clearCart()
       await fetchAll() // Refresh stock levels in the product grid
     } else {
@@ -283,6 +269,7 @@ const finalizeSale = async () => {
     saving.value = false
   }
 }
+
 const printReceipt = (orderId: number) => {
   window.open(`/api/orders/${orderId}/receipt`, '_blank')
 }
@@ -299,8 +286,8 @@ const payPix = async (orderId: number) => {
       method: 'POST'
     })
     if (res.status === 500) {
-      isErrorModalOpen.value = true;
-      return;
+      isErrorModalOpen.value = true
+      return
     }
     if (res.ok) {
       const transaction = await res.json()
@@ -315,7 +302,7 @@ const payPix = async (orderId: number) => {
     }
   } catch (e) {
     console.error('Error generating PIX', e)
-    isErrorModalOpen.value = true;
+    isErrorModalOpen.value = true
   }
 }
 </script>
@@ -331,32 +318,9 @@ const payPix = async (orderId: number) => {
           <h2 class="text-2xl font-black text-slate-800 tracking-tight">Frente de Caixa</h2>
           <p class="text-slate-500 text-sm font-medium">Venda rápida de insumos e serviços prontos.</p>
         </div>
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-          <!-- Customer search -->
-          <div class="relative w-full sm:w-64">
-            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-            <input
-              v-model="customerSearch"
-              @focus="showCustomerDropdown = true"
-              @blur="setTimeout(() => showCustomerDropdown = false, 150)"
-              type="text"
-              placeholder="Cliente..."
-              class="w-full pl-9 pr-4 py-2.5 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm font-bold bg-slate-50/50"
-            />
-            <div v-if="showCustomerDropdown && filteredCustomers.length > 0" class="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl z-[200] max-h-48 overflow-y-auto">
-              <button
-                v-for="c in filteredCustomers"
-                :key="c.id"
-                @mousedown.prevent="selectCustomer(c)"
-                class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors first:rounded-t-xl last:rounded-b-xl"
-              >{{ c.name }}</button>
-            </div>
-          </div>
-          <!-- Product search -->
-          <div class="relative w-full sm:w-72">
-            <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input v-model="searchQuery" type="text" placeholder="Buscar por nome..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm font-bold bg-slate-50/50">
-          </div>
+        <div class="relative w-full md:w-72">
+          <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          <input v-model="searchQuery" type="text" placeholder="Buscar por nome..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm font-bold bg-slate-50/50">
         </div>
       </div>
 
@@ -480,13 +444,13 @@ const payPix = async (orderId: number) => {
 
       <!-- Checkout Footer -->
       <div class="bg-indigo-950 p-6 rounded-t-[32px] border-t border-indigo-500/20 z-10">
-        <!-- Client badge + Discount -->
+        <!-- Customer & Discount -->
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-[10px] font-black text-indigo-300/60 uppercase tracking-widest mb-1.5">Cliente Selecionado</label>
-            <div class="px-3 py-2.5 rounded-xl border border-indigo-900/50 bg-indigo-900/30 text-xs font-bold truncate" :class="selectedCustomerId ? 'text-white' : 'text-slate-500 italic'">
-              {{ customerSearch || 'Nenhum selecionado' }}
-            </div>
+            <label class="block text-[10px] font-black text-indigo-300/60 uppercase tracking-widest mb-1.5">Cliente</label>
+            <select v-model="selectedCustomerId" class="w-full px-3 py-2.5 rounded-xl border border-indigo-900/50 bg-indigo-900/30 text-white focus:border-indigo-400 outline-none text-xs font-bold appearance-none">
+              <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
           </div>
           <div>
             <label class="flex items-center justify-between text-[10px] font-black text-indigo-300/60 uppercase tracking-widest mb-1.5 cursor-pointer">
@@ -670,15 +634,11 @@ const payPix = async (orderId: number) => {
           </form>
         </div>
       </div>
-
-      <!-- Error Modal for Payments -->
-      <PaymentErrorModal 
-        :show="isErrorModalOpen" 
-        @close="isErrorModalOpen = false"
-        @retry="() => { isErrorModalOpen = false; payPix(orderToPay!); }"
-      />
     </div>
   </div>
+
+  <!-- Payment Error Modal -->
+  <PaymentErrorModal :is-open="isErrorModalOpen" @close="isErrorModalOpen = false" />
 </template>
 
 <style scoped>
