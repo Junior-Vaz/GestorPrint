@@ -174,7 +174,6 @@ const handleSaveEstimate = async (convertToOrder = false) => {
       customerId: selectedCustomerId.value,
       totalPrice: calculation.value.total,
       salespersonId: authStore.user?.id,
-      producerId: authStore.user?.id,
       details: {
         productName: productName.value,
         width: width.value,
