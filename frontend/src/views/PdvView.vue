@@ -2,7 +2,9 @@
 import { ref, onMounted, computed } from 'vue'
 import PaymentModal from '../components/PaymentModal.vue'
 import PaymentErrorModal from '../components/PaymentErrorModal.vue'
+import { useAuthStore } from '../stores/auth'
 
+const authStore = useAuthStore()
 const isErrorModalOpen = ref(false)
 
 interface ProductType {
@@ -263,6 +265,8 @@ const finalizeSale = async () => {
       amount: total.value,
       isPdv: true, // Triggers auto-DELIVERED & stock deduction backend side
       paymentMethod: selectedPaymentMethod.value,
+      salespersonId: authStore.user?.id,
+      producerId: authStore.user?.id,
       details: {
         items: cart.value.map(i => ({
           id: i.id,

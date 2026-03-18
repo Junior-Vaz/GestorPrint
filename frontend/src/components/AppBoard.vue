@@ -4,6 +4,10 @@ import { io, Socket } from 'socket.io-client'
 import draggable from 'vuedraggable'
 import PaymentModal from './PaymentModal.vue'
 import PaymentErrorModal from './PaymentErrorModal.vue'
+import { useAuthStore } from '../stores/auth'
+
+const authStore = useAuthStore()
+const showStockWarningModal = ref(false)
 
 interface Order {
   id: number;
@@ -95,10 +99,18 @@ const updateOrderStatusLocal = async (newOrders: Order[], newStatus: string) => 
     movedOrder.status = newStatus;
     
     try {
+      const payload: any = { status: newStatus }
+      
+      // Auto-assign producer & Show warning if moving to PRODUCTION
+      if (newStatus === 'PRODUCTION') {
+        payload.producerId = authStore.user?.id
+        showStockWarningModal.value = true
+      }
+      
       const res = await fetch(`/api/orders/${movedOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error('Failed to update status');
     } catch (e) {
@@ -674,12 +686,28 @@ const isPDF = (mimetype: string) => {
       </div>
     </div>
 
-    <!-- Error Modal for Payments -->
-    <PaymentErrorModal 
-      :show="isErrorModalOpen" 
-      @close="isErrorModalOpen = false"
-      @retry="() => { isErrorModalOpen = false; generatePix(orderToPay!); }"
-    />
+    <!-- Payment Error Modal -->
+    <PaymentErrorModal :is-open="isErrorModalOpen" @close="isErrorModalOpen = false" />
+
+    <!-- Stock Warning Modal -->
+    <div v-if="showStockWarningModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showStockWarningModal = false"></div>
+      <div class="bg-white w-full max-w-sm p-8 rounded-[32px] shadow-2xl relative z-10 text-center animate-in zoom-in-95 duration-200">
+        <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <h3 class="text-xl font-black text-slate-800 mb-2">Atenção ao Estoque</h3>
+        <p class="text-slate-500 text-sm font-medium mb-8">
+          O estoque dos insumos vinculados a este pedido foi <strong class="text-slate-700">atualizado automaticamente</strong>.
+        </p>
+        <button 
+          @click="showStockWarningModal = false" 
+          class="w-full py-4 rounded-2xl bg-amber-500 text-white font-black hover:bg-amber-600 active:scale-95 transition-all shadow-lg shadow-amber-500/30 uppercase text-[10px] tracking-widest"
+        >
+          OK, Entendi
+        </button>
+      </div>
+    </div>
 
     <!-- Confirmation Modal Delete Order -->
     <div v-if="isConfirmingDelete" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
