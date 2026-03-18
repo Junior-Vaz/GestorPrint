@@ -70,7 +70,7 @@ onUnmounted(() => {
       <div 
         v-if="isOpen"
         ref="panelRef"
-        class="absolute right-0 mt-4 w-80 sm:w-96 bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden z-[100]"
+        class="absolute right-0 mt-4 w-80 sm:w-96 bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden z-[200]"
       >
         <header class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <h3 class="font-black text-slate-800 tracking-tight">Notificações</h3>
