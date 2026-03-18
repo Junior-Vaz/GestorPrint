@@ -15,6 +15,7 @@ import ExpensesView from '@/views/ExpensesView.vue'
 import SuppliersView from '@/views/SuppliersView.vue'
 import PdvView from '@/views/PdvView.vue'
 import AiView from '@/views/AiView.vue'
+import AuditView from '@/views/AuditView.vue'
 import NotificationBell from '@/components/NotificationBell.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import { useAuthStore } from './stores/auth'
@@ -154,6 +155,13 @@ const ui = useUiStore()
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
           Relatórios & BI
         </button>
+        <button 
+          v-if="auth.isAdmin"
+          @click="ui.setTab('audit')" 
+          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'audit' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Auditoria
+        </button>
 
         <button 
           v-if="auth.isAdmin"
@@ -226,6 +234,7 @@ const ui = useUiStore()
         <UsersView v-if="ui.currentTab === 'users'" />
         <ReportsView v-if="ui.currentTab === 'reports'" />
         <AiView v-if="ui.currentTab === 'ai'" />
+        <AuditView v-if="ui.currentTab === 'audit'" />
       </main>
 
     </div>

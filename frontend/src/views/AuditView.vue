@@ -48,7 +48,7 @@
             <tr v-for="log in logs" :key="log.id" class="hover:bg-indigo-50/30 transition-colors group">
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-sm font-semibold text-slate-600">
-                  {{ new Date(log.createdAt).toLocaleString() }}
+                  {{ log.createdAt ? new Date(log.createdAt).toLocaleString('pt-BR') : '-' }}
                 </span>
               </td>
               <td class="px-6 py-4">
