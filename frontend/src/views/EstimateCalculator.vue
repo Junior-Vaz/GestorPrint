@@ -41,6 +41,8 @@ const triggerToast = (msg: string) => {
 const selectedPaperId = ref<number | null>(null)
 const selectedFinishingId = ref<number | null>(null)
 const selectedCustomerId = ref<number | null>(null)
+const customerSearch = ref('')
+const showCustomerDropdown = ref(false)
 const quantity = ref(100)
 const width = ref(10)
 const height = ref(15)
@@ -85,9 +87,13 @@ const fetchInitialData = async () => {
       if (papers.value.length > 0 && !isEditing.value) selectedPaperId.value = papers.value[0].id
     }
 
-    if (cRes.ok) {
+  if (cRes.ok) {
       customers.value = await cRes.json()
-      if (customers.value.length > 0 && !isEditing.value) selectedCustomerId.value = customers.value[0].id
+      const fallback = customers.value.find(c => c.name.toLowerCase().includes('balcão'))
+      if (!isEditing.value) {
+        if (fallback) { selectedCustomerId.value = fallback.id; customerSearch.value = fallback.name }
+        else if (customers.value.length > 0) { selectedCustomerId.value = customers.value[0].id; customerSearch.value = customers.value[0].name }
+      }
     }
 
     // Load data if editing
@@ -102,6 +108,19 @@ const fetchInitialData = async () => {
 
 const selectedPaper = computed(() => papers.value.find(p => p.id === selectedPaperId.value))
 const selectedFinishing = computed(() => finishings.value.find(f => f.id === selectedFinishingId.value))
+
+// Customer search
+const filteredCustomers = computed(() => {
+  const q = customerSearch.value.toLowerCase().trim()
+  if (!q) return customers.value
+  return customers.value.filter(c => c.name.toLowerCase().includes(q))
+})
+
+const selectCustomer = (c: Customer) => {
+  selectedCustomerId.value = c.id
+  customerSearch.value = c.name
+  showCustomerDropdown.value = false
+}
 
 const calculation = computed(() => {
   if (!selectedPaper.value) return { paperCost: 0, finishingCost: 0, paperSell: 0, finishingSell: 0, total: 0, totalMargin: 0 }
@@ -230,11 +249,24 @@ onMounted(fetchInitialData)
           
           <!-- Basic Info -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div class="relative">
               <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cliente</label>
-              <select v-model="selectedCustomerId" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50">
-                <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
-              </select>
+              <input
+                v-model="customerSearch"
+                @focus="showCustomerDropdown = true"
+                @blur="setTimeout(() => showCustomerDropdown = false, 150)"
+                type="text"
+                placeholder="Buscar cliente..."
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50 text-sm"
+              />
+              <div v-if="showCustomerDropdown && filteredCustomers.length > 0" class="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
+                <button
+                  v-for="c in filteredCustomers"
+                  :key="c.id"
+                  @mousedown.prevent="selectCustomer(c)"
+                  class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                >{{ c.name }}</button>
+              </div>
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nome do Produto</label>
