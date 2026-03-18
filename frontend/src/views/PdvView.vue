@@ -136,6 +136,15 @@ const selectCustomer = (c: Customer) => {
   showCustomerDropdown.value = false
 }
 
+// Clear ID if search text is manually changed (to force fresh selection)
+import { watch } from 'vue'
+watch(customerSearch, (newVal) => {
+  const currentCustomer = customers.value.find(c => c.id === selectedCustomerId.value)
+  if (currentCustomer && currentCustomer.name !== newVal) {
+    selectedCustomerId.value = null
+  }
+})
+
 // Computed
 const filteredProducts = computed(() => {
   let result = products.value
@@ -466,12 +475,14 @@ const payPix = async (orderId: number) => {
             <input
               v-model="customerSearch"
               @focus="showCustomerDropdown = true"
+              @input="showCustomerDropdown = true"
+              @click="showCustomerDropdown = true"
               @blur="setTimeout(() => showCustomerDropdown = false, 150)"
               type="text"
               placeholder="Buscar cliente..."
               class="w-full px-3 py-2.5 rounded-xl border border-indigo-900/50 bg-indigo-900/30 text-white placeholder-slate-500 focus:border-indigo-400 outline-none text-xs font-bold"
             />
-            <div v-if="showCustomerDropdown && filteredCustomers.length > 0" class="absolute bottom-full mb-1 w-full bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
+            <div v-if="showCustomerDropdown && filteredCustomers.length > 0" class="absolute top-full mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
               <button
                 v-for="c in filteredCustomers"
                 :key="c.id"
