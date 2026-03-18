@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
+import { useAuthStore } from '../stores/auth'
 
 const ui = useUiStore()
+const authStore = useAuthStore()
 
 interface Product {
   id: number;
@@ -171,6 +173,8 @@ const handleSaveEstimate = async (convertToOrder = false) => {
     const estimateData = {
       customerId: selectedCustomerId.value,
       totalPrice: calculation.value.total,
+      salespersonId: authStore.user?.id,
+      producerId: authStore.user?.id,
       details: {
         productName: productName.value,
         width: width.value,
