@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import PaymentModal from '../components/PaymentModal.vue'
+import PaymentErrorModal from '../components/PaymentErrorModal.vue'
+
+const isErrorModalOpen = ref(false)
 
 interface ProductType {
   id: number
@@ -278,6 +281,10 @@ const payPix = async (orderId: number) => {
     const res = await fetch(`/api/payments/create/${orderId}?type=PIX`, {
       method: 'POST'
     })
+    if (res.status === 500) {
+      isErrorModalOpen.value = true;
+      return;
+    }
     if (res.ok) {
       const transaction = await res.json()
       if (transaction.paymentUrl) {
@@ -291,7 +298,7 @@ const payPix = async (orderId: number) => {
     }
   } catch (e) {
     console.error('Error generating PIX', e)
-    triggerToast('Erro ao gerar Pix')
+    isErrorModalOpen.value = true;
   }
 }
 </script>
@@ -623,6 +630,13 @@ const payPix = async (orderId: number) => {
           </form>
         </div>
       </div>
+
+      <!-- Error Modal for Payments -->
+      <PaymentErrorModal 
+        :show="isErrorModalOpen" 
+        @close="isErrorModalOpen = false"
+        @retry="() => { isErrorModalOpen = false; payPix(orderToPay!); }"
+      />
     </div>
   </div>
 </template>

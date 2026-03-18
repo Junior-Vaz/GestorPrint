@@ -3,18 +3,31 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly auditService: AuditService,
   ) {}
 
-  create(createProductDto: CreateProductDto) {
-    return this.prisma.product.create({
+  async create(createProductDto: CreateProductDto) {
+    const product = await this.prisma.product.create({
       data: createProductDto as any
     });
+    
+    // Audit Log
+    await this.auditService.logAction(
+      1, // Assuming admin for now or system
+      'CREATE',
+      'Product',
+      product.id,
+      createProductDto
+    );
+
+    return product;
   }
 
   findAll() {

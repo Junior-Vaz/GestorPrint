@@ -10,6 +10,11 @@ dist/
 build/
 .next/
 out/
+backend/dist/
+backend/manual_dist/
+backend/temp_dist/
+backend/tsconfig.tsbuildinfo
+frontend/dist/
 
 # Environment Variables (SENSITIVE)
 .env
@@ -30,7 +35,7 @@ Thumbs.db
 
 # Project Specific
 backend/prisma/dev.db
+backend/prisma/migrations/migration_lock.toml
 backend/uploads/*
 !backend/uploads/.gitkeep
-frontend/dist/
 whatsapp-ai/ai-error-dump.log

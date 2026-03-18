@@ -8,65 +8,70 @@ datasource db {
 }
 
 model Customer {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   name      String
-  email     String?  @unique
+  email     String?    @unique
   phone     String?
-  document  String?  @unique
+  document  String?    @unique
   orders    Order[]
   estimates Estimate[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model ProductType {
-  id           Int       @id @default(autoincrement())
-  name         String    @unique
-  color        String    @default("#6366f1")
-  hasStock     Boolean   @default(true)
-  products     Product[]
-  createdAt    DateTime  @default(now())
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  color     String    @default("#6366f1")
+  hasStock  Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
 }
 
 model Product {
-  id          Int          @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   name        String
-  productType ProductType  @relation(fields: [typeId], references: [id])
+  productType ProductType     @relation(fields: [typeId], references: [id])
   typeId      Int
-  unit        String       @default("un") // m², kg, un, h
+  unit        String          @default("un") // m², kg, un, h
   unitPrice   Float
   brand       String?
-  markup      Float        @default(0)    // percentage markup
-  stock       Float        @default(0)
-  minStock    Float        @default(0)
+  markup      Float           @default(0) // percentage markup
+  stock       Float           @default(0)
+  minStock    Float           @default(0)
   description String?
   supplierId  Int?
-  supplier    Supplier?    @relation(fields: [supplierId], references: [id])
+  supplier    Supplier?       @relation(fields: [supplierId], references: [id])
   movements   StockMovement[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model StockMovement {
   id        Int      @id @default(autoincrement())
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
-  quantity  Float    // positive for entry, negative for exit
-  type      String   // PURCHASE, SALE (PRODUCTION), ADJUSTMENT
+  quantity  Float // positive for entry, negative for exit
+  type      String // PURCHASE, SALE (PRODUCTION), ADJUSTMENT
   reason    String?
   createdAt DateTime @default(now())
 }
 
 model Estimate {
-  id            Int      @id @default(autoincrement())
-  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId    Int
-  status        String   @default("DRAFT") // DRAFT, SENT, APPROVED, REJECTED
-  details       Json     // Contains dynamic calculator fields like width, height, colors, etc.
-  totalPrice    Float
-  orders        Order[]  // An estimate can generate one or more production orders
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId Int
+  status     String   @default("DRAFT") // DRAFT, SENT, APPROVED, REJECTED
+  details    Json // Contains dynamic calculator fields like width, height, colors, etc.
+  totalPrice Float
+  orders     Order[] // An estimate can generate one or more production orders
+
+  // Employee Assignment
+  salespersonId Int?
+  salesperson   User? @relation("EstimateSalesperson", fields: [salespersonId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Order {
@@ -75,14 +80,20 @@ model Order {
   customerId         Int
   estimate           Estimate? @relation(fields: [estimateId], references: [id])
   estimateId         Int?
-  productDescription String    // Snapshot of what to produce
+  productDescription String // Snapshot of what to produce
   amount             Float
   status             String    @default("PENDING") // PENDING, PRODUCTION, FINISHED, DELIVERED
-  details            Json?     // Stores items for PDV orders
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  transactions       Transaction[]
-  attachments        Attachment[]
+  details            Json? // Stores items for PDV orders
+  // Employee Assignment
+  salespersonId      Int?
+  salesperson        User?     @relation("Salesperson", fields: [salespersonId], references: [id])
+  producerId         Int?
+  producer           User?     @relation("Producer", fields: [producerId], references: [id])
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  attachments  Attachment[]
 }
 
 model Attachment {
@@ -97,63 +108,77 @@ model Attachment {
 }
 
 model Settings {
-  id          Int      @id @default(1)
-  companyName String   @default("Minha Gráfica")
-  cnpj        String?
-  phone       String?
-  email       String?
-  address     String?
-  smtpHost    String?
-  smtpPort    Int?     @default(587)
-  smtpUser    String?
-  smtpPass    String?
-  smtpSecure  Boolean  @default(false)
+  id            Int      @id @default(1)
+  companyName   String   @default("Minha Gráfica")
+  cnpj          String?
+  phone         String?
+  email         String?
+  address       String?
+  smtpHost      String?
+  smtpPort      Int?     @default(587)
+  smtpUser      String?
+  smtpPass      String?
+  smtpSecure    Boolean  @default(false)
   mpAccessToken String?
   mpPublicKey   String?
   logoUrl       String?
-  updatedAt   DateTime @updatedAt
+  updatedAt     DateTime @updatedAt
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("ADMIN") // ADMIN, SALES, PRODUCTION
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  name     String
+  role     String @default("ADMIN") // ADMIN, SALES, PRODUCTION
+
+  // Employee Details
+  phone          String?
+  document       String?
+  salary         Float?
+  commissionRate Float?  @default(0)
+  isActive       Boolean @default(true)
+
+  // Relationships
+  salesOrders    Order[]    @relation("Salesperson")
+  producedOrders Order[]    @relation("Producer")
+  salesEstimates Estimate[] @relation("EstimateSalesperson")
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  AuditLog  AuditLog[]
 }
 
 model Transaction {
-  id          Int      @id @default(autoincrement())
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId     Int
-  amount      Float
-  status      String   @default("PENDING") // PENDING, PAID, CANCELLED, REFUNDED
-  paymentType String   @default("PIX")     // PIX, CREDIT_CARD, CASH
-  gatewayId   String?  @unique             // Reference from Mercado Pago
-  paymentUrl  String?                      // Link for payment or QR code data
-  qrCode      String?                      // Pix "Copia e Cola" string
-  qrCodeBase64 String?                     // Pix QR Code image (base64)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      Int
+  amount       Float
+  status       String   @default("PENDING") // PENDING, PAID, CANCELLED, REFUNDED
+  paymentType  String   @default("PIX") // PIX, CREDIT_CARD, CASH
+  gatewayId    String?  @unique // Reference from Mercado Pago
+  paymentUrl   String? // Link for payment or QR code data
+  qrCode       String? // Pix "Copia e Cola" string
+  qrCodeBase64 String? // Pix QR Code image (base64)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Expense {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   description String
   amount      Float
   category    String
-  date        DateTime @default(now())
+  date        DateTime  @default(now())
   supplierId  Int?
   supplier    Supplier? @relation(fields: [supplierId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model ExpenseCategory {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
+  id   Int    @id @default(autoincrement())
+  name String @unique
 }
 
 model Supplier {
@@ -179,16 +204,27 @@ model Notification {
 }
 
 model AiConfig {
-  id              Int      @id @default(1)
-  enabled         Boolean  @default(false)
-  geminiKey       String?
-  geminiModel     String?  @default("gemini-2.0-flash")
-  maxTokens       Int?     @default(1000)
-  evolutionUrl    String?  @default("https://api.cslsoftwares.com.br")
-  evolutionKey    String?
-  evolutionInstance String? @default("gestorprint")
-  agentPrompt     String?  @default("Você é um atendente inteligente da nossa gráfica...")
-  allowedProductTypes Int[]   @default([])
-  allowFileUploads Boolean @default(true)
-  updatedAt       DateTime @updatedAt
+  id                  Int      @id @default(1)
+  enabled             Boolean  @default(false)
+  geminiKey           String?
+  geminiModel         String?  @default("gemini-2.0-flash")
+  maxTokens           Int?     @default(1000)
+  evolutionUrl        String?  @default("https://api.cslsoftwares.com.br")
+  evolutionKey        String?
+  evolutionInstance   String?  @default("gestorprint")
+  agentPrompt         String?  @default("Você é um atendente inteligente da nossa gráfica...")
+  allowedProductTypes Int[]    @default([])
+  allowFileUploads    Boolean  @default(true)
+  updatedAt           DateTime @updatedAt
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  action    String // CREATE, UPDATE, DELETE
+  entity    String // Order, Product, User, Estimate, etc.
+  entityId  Int? // ID of the entity that was affected
+  details   Json? // Optional JSON containing old/new values or specific change notes
+  createdAt DateTime @default(now())
 }

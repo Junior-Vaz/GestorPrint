@@ -18,6 +18,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
 import { ProductTypesModule } from './product-types/product-types.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { McpModule } from './mcp/mcp.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { McpModule } from './mcp/mcp.module';
     ProductTypesModule,
     NotificationsModule,
     McpModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

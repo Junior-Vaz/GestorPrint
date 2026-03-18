@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { io, Socket } from 'socket.io-client'
 import draggable from 'vuedraggable'
 import PaymentModal from './PaymentModal.vue'
+import PaymentErrorModal from './PaymentErrorModal.vue'
 
 interface Order {
   id: number;
@@ -33,6 +34,13 @@ const currentTransactionId = ref<number | null>(null)
 const isConfirmingPix = ref(false)
 const orderToPay = ref<number | null>(null)
 const verifyingOrderId = ref<number | null>(null)
+
+// New modal refs
+const isErrorModalOpen = ref(false)
+const isConfirmingDelete = ref(false)
+const orderToDelete = ref<number | null>(null)
+const isConfirmingDeleteFile = ref(false)
+const fileToDelete = ref<{id: number, orderId: number} | null>(null)
 
 // Notifications
 const showToast = ref(false)
@@ -161,6 +169,10 @@ const generatePix = async (orderId: number) => {
     const res = await fetch(`/api/payments/create/${orderId}?type=PIX`, {
       method: 'POST'
     })
+    if (res.status === 500) {
+      isErrorModalOpen.value = true;
+      return;
+    }
     if (res.ok) {
       const transaction = await res.json()
       if (transaction.paymentUrl) {
@@ -208,15 +220,28 @@ const verifyPaymentDirectly = async (orderId: number) => {
   }
 }
 
-const deleteOrder = async (id: number) => {
-  if (!confirm('Deseja excluir permanentemente este pedido?')) return
+const startDeleteOrder = (id: number) => {
+  orderToDelete.value = id;
+  isConfirmingDelete.value = true;
+}
+
+const confirmDeleteOrder = async () => {
+  if (!orderToDelete.value) return;
   try {
-    const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/orders/${orderToDelete.value}`, { method: 'DELETE' })
     if (res.ok) {
-      orders.value = orders.value.filter(o => o.id !== id)
+      orders.value = orders.value.filter(o => o.id !== orderToDelete.value)
+      triggerToast('Pedido excluído com sucesso!')
+      if (selectedOrder.value?.id === orderToDelete.value) {
+        isModalOpen.value = false;
+      }
     }
   } catch (e) {
     console.error('Error deleting order', e)
+    triggerToast('Erro ao excluir pedido.')
+  } finally {
+    isConfirmingDelete.value = false;
+    orderToDelete.value = null;
   }
 }
 
@@ -647,6 +672,46 @@ const isPDF = (mimetype: string) => {
         <div class="flex gap-3">
           <button @click="isConfirmingPix = false" class="flex-1 py-3.5 px-4 rounded-2xl font-black text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all active:scale-95 uppercase text-[10px] tracking-widest border border-transparent hover:border-slate-100">Cancelar</button>
           <button @click="generatePix(orderToPay!)" class="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-black hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-emerald-500/30 uppercase text-[10px] tracking-widest">Gerar Pix</button>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Error Modal for Payments -->
+    <PaymentErrorModal 
+      :show="isErrorModalOpen" 
+      @close="isErrorModalOpen = false"
+      @retry="() => { isErrorModalOpen = false; generatePix(orderToPay!); }"
+    />
+
+    <!-- Confirmation Modal Delete Order -->
+    <div v-if="isConfirmingDelete" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="isConfirmingDelete = false"></div>
+      <div class="bg-white w-full max-w-sm p-8 rounded-[32px] shadow-2xl relative z-10 text-center animate-in zoom-in-95 duration-200">
+        <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </div>
+        <h3 class="text-xl font-black text-slate-900 mb-2">Excluir Pedido?</h3>
+        <p class="text-slate-500 text-sm font-medium mb-8">Esta ação não poderá ser desfeita e removerá todos os arquivos vinculados.</p>
+        <div class="flex gap-3">
+          <button @click="isConfirmingDelete = false" class="flex-1 py-3.5 px-4 rounded-2xl font-black text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all active:scale-95 uppercase text-[10px] tracking-widest border border-transparent hover:border-slate-100">Manter</button>
+          <button @click="confirmDeleteOrder" class="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-rose-400 to-rose-600 text-white font-black hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-rose-500/30 uppercase text-[10px] tracking-widest">Excluir</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal Delete File -->
+    <div v-if="isConfirmingDeleteFile" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="isConfirmingDeleteFile = false"></div>
+      <div class="bg-white w-full max-w-sm p-8 rounded-[32px] shadow-2xl relative z-10 text-center animate-in zoom-in-95 duration-200">
+        <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </div>
+        <h3 class="text-xl font-black text-slate-900 mb-2">Remover Arquivo?</h3>
+        <p class="text-slate-500 text-sm font-medium mb-8">O arquivo será excluído permanentemente do servidor.</p>
+        <div class="flex gap-3">
+          <button @click="isConfirmingDeleteFile = false" class="flex-1 py-3.5 px-4 rounded-2xl font-black text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all active:scale-95 uppercase text-[10px] tracking-widest border border-transparent hover:border-slate-100">Manter</button>
+          <button @click="confirmDeleteAttachment" class="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-br from-rose-400 to-rose-600 text-white font-black hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-rose-500/30 uppercase text-[10px] tracking-widest">Remover</button>
         </div>
       </div>
     </div>

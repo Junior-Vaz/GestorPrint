@@ -6,9 +6,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProductsModule } from '../products/products.module';
 import { SettingsModule } from '../settings/settings.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [ProductsModule, SettingsModule, NotificationsModule],
+  imports: [ProductsModule, SettingsModule, NotificationsModule, AuditModule],
   controllers: [OrdersController],
   providers: [OrdersService, OrdersGateway, PrismaService],
   exports: [OrdersService, OrdersGateway],

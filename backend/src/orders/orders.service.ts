@@ -10,6 +10,7 @@ import { SettingsService } from '../settings/settings.service';
 import * as path from 'path';
 import * as fs from 'fs';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditService } from '../audit/audit.service';
 
 const PDFDocument = require('pdfkit');
 
@@ -21,6 +22,7 @@ export class OrdersService {
     private readonly messagingService: MessagingService,
     private readonly settingsService: SettingsService,
     private readonly notificationsService: NotificationsService,
+    private readonly auditService: AuditService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto) {
@@ -165,6 +167,19 @@ export class OrdersService {
       include: { customer: true, estimate: true, attachments: true }
     });
 
+    // Audit Log
+    await this.auditService.logAction(
+      1, // Generic Admin
+      'UPDATE',
+      'Order',
+      id,
+      {
+        oldStatus: previousOrder?.status,
+        newStatus: updatedOrder.status,
+        fields: Object.keys(updateOrderDto)
+      }
+    );
+
     // Notify Status Change
     if (previousOrder?.status !== updatedOrder.status) {
       const statusLabels: Record<string, string> = {
@@ -260,9 +275,29 @@ export class OrdersService {
   }
 
   async remove(id: number) {
-    return this.prisma.order.delete({
+    const order = await (this.prisma as any).order.findUnique({
+      where: { id },
+      include: { customer: true }
+    });
+
+    const deleted = await this.prisma.order.delete({
        where: { id }
     });
+
+    // Audit Log
+    await this.auditService.logAction(
+      1, // Generic Admin
+      'DELETE',
+      'Order',
+      id,
+      {
+        customer: order?.customer?.name,
+        description: order?.productDescription,
+        amount: order?.amount
+      }
+    );
+
+    return deleted;
   }
 
   async generateReceipt(id: number, res: any) {
