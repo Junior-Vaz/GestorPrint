@@ -39,8 +39,6 @@ const verifyingOrderId = ref<number | null>(null)
 const isErrorModalOpen = ref(false)
 const isConfirmingDelete = ref(false)
 const orderToDelete = ref<number | null>(null)
-const isConfirmingDeleteFile = ref(false)
-const fileToDelete = ref<{id: number, orderId: number} | null>(null)
 
 // Notifications
 const showToast = ref(false)
