@@ -128,7 +128,13 @@ onMounted(fetchEstimates)
           <tbody class="divide-y divide-slate-100">
             <tr v-for="est in estimates" :key="est.id" class="hover:bg-slate-50/50 transition-colors group">
               <td class="px-6 py-4">
-                <div class="text-[10px] font-mono font-bold text-slate-400 mb-0.5">#ORC-{{ est.id }}</div>
+                <div class="flex items-center gap-2 mb-0.5">
+                  <div class="text-[10px] font-mono font-bold text-slate-400">#ORC-{{ est.id }}</div>
+                  <div v-if="est.salesperson" class="flex items-center gap-1 bg-blue-50 text-blue-600 px-1.5 py-[1px] rounded text-[8px] font-bold" title="Vendedor">
+                    <svg class="w-2.5 h-2.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    {{ est.salesperson.name.split(' ')[0] }}
+                  </div>
+                </div>
                 <div class="font-bold text-slate-800 leading-none">{{ est.customer.name }}</div>
               </td>
               <td class="px-6 py-4">

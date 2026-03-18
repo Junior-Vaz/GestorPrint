@@ -13,9 +13,10 @@ interface Order {
   id: number;
   customerName: string;
   customerPhone?: string;
-  productDescription: string;
   amount: number;
   status: string;
+  salesperson?: { id: number, name: string };
+  producer?: { id: number, name: string };
   createdAt: string;
   attachments?: any[];
 }
@@ -420,6 +421,17 @@ const isPDF = (mimetype: string) => {
                   <span v-if="element.productDescription.toLowerCase().includes('brilh')" class="text-[9px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md uppercase tracking-tighter">Brilho</span>
                   <span v-if="element.productDescription.toLowerCase().includes('fosco')" class="text-[9px] font-black bg-slate-800 text-white px-2 py-0.5 rounded-md uppercase tracking-tighter">Fosco</span>
                   <span v-if="element.productDescription.toLowerCase().includes('verniz')" class="text-[9px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md uppercase tracking-tighter">Verniz</span>
+                </div>
+
+                <div class="mt-3 flex items-center gap-2 border-t border-slate-50 pt-3">
+                  <div v-if="element.salesperson" class="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-[9px] font-bold" title="Vendedor">
+                    <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    {{ element.salesperson.name.split(' ')[0] }}
+                  </div>
+                  <div v-if="element.producer" class="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-md text-[9px] font-bold" title="Produtor">
+                    <svg class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    {{ element.producer.name.split(' ')[0] }}
+                  </div>
                 </div>
 
                 <div class="mt-4 pt-4 border-t border-slate-50">

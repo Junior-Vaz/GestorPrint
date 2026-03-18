@@ -31,7 +31,10 @@ export class EstimatesService {
 
   findAll() {
     return this.prisma.estimate.findMany({
-       include: { customer: true },
+       include: { 
+         customer: true,
+         salesperson: { select: { id: true, name: true } }
+       },
        orderBy: { id: 'desc' }
     });
   }
@@ -39,7 +42,10 @@ export class EstimatesService {
   findOne(id: number) {
     return this.prisma.estimate.findUnique({
       where: { id },
-      include: { customer: true }
+      include: { 
+        customer: true,
+        salesperson: { select: { id: true, name: true } }
+      }
     });
   }
 

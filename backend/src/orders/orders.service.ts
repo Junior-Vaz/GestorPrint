@@ -121,7 +121,9 @@ export class OrdersService {
   async findAll() {
     const orders = await (this.prisma as any).order.findMany({
       include: { 
-        customer: true, 
+        customer: true,
+        salesperson: true,
+        producer: true,
         attachments: true,
         transactions: {
           orderBy: { createdAt: 'desc' }
@@ -137,6 +139,8 @@ export class OrdersService {
       productDescription: o.productDescription,
       amount: o.amount,
       status: o.status,
+      salesperson: o.salesperson ? { id: o.salesperson.id, name: o.salesperson.name } : null,
+      producer: o.producer ? { id: o.producer.id, name: o.producer.name } : null,
       createdAt: o.createdAt.toISOString(),
       attachments: o.attachments,
       transactions: o.transactions
@@ -148,6 +152,8 @@ export class OrdersService {
       where: { id },
       include: { 
         customer: true,
+        salesperson: true,
+        producer: true,
         transactions: {
           orderBy: { createdAt: 'desc' }
         }
