@@ -20,6 +20,13 @@ const charts = ref({
 })
 
 const loading = ref(true)
+const chartContainer = ref<HTMLElement | null>(null)
+
+const scrollToRight = () => {
+  if (chartContainer.value) {
+    chartContainer.value.scrollLeft = chartContainer.value.scrollWidth
+  }
+}
 
 const fetchReports = async () => {
   loading.value = true
@@ -30,11 +37,15 @@ const fetchReports = async () => {
     ])
     
     if (sumRes.ok) summary.value = await sumRes.json()
-    if (statsRes.ok) charts.value = await statsRes.json()
+    if (statsRes.ok) {
+      charts.value = await statsRes.json()
+      setTimeout(scrollToRight, 100)
+    }
   } catch (e) {
     console.error('Error fetching reports', e)
   } finally {
     loading.value = false
+    setTimeout(scrollToRight, 300)
   }
 }
 
@@ -133,40 +144,66 @@ onMounted(fetchReports)
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <!-- Sales Trend Chart -->
-        <div class="lg:col-span-8 bg-white rounded-[40px] border border-slate-200 p-8 md:p-10 shadow-sm overflow-hidden">
+        <div class="lg:col-span-8 bg-white rounded-[40px] border border-slate-200 p-8 md:p-10 shadow-sm overflow-hidden flex flex-col">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-            <h4 class="text-lg font-black text-slate-900 tracking-tight">Crescimento de Faturamento</h4>
-            <div class="flex items-center gap-4">
-              <div class="flex items-center gap-1.5">
-                <div class="w-3 h-3 bg-indigo-600 rounded-full"></div>
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Receita</span>
+            <div>
+              <h4 class="text-lg font-black text-slate-900 tracking-tight">Crescimento de Faturamento</h4>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Análise de Receita vs Custos</p>
+            </div>
+            <div class="flex items-center gap-6 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 bg-indigo-600 rounded-full shadow-sm shadow-indigo-200"></div>
+                <span class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Receita</span>
               </div>
-              <div class="flex items-center gap-1.5">
-                <div class="w-3 h-3 bg-red-400 rounded-full"></div>
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Custos</span>
+              <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 bg-rose-400 rounded-full shadow-sm shadow-rose-200"></div>
+                <span class="text-[10px] font-black text-slate-600 uppercase tracking-widest">Custos</span>
               </div>
             </div>
           </div>
 
-          <div class="h-72 flex items-end gap-2 md:gap-4 px-2 pb-8 overflow-x-auto no-scrollbar">
-            <div v-for="day in charts.salesTrend" :key="day.date" class="min-w-[40px] flex-1 flex flex-col items-center group relative">
-              <div class="absolute -top-12 opacity-0 group-hover:opacity-100 transition-all bg-slate-900 text-white text-[10px] font-black px-3 py-2 rounded-xl pointer-events-none whitespace-nowrap z-50 shadow-2xl scale-90 group-hover:scale-100">
-                {{ day.date }}: R$ {{ day.revenue.toLocaleString() }}
+          <!-- Chart Area -->
+          <div 
+            ref="chartContainer"
+            class="h-[350px] flex items-end gap-2 md:gap-3 px-4 pb-16 overflow-x-auto no-scrollbar scroll-smooth relative"
+          >
+            <!-- Grid Lines -->
+            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-[0.05] py-16 px-4">
+              <div v-for="i in 5" :key="i" class="w-full border-b border-slate-900"></div>
+            </div>
+
+            <!-- Bars -->
+            <div v-for="day in charts.salesTrend" :key="day.fullDate" 
+              class="min-w-[32px] md:min-w-[40px] h-full flex flex-col justify-end items-center group relative transition-all duration-300"
+            >
+              <!-- Tooltip -->
+              <div class="absolute -top-20 opacity-0 group-hover:opacity-100 transition-all bg-slate-900 text-white p-3 rounded-2xl pointer-events-none z-50 shadow-2xl border border-white/10 whitespace-nowrap">
+                <p class="text-[8px] font-black uppercase tracking-widest opacity-40 mb-1">{{ day.weekday }} {{ day.date }}</p>
+                <p class="text-[10px] font-black text-indigo-400">Receita: R$ {{ day.revenue.toLocaleString('pt-BR') }}</p>
+                <p class="text-[10px] font-black text-rose-400">Custo: R$ {{ (day.expense || 0).toLocaleString('pt-BR') }}</p>
               </div>
               
-              <div class="flex items-end gap-1 w-full h-full max-w-[20px]">
+              <!-- Bar Group -->
+              <div class="w-full flex items-end justify-center gap-[2px] h-[200px] mb-2">
+                <!-- Revenue Bar -->
                 <div 
-                  class="flex-1 bg-indigo-600 rounded-t-lg transition-all duration-700 ease-out min-h-[4px] relative"
+                  class="w-[10px] md:w-[12px] bg-indigo-600 rounded-t-md transition-all duration-1000 ease-out shadow-sm relative"
                   :style="{ height: getBarHeight(day.revenue) + '%' }"
                 >
-                  <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                   <span v-if="day.revenue > 30" class="absolute -top-5 left-1/2 -translate-x-1/2 text-[8px] font-black text-indigo-600 opacity-0 group-hover:opacity-100">R${{Math.round(day.revenue)}}</span>
                 </div>
+                <!-- Expense Bar -->
                 <div 
-                  class="flex-1 bg-red-400 rounded-t-lg transition-all duration-700 ease-out min-h-[4px]"
-                  :style="{ height: getBarHeight(day.expense) + '%' }"
+                  class="w-[10px] md:w-[12px] bg-rose-400 rounded-t-md transition-all duration-1000 ease-out shadow-sm"
+                  :style="{ height: getBarHeight(day.expense || 0) + '%' }"
                 ></div>
               </div>
-              <span class="text-[8px] font-black text-slate-400 mt-4 uppercase rotate-45 origin-left">{{ day.date }}</span>
+
+              <!-- Date Label (Simplified/Rotated if needed) -->
+              <div class="absolute -bottom-10 h-10 flex flex-col items-center">
+                <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{{ day.weekday }}</span>
+                <span class="text-[10px] font-black text-slate-700">{{ day.date.split('/')[0] }}</span>
+              </div>
             </div>
           </div>
         </div>

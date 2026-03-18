@@ -21,4 +21,10 @@ export class CreateOrderDto {
 
   @ApiProperty({ example: 'DINHEIRO', required: false, description: 'Payment method for PDV sales' })
   paymentMethod?: string;
+
+  @ApiProperty({ required: false, description: 'ID of the salesperson' })
+  salespersonId?: number;
+
+  @ApiProperty({ required: false, description: 'ID of the producer' })
+  producerId?: number;
 }

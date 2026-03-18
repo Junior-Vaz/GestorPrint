@@ -58,6 +58,7 @@ const paymentAmount = ref(0)
 const currentTransactionId = ref<number | null>(null)
 const isConfirmingPix = ref(false)
 const orderToPay = ref<number | null>(null)
+const isIntegrated = ref(true) // Default to true, check on mount
 
 const showSangriaModal = ref(false)
 const sangriaForm = ref({
@@ -115,6 +116,13 @@ const fetchAll = async () => {
       const fallback = (customers.value as any[]).find(c => c.name.toLowerCase().includes('balcão'))
       if (fallback) { selectedCustomerId.value = fallback.id; customerSearch.value = fallback.name }
       else if (customers.value && customers.value.length > 0) { selectedCustomerId.value = (customers.value[0] as any).id; customerSearch.value = (customers.value[0] as any).name }
+    }
+    
+    // Check integration status
+    const statusRes = await fetch('/api/payments/config-status')
+    if (statusRes.ok) {
+      const statusData = await statusRes.json()
+      isIntegrated.value = statusData.integrated
     }
   } catch (e) {
     console.error(e)
@@ -352,9 +360,15 @@ const payPix = async (orderId: number) => {
           <h2 class="text-2xl font-black text-slate-800 tracking-tight">Frente de Caixa</h2>
           <p class="text-slate-500 text-sm font-medium">Venda rápida de insumos e serviços prontos.</p>
         </div>
-        <div class="relative w-full md:w-72">
-          <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-          <input v-model="searchQuery" type="text" placeholder="Buscar por nome..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm font-bold bg-slate-50/50">
+        <div class="flex items-center gap-3">
+          <div :class="['flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all', isIntegrated ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100 animate-pulse']">
+            <div :class="['w-1.5 h-1.5 rounded-full', isIntegrated ? 'bg-emerald-500' : 'bg-red-500']"></div>
+            {{ isIntegrated ? 'Mercado Pago ON' : 'Mercado Pago OFF' }}
+          </div>
+          <div class="relative w-full md:w-72">
+            <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input v-model="searchQuery" type="text" placeholder="Buscar por nome..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm font-bold bg-slate-50/50">
+          </div>
         </div>
       </div>
 
@@ -687,7 +701,7 @@ const payPix = async (orderId: number) => {
   </div>
 
   <!-- Payment Error Modal -->
-  <PaymentErrorModal :is-open="isErrorModalOpen" @close="isErrorModalOpen = false" />
+  <PaymentErrorModal :show="isErrorModalOpen" @close="isErrorModalOpen = false" />
 </template>
 
 <style scoped>

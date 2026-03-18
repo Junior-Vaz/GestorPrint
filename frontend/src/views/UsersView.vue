@@ -6,6 +6,11 @@ interface User {
   name: string;
   email: string;
   role: string;
+  phone?: string;
+  document?: string;
+  salary?: number;
+  commissionRate?: number;
+  isActive?: boolean;
   createdAt: string;
 }
 
@@ -19,7 +24,12 @@ const newUser = ref({
   name: '',
   email: '',
   password: '',
-  role: 'SALES'
+  role: 'SALES',
+  phone: '',
+  document: '',
+  salary: 0,
+  commissionRate: 0,
+  isActive: true
 })
 
 const roles = [
@@ -36,12 +46,17 @@ const openModal = (user?: User) => {
       name: user.name,
       email: user.email,
       password: '', // Password stays empty unless editing
-      role: user.role
+      role: user.role,
+      phone: user.phone || '',
+      document: user.document || '',
+      salary: user.salary || 0,
+      commissionRate: user.commissionRate || 0,
+      isActive: user.isActive !== undefined ? user.isActive : true
     }
   } else {
     isEditing.value = false
     editingId.value = null
-    newUser.value = { name: '', email: '', password: '', role: 'SALES' }
+    newUser.value = { name: '', email: '', password: '', role: 'SALES', phone: '', document: '', salary: 0, commissionRate: 0, isActive: true }
   }
   showModal.value = true
 }
@@ -225,6 +240,39 @@ onMounted(fetchUsers)
               <select v-model="newUser.role" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-sans appearance-none">
                 <option v-for="role in roles" :key="role.value" :value="role.value">{{ role.label }}</option>
               </select>
+            </div>
+
+            <div class="border-t border-slate-100 my-4 pt-4">
+              <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Dados de Funcionário</h4>
+              
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">CPF / Documento</label>
+                  <input v-model="newUser.document" type="text" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Telefone</label>
+                  <input v-model="newUser.phone" type="text" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Salário Base (R$)</label>
+                  <input v-model.number="newUser.salary" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Comissão (%)</label>
+                  <input v-model.number="newUser.commissionRate" type="number" step="0.1" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                </div>
+              </div>
+
+              <div class="space-y-1.5 mt-2">
+                <label class="flex items-center gap-2 text-sm font-bold text-slate-600 mb-3 cursor-pointer">
+                  <input v-model="newUser.isActive" type="checkbox" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
+                  Funcionário Ativo no Sistema
+                </label>
+              </div>
             </div>
 
             <div class="pt-6 flex gap-3">

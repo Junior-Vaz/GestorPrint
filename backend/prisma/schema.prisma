@@ -13,6 +13,12 @@ model Customer {
   email     String?    @unique
   phone     String?
   document  String?    @unique
+  zipCode      String?
+  address      String?
+  number       String?
+  neighborhood String?
+  city         String?
+  state        String?
   orders    Order[]
   estimates Estimate[]
   createdAt DateTime   @default(now())

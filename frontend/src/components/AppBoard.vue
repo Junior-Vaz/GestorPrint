@@ -39,6 +39,7 @@ const currentTransactionId = ref<number | null>(null)
 const isConfirmingPix = ref(false)
 const orderToPay = ref<number | null>(null)
 const verifyingOrderId = ref<number | null>(null)
+const isIntegrated = ref(true)
 
 // New modal refs
 const isErrorModalOpen = ref(false)
@@ -133,6 +134,13 @@ onMounted(async () => {
     loading.value = false
   }
 
+  // Check integration status
+  const statusRes = await fetch('/api/payments/config-status')
+  if (statusRes.ok) {
+    const statusData = await statusRes.json()
+    isIntegrated.value = statusData.integrated
+  }
+
   socket.value = io()
   socket.value.on('connect', () => connectionStatus.value = 'ON')
   socket.value.on('disconnect', () => connectionStatus.value = 'OFF')
@@ -142,7 +150,22 @@ onMounted(async () => {
   socket.value.on('order_updated', (updatedOrder: any) => {
     const index = orders.value.findIndex(o => o.id === updatedOrder.id)
     if (index > -1) {
-      orders.value[index] = { ...orders.value[index], ...updatedOrder }
+      const existing = orders.value[index]
+      // Merge intelligently: preserve attachments if the update doesn't have them
+      const attachments = (updatedOrder.attachments && updatedOrder.attachments.length > 0) 
+        ? updatedOrder.attachments 
+        : existing.attachments;
+        
+      orders.value[index] = { 
+        ...existing, 
+        ...updatedOrder,
+        attachments: attachments || []
+      }
+      
+      // Update selectedOrder if it's the same one
+      if (selectedOrder.value && selectedOrder.value.id === updatedOrder.id) {
+        selectedOrder.value = { ...selectedOrder.value, ...updatedOrder, attachments: attachments || [] }
+      }
       
       // If the paying order was just paid, close the payment modal
       if (payingOrderId.value === updatedOrder.id && updatedOrder.status === 'PRODUCTION') {
@@ -157,17 +180,7 @@ onUnmounted(() => {
   if (socket.value) socket.value.disconnect()
 })
 
-const createTestOrder = async () => {
-  await fetch('/api/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      customerName: 'Cliente VIP',
-      productDescription: 'Cartão de Visita c/ Verniz Localizado',
-      amount: 250.00
-    })
-  })
-}
+// Função de teste removida conforme solicitação do usuário
 
 const confirmPix = (orderId: number) => {
   orderToPay.value = orderId
@@ -369,14 +382,15 @@ const isPDF = (mimetype: string) => {
           />
         </div>
 
+        <div :class="['flex items-center gap-2 px-3 py-2 text-[10px] font-black uppercase tracking-widest border rounded-xl shadow-sm transition-all', isIntegrated ? 'bg-white text-slate-500 border-slate-200' : 'bg-red-50 text-red-600 border-red-100 animate-pulse']">
+          <div :class="['w-2 h-2 rounded-full', isIntegrated ? 'bg-emerald-500' : 'bg-red-500']"></div>
+          Mercado Pago {{ isIntegrated ? 'ON' : 'OFF' }}
+        </div>
+
         <div class="flex items-center gap-2 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white rounded-xl border border-slate-200 shadow-sm">
           <div class="w-2 h-2 rounded-full" :class="connectionStatus === 'ON' ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-red-500'"></div>
           Socket {{ connectionStatus }}
         </div>
-        
-        <button @click="createTestOrder" class="rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-xl hover:bg-slate-800 transition-all active:scale-95">
-          Simular Pedido
-        </button>
       </div>
     </header>
 
@@ -486,7 +500,7 @@ const isPDF = (mimetype: string) => {
                       title="Enviar WhatsApp">
                       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 448 512"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-5.5-2.8-23.4-8.6-44.6-27.5-16.5-14.7-27.6-32.8-30.8-38.4-3.2-5.5-.3-8.6 2.5-11.3 2.5-2.5 5.5-6.5 8.3-9.7 2.8-3.3 3.7-5.6 5.5-9.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 13.2 5.8 23.5 9.2 31.5 11.8 13.3 4.2 25.4 3.6 35 2.2 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
                     </button>
-                    <button @click.stop="startDeleteOrder(element.id)" class="text-slate-300 hover:text-red-500 transition-colors">
+                    <button v-if="!authStore.isOnlyProduction" @click.stop="startDeleteOrder(element.id)" class="text-slate-300 hover:text-red-500 transition-colors">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                     <div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
@@ -538,20 +552,20 @@ const isPDF = (mimetype: string) => {
             <div v-if="selectedOrder.salesperson || selectedOrder.producer" class="space-y-4">
               <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Equipe</h4>
               <div class="flex items-center gap-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                <div v-if="selectedOrder.salesperson" class="flex-1">
-                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Vendedor</div>
+                <div v-if="selectedOrder.salesperson" class="flex-1 min-w-0">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 truncate">Vendedor</div>
                   <div class="font-black text-slate-800 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                    {{ selectedOrder.salesperson.name }}
+                    <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <span class="truncate text-[12px]" :title="selectedOrder.salesperson.name">{{ selectedOrder.salesperson.name }}</span>
                   </div>
                 </div>
                 <!-- Divisor -->
-                <div v-if="selectedOrder.salesperson && selectedOrder.producer" class="w-px h-8 bg-slate-100"></div>
-                <div v-if="selectedOrder.producer" class="flex-1">
-                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Produtor</div>
+                <div v-if="selectedOrder.salesperson && selectedOrder.producer" class="w-px h-8 bg-slate-100 shrink-0"></div>
+                <div v-if="selectedOrder.producer" class="flex-1 min-w-0">
+                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 truncate">Produtor</div>
                   <div class="font-black text-slate-800 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    {{ selectedOrder.producer.name }}
+                    <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span class="truncate text-[12px]" :title="selectedOrder.producer.name">{{ selectedOrder.producer.name }}</span>
                   </div>
                 </div>
               </div>
@@ -722,7 +736,7 @@ const isPDF = (mimetype: string) => {
     </div>
 
     <!-- Payment Error Modal -->
-    <PaymentErrorModal :is-open="isErrorModalOpen" @close="isErrorModalOpen = false" />
+    <PaymentErrorModal :show="isErrorModalOpen" @close="isErrorModalOpen = false" />
 
     <!-- Stock Warning Modal -->
     <div v-if="showStockWarningModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">

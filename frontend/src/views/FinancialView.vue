@@ -7,6 +7,8 @@ const stats = ref({
   netProfit: 0,
   paidTransactionsCount: 0,
   pendingTransactionsCount: 0,
+  revenueToday: 0,
+  revenueMonth: 0,
   loading: true
 })
 
@@ -110,6 +112,28 @@ onMounted(fetchFinancialData)
 
     <!-- Financial KPIs -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- High-level Today/Month Summary -->
+      <div class="bg-indigo-600 p-8 rounded-[40px] shadow-2xl shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all group lg:col-span-4 border border-indigo-400/20 relative overflow-hidden">
+        <div class="absolute top-0 right-0 p-8 opacity-10">
+          <svg class="w-32 h-32 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+        </div>
+        <div class="flex flex-col md:flex-row gap-12 justify-around items-center relative z-10">
+          <div class="text-center md:text-left">
+            <div class="text-indigo-200 text-[11px] font-black uppercase tracking-[0.2em] mb-2 opacity-80">Faturamento Hoje</div>
+            <div class="text-5xl font-black text-white tracking-tighter">
+              {{ stats.loading ? '...' : 'R$ ' + stats.revenueToday.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
+            </div>
+          </div>
+          <div class="w-px h-16 bg-white/20 hidden md:block"></div>
+          <div class="text-center md:text-left">
+            <div class="text-indigo-200 text-[11px] font-black uppercase tracking-[0.2em] mb-2 opacity-80">Faturamento este Mês</div>
+            <div class="text-5xl font-black text-white tracking-tighter">
+              {{ stats.loading ? '...' : 'R$ ' + stats.revenueMonth.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <!-- Entries -->
       <div class="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm hover:shadow-md transition-all group">
         <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 group-hover:scale-110 transition-transform">
@@ -151,6 +175,7 @@ onMounted(fetchFinancialData)
         <div class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">A Receber (Pendente)</div>
         <div class="text-2xl font-black text-slate-800">{{ stats.loading ? '...' : stats.pendingTransactionsCount }}</div>
       </div>
+
     </div>
 
     <!-- History Table -->

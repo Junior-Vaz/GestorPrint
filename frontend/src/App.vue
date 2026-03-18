@@ -78,17 +78,18 @@ const ui = useUiStore()
         </button>
 
         <button 
+          v-if="auth.isAdmin"
           @click="ui.setTab('products')" 
           :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'products' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
           Insumos
         </button>
 
-        <div v-if="auth.isSales" class="pt-6 pb-2">
+        <div v-if="auth.isAdmin" class="pt-6 pb-2">
           <span class="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Financeiro</span>
         </div>
         <button 
-          v-if="auth.isSales"
+          v-if="auth.isAdmin"
           @click="ui.setTab('financial')" 
           :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'financial' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M12 16v1m0-1V7m0 0a1 1 0 011-1h2a1 1 0 011 1v1m-6 0a1 1 0 00-1-1H7a1 1 0 00-1 1v1"></path></svg>
@@ -96,7 +97,7 @@ const ui = useUiStore()
         </button>
 
         <button 
-          v-if="auth.isSales"
+          v-if="auth.isAdmin"
           @click="ui.setTab('expenses')" 
           :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'expenses' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2 17l10 5 10-5M2 12l10 5 10-5M12 2l10 5-10 5-10-5 10-5z"></path></svg>
@@ -104,7 +105,7 @@ const ui = useUiStore()
         </button>
 
         <button 
-          v-if="auth.isSales"
+          v-if="auth.isAdmin"
           @click="ui.setTab('suppliers')" 
           :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'suppliers' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
@@ -134,6 +135,7 @@ const ui = useUiStore()
         </div>
 
         <button 
+          v-if="auth.isAdmin"
           @click="ui.setTab('settings')" 
           :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'settings' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>

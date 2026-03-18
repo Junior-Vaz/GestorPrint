@@ -37,6 +37,16 @@ export class ReportsService {
         inventoryValue: totalInventoryValue,
         lowStockCount,
         paidTransactionsCount: transactions.length,
+        revenueToday: transactions
+          .filter((t: any) => new Date(t.createdAt).toDateString() === new Date().toDateString())
+          .reduce((sum: number, t: any) => sum + Number(t.amount), 0),
+        revenueMonth: transactions
+          .filter((t: any) => {
+            const date = new Date(t.createdAt);
+            const now = new Date();
+            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+          })
+          .reduce((sum: number, t: any) => sum + Number(t.amount), 0),
       };
     } catch (error) {
       console.error('Error in getSummary:', error);
@@ -91,24 +101,30 @@ export class ReportsService {
       })
     ]);
 
+    // Simplified and robust grouping
+    const txGroupByDay: Record<string, number> = {};
+    dailyTransactions.forEach((t: any) => {
+      const d = new Date(t.createdAt);
+      // Use YYYY-MM-DD for stable internal key
+      const key = d.toISOString().split('T')[0];
+      txGroupByDay[key] = (txGroupByDay[key] || 0) + Number(t.amount || 0);
+    });
+
+    const expGroupByDay: Record<string, number> = {};
+    dailyExpenses.forEach((e: any) => {
+      const d = new Date(e.date);
+      const key = d.toISOString().split('T')[0];
+      expGroupByDay[key] = (expGroupByDay[key] || 0) + Number(e.amount || 0);
+    });
+
     const salesTrend = trendDays.map(day => {
-      const dayIso = day.toISOString().split('T')[0];
-      
-      const matchedTxs = dailyTransactions.filter((t: any) => {
-        const txDate = new Date(t.createdAt).toISOString().split('T')[0];
-        return txDate === dayIso;
-      });
-      
-      const revenue = matchedTxs.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
-      
-      const expense = dailyExpenses
-        .filter((e: any) => new Date(e.date).toISOString().split('T')[0] === dayIso)
-        .reduce((sum: number, e: any) => sum + Number(e.amount), 0);
-      
+      const key = day.toISOString().split('T')[0];
       return {
-        date: day.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' }),
-        revenue,
-        expense,
+        date: day.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        weekday: day.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+        fullDate: day.toISOString(),
+        revenue: Number(txGroupByDay[key] || 0),
+        expense: Number(expGroupByDay[key] || 0),
       };
     });
 

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useAuthStore } from '../stores/auth'
+
+const auth = useAuthStore()
 
 interface Customer {
   id: number;
@@ -7,6 +10,12 @@ interface Customer {
   email: string | null;
   phone: string | null;
   document: string | null;
+  zipCode: string | null;
+  address: string | null;
+  number: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
   createdAt: string;
 }
 
@@ -17,7 +26,13 @@ const newCustomer = ref({
   name: '',
   email: '',
   phone: '',
-  document: ''
+  document: '',
+  zipCode: '',
+  address: '',
+  number: '',
+  neighborhood: '',
+  city: '',
+  state: ''
 })
 
 const isEditing = ref(false)
@@ -31,12 +46,18 @@ const openModal = (customer?: Customer) => {
       name: customer.name,
       email: customer.email || '',
       phone: customer.phone || '',
-      document: customer.document || ''
+      document: customer.document || '',
+      zipCode: customer.zipCode || '',
+      address: customer.address || '',
+      number: customer.number || '',
+      neighborhood: customer.neighborhood || '',
+      city: customer.city || '',
+      state: customer.state || ''
     }
   } else {
     isEditing.value = false
     editingId.value = null
-    newCustomer.value = { name: '', email: '', phone: '', document: '' }
+    newCustomer.value = { name: '', email: '', phone: '', document: '', zipCode: '', address: '', number: '', neighborhood: '', city: '', state: '' }
   }
   showModal.value = true
 }
@@ -72,7 +93,7 @@ const handleSave = async () => {
     
     if (res.ok) {
       showModal.value = false;
-      newCustomer.value = { name: '', email: '', phone: '', document: '' };
+      newCustomer.value = { name: '', email: '', phone: '', document: '', zipCode: '', address: '', number: '', neighborhood: '', city: '', state: '' };
       await fetchCustomers();
     }
   } catch (e) {
@@ -156,7 +177,7 @@ onMounted(fetchCustomers)
                   <button @click="openModal(customer)" class="text-slate-400 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 rounded-md transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                   </button>
-                  <button @click="deleteCustomer(customer.id)" class="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-md transition-all">
+                  <button v-if="auth.isAdmin" @click="deleteCustomer(customer.id)" class="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-md transition-all">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                   </button>
                 </div>
@@ -194,6 +215,39 @@ onMounted(fetchCustomers)
           <div>
             <label class="block text-sm font-semibold text-slate-600 mb-1.5">E-mail</label>
             <input v-model="newCustomer.email" type="email" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700">
+          </div>
+          <div class="border-t border-slate-100 my-4 pt-4">
+            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Endereço</h4>
+            <div class="grid grid-cols-3 gap-4 mb-4">
+              <div class="col-span-1">
+                <label class="block text-sm font-semibold text-slate-600 mb-1.5">CEP</label>
+                <input v-model="newCustomer.zipCode" type="text" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700">
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-semibold text-slate-600 mb-1.5">Endereço (Rua, Av)</label>
+                <input v-model="newCustomer.address" type="text" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700">
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-4 mb-4">
+              <div class="col-span-1">
+                <label class="block text-sm font-semibold text-slate-600 mb-1.5">Número</label>
+                <input v-model="newCustomer.number" type="text" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700">
+              </div>
+              <div class="col-span-3">
+                <label class="block text-sm font-semibold text-slate-600 mb-1.5">Bairro</label>
+                <input v-model="newCustomer.neighborhood" type="text" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700">
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-4">
+              <div class="col-span-3">
+                <label class="block text-sm font-semibold text-slate-600 mb-1.5">Cidade</label>
+                <input v-model="newCustomer.city" type="text" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700">
+              </div>
+              <div class="col-span-1">
+                <label class="block text-sm font-semibold text-slate-600 mb-1.5">UF</label>
+                <input v-model="newCustomer.state" type="text" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-700">
+              </div>
+            </div>
           </div>
         </div>
         <div class="p-6 bg-slate-50 flex gap-3">

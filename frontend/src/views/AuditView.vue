@@ -95,16 +95,25 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { useAuthStore } from '../stores/auth';
 
 const logs = ref([]);
 const loading = ref(false);
+const auth = useAuthStore();
 
 const fetchLogs = async () => {
   loading.value = true;
   try {
-    const response = await axios.get('/api/audit');
-    logs.value = response.data;
+    const response = await fetch('/api/audit', {
+      headers: {
+        'Authorization': `Bearer ${auth.token}`
+      }
+    });
+    if (response.ok) {
+      logs.value = await response.json();
+    } else {
+      console.error('Erro ao buscar logs:', response.statusText);
+    }
   } catch (error) {
     console.error('Erro ao buscar logs:', error);
   } finally {

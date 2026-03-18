@@ -31,6 +31,11 @@ export class PaymentsService {
     return this.client;
   }
 
+  async checkIntegration() {
+    const settings = await (this.prisma as any).settings.findUnique({ where: { id: 1 } });
+    return { integrated: !!settings?.mpAccessToken };
+  }
+
   async createPayment(orderId: number, type: 'PIX' | 'LINK' = 'PIX') {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },

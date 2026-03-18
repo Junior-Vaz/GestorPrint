@@ -34,4 +34,9 @@ export class PaymentsController {
   async checkStatus(@Param('id') id: string) {
     return this.paymentsService.checkPaymentStatus(+id);
   }
+
+  @Get('config-status')
+  async getConfigStatus() {
+    return this.paymentsService.checkIntegration();
+  }
 }

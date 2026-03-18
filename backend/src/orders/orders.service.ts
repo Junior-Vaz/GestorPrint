@@ -57,6 +57,8 @@ export class OrdersService {
         amount: createOrderDto.amount,
         status: initialStatus,
         customerId: customer.id,
+        salespersonId: createOrderDto.salespersonId || null,
+        producerId: createOrderDto.producerId || null,
         details: createOrderDto.details || null,
         estimateId: createOrderDto.estimateId || null
       },
@@ -148,17 +150,34 @@ export class OrdersService {
   }
 
   async findOne(id: number) {
-    return (this.prisma as any).order.findUnique({
+    const o = await (this.prisma as any).order.findUnique({
       where: { id },
       include: { 
         customer: true,
         salesperson: true,
         producer: true,
+        attachments: true,
         transactions: {
           orderBy: { createdAt: 'desc' }
         }
       }
     });
+
+    if (!o) return null;
+
+    return {
+      id: o.id,
+      customerName: o.customer.name,
+      customerPhone: o.customer.phone,
+      productDescription: o.productDescription,
+      amount: o.amount,
+      status: o.status,
+      salesperson: o.salesperson ? { id: o.salesperson.id, name: o.salesperson.name } : null,
+      producer: o.producer ? { id: o.producer.id, name: o.producer.name } : null,
+      createdAt: o.createdAt.toISOString(),
+      attachments: o.attachments,
+      transactions: o.transactions
+    };
   }
 
   async update(id: number, updateOrderDto: UpdateOrderDto) {
@@ -167,10 +186,19 @@ export class OrdersService {
       include: { estimate: true }
     });
 
-    const updatedOrder = await (this.prisma as any).order.update({
+    const updatedOrder = await (this.prisma.order as any).update({
       where: { id },
       data: updateOrderDto,
-      include: { customer: true, estimate: true, attachments: true }
+      include: { 
+        customer: true, 
+        estimate: true, 
+        attachments: true,
+        salesperson: true,
+        producer: true,
+        transactions: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
     });
 
     // Audit Log
@@ -240,8 +268,11 @@ export class OrdersService {
       productDescription: updatedOrder.productDescription,
       amount: updatedOrder.amount,
       status: updatedOrder.status,
+      salesperson: updatedOrder.salesperson ? { id: updatedOrder.salesperson.id, name: updatedOrder.salesperson.name } : null,
+      producer: updatedOrder.producer ? { id: updatedOrder.producer.id, name: updatedOrder.producer.name } : null,
       createdAt: updatedOrder.createdAt.toISOString(),
-      attachments: (updatedOrder as any).attachments || []
+      attachments: (updatedOrder as any).attachments || [],
+      transactions: (updatedOrder as any).transactions || []
     };
 
     this.ordersGateway.notifyOrderUpdated(payload);

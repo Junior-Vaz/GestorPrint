@@ -71,6 +71,7 @@ export class EstimatesService {
       data: {
         customerId: estimate.customerId,
         estimateId: estimate.id,
+        salespersonId: estimate.salespersonId,
         productDescription: `${details.productName || 'Impresso'} - ${details.width}x${details.height}cm - ${details.quantity}un`,
         amount: estimate.totalPrice,
         status: 'PENDING'
