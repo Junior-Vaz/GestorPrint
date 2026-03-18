@@ -43,4 +43,4 @@ RUN mkdir -p /app/uploads
 
 EXPOSE 3000
 
-CMD sh -c "node -e \"const{Client}=require('pg');const c=new Client({connectionString:process.env.DATABASE_URL});c.connect().then(()=>c.query(\\\"UPDATE _prisma_migrations SET rolled_back_at=NOW() WHERE finished_at IS NULL AND rolled_back_at IS NULL\\\")).catch(()=>{}).finally(()=>c.end())\" && npx prisma migrate deploy && node dist/main"
+CMD sh -c "npx prisma migrate deploy && node dist/main"
