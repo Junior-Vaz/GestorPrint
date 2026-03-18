@@ -122,6 +122,21 @@ const selectCustomer = (c: Customer) => {
   showCustomerDropdown.value = false
 }
 
+const handleCustomerBlur = () => {
+  setTimeout(() => {
+    showCustomerDropdown.value = false
+  }, 150)
+}
+
+// Clear ID if search text is manually changed (to force fresh selection)
+import { watch } from 'vue'
+watch(customerSearch, (newVal) => {
+  const currentCustomer = customers.value.find(c => c.id === selectedCustomerId.value)
+  if (currentCustomer && currentCustomer.name !== newVal) {
+    selectedCustomerId.value = null
+  }
+})
+
 const calculation = computed(() => {
   if (!selectedPaper.value) return { paperCost: 0, finishingCost: 0, paperSell: 0, finishingSell: 0, total: 0, totalMargin: 0 }
 
@@ -254,7 +269,9 @@ onMounted(fetchInitialData)
               <input
                 v-model="customerSearch"
                 @focus="showCustomerDropdown = true"
-                @blur="setTimeout(() => showCustomerDropdown = false, 150)"
+                @input="showCustomerDropdown = true"
+                @click="showCustomerDropdown = true"
+                @blur="handleCustomerBlur"
                 type="text"
                 placeholder="Buscar cliente..."
                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50 text-sm"

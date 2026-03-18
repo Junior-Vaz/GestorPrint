@@ -136,6 +136,12 @@ const selectCustomer = (c: Customer) => {
   showCustomerDropdown.value = false
 }
 
+const handleCustomerBlur = () => {
+  setTimeout(() => {
+    showCustomerDropdown.value = false
+  }, 150)
+}
+
 // Clear ID if search text is manually changed (to force fresh selection)
 import { watch } from 'vue'
 watch(customerSearch, (newVal) => {
@@ -477,7 +483,7 @@ const payPix = async (orderId: number) => {
               @focus="showCustomerDropdown = true"
               @input="showCustomerDropdown = true"
               @click="showCustomerDropdown = true"
-              @blur="setTimeout(() => showCustomerDropdown = false, 150)"
+              @blur="handleCustomerBlur"
               type="text"
               placeholder="Buscar cliente..."
               class="w-full px-3 py-2.5 rounded-xl border border-indigo-900/50 bg-indigo-900/30 text-white placeholder-slate-500 focus:border-indigo-400 outline-none text-xs font-bold"
