@@ -18,7 +18,6 @@ export class AiAgent {
   // Clear memory for a contact (call after order is complete)
   clearSession(contact: string) {
     this.chatSessions.delete(contact);
-    console.log(`🗑️ Sessão apagada para ${contact}`);
   }
 
   async processMessage(contact: string, text: string, systemPrompt: string, mediaData?: { base64: string, mimetype: string }) {
@@ -61,9 +60,6 @@ REGRAS CRÍTICAS DE COMPORTAMENTO:
           generationConfig: { maxOutputTokens: this.maxTokens },
         });
         this.chatSessions.set(contact, chat);
-        console.log(`🆕 Nova sessão criada para ${contact}`);
-      } else {
-        console.log(`♻️ Sessão reutilizada para ${contact}`);
       }
 
       let messagePayload: any = text;
@@ -85,10 +81,7 @@ REGRAS CRÍTICAS DE COMPORTAMENTO:
 
         for (const call of toolCalls) {
           const { name, args } = (call as any).functionCall;
-          console.log(`AI calling tool: ${name}`, args);
-          
           const toolResult = await this.callErpTool(name, args);
-          console.log(`   🛠️ Ferramenta "${name}" respondeu com sucesso.`);
           toolResponses.push({
             functionResponse: {
               name,
@@ -104,9 +97,7 @@ REGRAS CRÍTICAS DE COMPORTAMENTO:
 
       return response.text();
     } catch (error: any) {
-      console.error("AI Error Full:", error?.response?.data || error);
-      if (error.response?.data) console.error("ERP Error Details:", error.response.data);
-      require('fs').writeFileSync('ai-error-dump.log', JSON.stringify({ message: error.message, error: error, data: error?.response?.data }, null, 2));
+      console.error("AI Error:", error?.response?.data || error?.message || error);
       return "Desculpe, tive um problema técnico ao processar sua consulta. Poderia repetir?";
     }
   }
