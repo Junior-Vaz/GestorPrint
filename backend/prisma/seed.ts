@@ -1,14 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '../.env' });
 
 async function main() {
-  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-  const adapter = new PrismaPg(pool as any);
-  const prisma = new PrismaClient({ adapter } as any) as any;
+  const prisma = new PrismaClient();
 
   console.log('Seed started...');
 
@@ -39,7 +35,8 @@ async function main() {
   ];
 
   for (const p of papers) {
-    await prisma.product.create({ data: p });
+    const exists = await prisma.product.findFirst({ where: { name: p.name, typeId: p.typeId } });
+    if (!exists) await prisma.product.create({ data: p });
   }
 
   // 3. Seed Products - Finishes
@@ -51,7 +48,8 @@ async function main() {
   ];
 
   for (const f of finishes) {
-    await prisma.product.create({ data: f });
+    const exists = await prisma.product.findFirst({ where: { name: f.name, typeId: f.typeId } });
+    if (!exists) await prisma.product.create({ data: f });
   }
 
   // 4. Initial Customers
@@ -69,11 +67,11 @@ async function main() {
   }
 
   console.log('Seed finished successfully!');
+
+  await prisma.$disconnect();
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {});
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
