@@ -31,4 +31,12 @@ export class ProductsController {
   remove(@Param('id') id: string) {
     return this.productsService.remove(+id);
   }
+
+  @Post(':id/stock')
+  adjustStock(
+    @Param('id') id: string,
+    @Body() body: { quantity: number; type: 'PURCHASE' | 'SALE' | 'ADJUSTMENT'; reason?: string },
+  ) {
+    return this.productsService.updateStock(+id, body.quantity, body.type, body.reason);
+  }
 }
