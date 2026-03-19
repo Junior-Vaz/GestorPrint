@@ -11,12 +11,12 @@ app.use(express.json());
 const PORT = process.env.PORT || 3005;
 const ERP_API_URL = process.env.ERP_API_URL || 'http://localhost:3000/api';
 
-// Singleton agent cache — keyed by apiKey+model+tokens so config changes take effect immediately
+// Singleton agent cache — keyed by apiKey+model+tokens+erpUrl so config changes take effect immediately
 const agentCache = new Map<string, AiAgent>();
 function getAgent(apiKey: string, geminiModel: string, maxTokens: number): AiAgent {
-  const cacheKey = `${apiKey}|${geminiModel}|${maxTokens}`;
+  const cacheKey = `${apiKey}|${geminiModel}|${maxTokens}|${ERP_API_URL}`;
   if (!agentCache.has(cacheKey)) {
-    agentCache.set(cacheKey, new AiAgent(apiKey, geminiModel, maxTokens));
+    agentCache.set(cacheKey, new AiAgent(apiKey, geminiModel, maxTokens, ERP_API_URL));
   }
   return agentCache.get(cacheKey)!;
 }
