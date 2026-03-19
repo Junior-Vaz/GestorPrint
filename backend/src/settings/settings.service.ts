@@ -1,8 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class SettingsService implements OnModuleInit {
+  private readonly uploadPath = path.join(process.cwd(), 'uploads');
+
   constructor(private prisma: PrismaService) {}
 
   async onModuleInit() {
@@ -22,10 +26,18 @@ export class SettingsService implements OnModuleInit {
     }
   }
 
-  getSettings() {
-    return this.prisma.settings.findUnique({
-      where: { id: 1 }
-    });
+  async getSettings() {
+    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+    if (settings?.logoUrl) {
+      const filename = settings.logoUrl.split('/').pop();
+      const filePath = path.join(this.uploadPath, filename || '');
+      if (!fs.existsSync(filePath)) {
+        // File lost (e.g. volume reset) — clear stale URL so frontend doesn't get 404
+        await this.prisma.settings.update({ where: { id: 1 }, data: { logoUrl: null } });
+        return { ...settings, logoUrl: null };
+      }
+    }
+    return settings;
   }
 
   updateSettings(data: any) {
