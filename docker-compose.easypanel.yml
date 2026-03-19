@@ -21,7 +21,7 @@ services:
   # 2. Backend (API)
   # ─────────────────────────────────────────────
   backend:
-    image: ghcr.io/junior-vaz/gestorprint-backend:df970701efdeb426a89cd7cdf7d8c34e9bf0afed
+    image: ghcr.io/junior-vaz/gestorprint-backend:a91e6d8980660f03f4575c363427d612aab058fe
     restart: unless-stopped
     depends_on:
       db:
@@ -45,7 +45,7 @@ services:
   # 3. WhatsApp AI Agent
   # ─────────────────────────────────────────────
   whatsapp-ai:
-    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:df970701efdeb426a89cd7cdf7d8c34e9bf0afed
+    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:a91e6d8980660f03f4575c363427d612aab058fe
     restart: unless-stopped
     depends_on:
       backend:
@@ -59,7 +59,7 @@ services:
   # 4. Frontend (Web)
   # ─────────────────────────────────────────────
   frontend:
-    image: ghcr.io/junior-vaz/gestorprint-frontend:df970701efdeb426a89cd7cdf7d8c34e9bf0afed
+    image: ghcr.io/junior-vaz/gestorprint-frontend:a91e6d8980660f03f4575c363427d612aab058fe
     restart: unless-stopped
     depends_on:
       - backend
