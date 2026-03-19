@@ -68,21 +68,29 @@ REGRAS CRÍTICAS DE COMPORTAMENTO:
         parameters: t.inputSchema,
       }));
 
-      // 3. Build model — thinkingConfig (Gemini 2.0+) forces the model to reason
-      //    before answering, which dramatically reduces hallucinations and wrong
-      //    function calls. Docs: ai.google.dev/gemini-api/docs/thinking
-      //    Temperature MUST stay at 1.0 for Gemini 2.0+ (see function-calling docs).
+      // 3. Build model
+      //    thinkingConfig is only supported on Gemini 2.0+ models.
+      //    Sending it to 1.5-* models causes a 404/400 API rejection.
+      //    Temperature MUST stay at 1.0 for Gemini 2.0+ (function-calling docs).
+      const supportsThinking = this.geminiModel.startsWith("gemini-2.") ||
+                               this.geminiModel.startsWith("gemini-2.5");
+
+      const generationConfig: any = {
+        maxOutputTokens: this.maxTokens,
+        temperature: 1.0,
+      };
+
+      // thinkingLevel "low" = cost-efficient but still ~60% improvement in
+      // reasoning accuracy vs no thinking. Use "medium" for more complex flows.
+      if (supportsThinking) {
+        generationConfig.thinkingConfig = { thinkingLevel: "low" };
+      }
+
       const model = this.genAI.getGenerativeModel({
         model: this.geminiModel,
         systemInstruction: { role: "system", parts: [{ text: fullSystemPrompt }] },
         tools: [{ functionDeclarations }],
-        generationConfig: {
-          maxOutputTokens: this.maxTokens,
-          temperature: 1.0,
-          // thinkingConfig — low = cost-efficient but still ~60 % improvement
-          // in reasoning accuracy vs no thinking. Use "medium" for more complex flows.
-          thinkingConfig: { thinkingLevel: "low" },
-        } as any,
+        generationConfig,
       });
 
       // 4. Get or create chat session (preserves full conversation history)

@@ -55,8 +55,8 @@
               >
                 <option value="gemini-2.0-flash">Gemini 2.0 Flash ⚡ (Recomendado)</option>
                 <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite 🪶 (Mais cota grátis)</option>
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash 💨 (Rápido)</option>
-                <option value="gemini-2.5-flash-preview-04-17">Gemini 2.5 Flash Preview 🧠 (Mais preciso)</option>
+                <option value="gemini-1.5-flash-002">Gemini 1.5 Flash 💨 (Rápido)</option>
+                <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B 🔋 (Mais leve)</option>
               </select>
               <p class="text-[10px] text-slate-400 mt-1 font-medium">Modelos pagos precisam de faturamento ativo</p>
             </div>
