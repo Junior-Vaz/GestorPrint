@@ -38,3 +38,11 @@ backend/prisma/dev.db
 backend/uploads/*
 !backend/uploads/.gitkeep
 whatsapp-ai/ai-error-dump.log
+
+# Backups
+*.rar
+*.zip
+*.tar.gz
+
+# Old/failed migrations (superseded by consolidated init)
+backend/prisma/migrations/20260318180614_add_saleperson_fields/
