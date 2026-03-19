@@ -43,4 +43,8 @@ RUN mkdir -p /app/uploads
 
 EXPOSE 3000
 
-CMD sh -c "npx prisma migrate resolve --rolled-back 20260318180614_add_saleperson_fields 2>/dev/null || true && npx prisma migrate deploy && node dist/main"
+CMD sh -c " \
+  npx prisma migrate resolve --rolled-back 20260318180614_add_saleperson_fields 2>/dev/null || true && \
+  npx prisma migrate resolve --rolled-back 20260319000000_fix_salesperson_columns 2>/dev/null || true && \
+  npx prisma migrate resolve --rolled-back 20260319010000_fix_customer_address_fields 2>/dev/null || true && \
+  npx prisma migrate deploy && node dist/main"
