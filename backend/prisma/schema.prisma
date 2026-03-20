@@ -23,6 +23,9 @@ model Tenant {
   ownerName       String?
   ownerEmail      String?
   ownerPhone      String?
+  // Asaas (gateway de cobrança SaaS)
+  asaasCustomerId     String?   // cus_000005113654
+  asaasSubscriptionId String?   // sub_000000123456
   // Estado
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())

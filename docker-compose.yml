@@ -38,6 +38,9 @@ services:
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
       PORT: 3000
+      ASAAS_API_KEY: ${ASAAS_API_KEY}
+      ASAAS_ENV: ${ASAAS_ENV:-sandbox}
+      API_URL: ${API_URL:-http://localhost:3000}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     volumes:

@@ -20,6 +20,7 @@ import { ProductTypesModule } from './product-types/product-types.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { McpModule } from './mcp/mcp.module';
 import { AuditModule } from './audit/audit.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AuditModule } from './audit/audit.module';
     NotificationsModule,
     McpModule,
     AuditModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

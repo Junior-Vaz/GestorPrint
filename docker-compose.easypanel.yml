@@ -32,6 +32,9 @@ services:
       MP_PUBLIC_KEY: APP_USR-7a191a24-fe97-41c8-9390-b4b4763b9d0e
       JWT_SECRET: gestorprint_secret_key_2024
       PORT: 3000
+      ASAAS_API_KEY: ${ASAAS_API_KEY}
+      ASAAS_ENV: ${ASAAS_ENV:-production}
+      API_URL: https://api.gestorprint.com.br
     volumes:
       - gestorprint_uploads:/app/uploads
     healthcheck:
