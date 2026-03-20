@@ -2,14 +2,6 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 
-// ← NOVO: JwtPayload interface for type safety
-export interface JwtPayload {
-  sub: number;
-  email: string;
-  role: string;
-  tenantId: number;
-}
-
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
@@ -20,12 +12,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload) {
-    return {
-      id: payload.sub,
-      email: payload.email,
-      role: payload.role,
-      tenantId: payload.tenantId, // ← NOVO: Include tenantId
-    };
+  async validate(payload: any) {
+    return { id: payload.sub, email: payload.email, role: payload.role };
   }
 }
