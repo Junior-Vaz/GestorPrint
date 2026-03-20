@@ -1,38 +1,44 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsIn, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsIn, IsBoolean, IsInt, IsISO8601, Min, Max, MaxLength, ValidateIf, Matches } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateTenantDto {
-  @ApiProperty({ example: 'Gráfica Express' })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
+  @IsString() @IsNotEmpty() @MaxLength(120)
   name: string;
 
-  @ApiProperty({ example: 'grafica-express' })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(60)
+  @IsString() @IsNotEmpty() @MaxLength(60)
   slug: string;
 
-  @ApiProperty({ example: 'PRO', enum: ['FREE', 'BASIC', 'PRO', 'ENTERPRISE'], required: false })
-  @IsOptional()
-  @IsIn(['FREE', 'BASIC', 'PRO', 'ENTERPRISE'])
+  @IsOptional() @IsIn(['FREE', 'BASIC', 'PRO', 'ENTERPRISE'])
   plan?: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(120)
+  @IsOptional() @IsIn(['TRIAL', 'ACTIVE', 'SUSPENDED', 'CANCELLED'])
+  planStatus?: string;
+
+  @IsOptional() @IsISO8601()
+  trialEndsAt?: string;
+
+  @IsOptional() @IsISO8601()
+  planExpiresAt?: string;
+
+  @IsOptional() @IsInt() @Min(1) @Max(1000) @Type(() => Number)
+  maxUsers?: number;
+
+  @IsOptional() @IsInt() @Min(1) @Type(() => Number)
+  maxOrders?: number;
+
+  @IsOptional() @IsString() @MaxLength(120)
   ownerName?: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsEmail()
+  @ValidateIf(o => !!o.ownerEmail)
+  @IsOptional() @IsEmail()
   ownerEmail?: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
+  @IsOptional() @IsString() @MaxLength(20)
   ownerPhone?: string;
+
+  @IsOptional() @Matches(/^\d{11}$|^\d{14}$/, { message: 'cpfCnpj deve ter 11 dígitos (CPF) ou 14 dígitos (CNPJ), apenas números' })
+  cpfCnpj?: string;
+
+  @IsOptional() @IsBoolean()
+  isActive?: boolean;
 }
