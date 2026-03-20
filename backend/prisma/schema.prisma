@@ -7,12 +7,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── TENANT (SaaS Multi-Tenant) ─────────────────────────────────────────────
+model Tenant {
+  id              Int       @id @default(autoincrement())
+  name            String
+  slug            String    @unique
+  // Plano & Assinatura
+  plan            String    @default("FREE")        // FREE, BASIC, PRO, ENTERPRISE
+  planStatus      String    @default("TRIAL")       // TRIAL, ACTIVE, SUSPENDED, CANCELLED
+  trialEndsAt     DateTime?
+  planExpiresAt   DateTime?
+  maxUsers        Int       @default(3)             // limite de usuários por plano
+  maxOrders       Int       @default(100)           // limite de pedidos/mês por plano
+  // Contato do responsável
+  ownerName       String?
+  ownerEmail      String?
+  ownerPhone      String?
+  // Estado
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  // Relacionamentos
+  customers         Customer[]
+  productTypes      ProductType[]
+  products          Product[]
+  estimates         Estimate[]
+  orders            Order[]
+  users             User[]
+  expenses          Expense[]
+  expenseCategories ExpenseCategory[]
+  suppliers         Supplier[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  settings          Settings[]
+  aiConfigs         AiConfig[]
+}
+
 model Customer {
   id        Int        @id @default(autoincrement())
+  tenantId  Int        @default(1)
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
   name      String
-  email     String?    @unique
+  email     String?
   phone     String?
-  document  String?    @unique
+  document  String?
   zipCode      String?
   address      String?
   number       String?
@@ -23,19 +61,28 @@ model Customer {
   estimates Estimate[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+
+  @@unique([email, tenantId])
+  @@unique([document, tenantId])
 }
 
 model ProductType {
   id        Int       @id @default(autoincrement())
-  name      String    @unique
+  tenantId  Int       @default(1)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  name      String
   color     String    @default("#6366f1")
   hasStock  Boolean   @default(true)
   products  Product[]
   createdAt DateTime  @default(now())
+
+  @@unique([name, tenantId])
 }
 
 model Product {
   id          Int             @id @default(autoincrement())
+  tenantId    Int             @default(1)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
   name        String
   productType ProductType     @relation(fields: [typeId], references: [id])
   typeId      Int
@@ -65,6 +112,8 @@ model StockMovement {
 
 model Estimate {
   id         Int      @id @default(autoincrement())
+  tenantId   Int      @default(1)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId Int
   status     String   @default("DRAFT") // DRAFT, SENT, APPROVED, REJECTED
@@ -82,6 +131,8 @@ model Estimate {
 
 model Order {
   id                 Int       @id @default(autoincrement())
+  tenantId           Int       @default(1)
+  tenant             Tenant    @relation(fields: [tenantId], references: [id])
   customer           Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId         Int
   estimate           Estimate? @relation(fields: [estimateId], references: [id])
@@ -114,7 +165,9 @@ model Attachment {
 }
 
 model Settings {
-  id            Int      @id @default(1)
+  id            Int      @id @default(autoincrement())
+  tenantId      Int      @unique @default(1)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
   companyName   String   @default("Minha Gráfica")
   cnpj          String?
   phone         String?
@@ -133,7 +186,9 @@ model Settings {
 
 model User {
   id       Int    @id @default(autoincrement())
-  email    String @unique
+  tenantId Int    @default(1)
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  email    String
   password String
   name     String
   role     String @default("ADMIN") // ADMIN, SALES, PRODUCTION
@@ -153,6 +208,8 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   AuditLog  AuditLog[]
+
+  @@unique([email, tenantId])
 }
 
 model Transaction {
@@ -172,6 +229,8 @@ model Transaction {
 
 model Expense {
   id          Int       @id @default(autoincrement())
+  tenantId    Int       @default(1)
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
   description String
   amount      Float
   category    String
@@ -183,12 +242,18 @@ model Expense {
 }
 
 model ExpenseCategory {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+  id       Int    @id @default(autoincrement())
+  tenantId Int    @default(1)
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  name     String
+
+  @@unique([name, tenantId])
 }
 
 model Supplier {
   id        Int       @id @default(autoincrement())
+  tenantId  Int       @default(1)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
   name      String
   email     String?
   phone     String?
@@ -202,6 +267,8 @@ model Supplier {
 
 model Notification {
   id        Int      @id @default(autoincrement())
+  tenantId  Int      @default(1)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
   title     String
   message   String
   type      String   @default("INFO") // INFO, SUCCESS, WARNING, ALERTA
@@ -210,7 +277,9 @@ model Notification {
 }
 
 model AiConfig {
-  id                  Int      @id @default(1)
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int      @unique @default(1)
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
   enabled             Boolean  @default(false)
   geminiKey           String?
   geminiModel         String?  @default("gemini-2.0-flash")
@@ -226,6 +295,8 @@ model AiConfig {
 
 model AuditLog {
   id        Int      @id @default(autoincrement())
+  tenantId  Int      @default(1)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   action    String // CREATE, UPDATE, DELETE

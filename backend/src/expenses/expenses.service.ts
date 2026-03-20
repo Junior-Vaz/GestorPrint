@@ -11,15 +11,15 @@ export class ExpensesService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async create(createExpenseDto: CreateExpenseDto) {
+  async create(createExpenseDto: CreateExpenseDto, tenantId: number) {
     const expense = await (this.prisma as any).expense.create({
       data: {
         ...createExpenseDto,
+        tenantId,
         date: createExpenseDto.date ? new Date(createExpenseDto.date) : new Date(),
       },
     });
 
-    // Create System Notification
     await this.notificationsService.create({
       title: 'Nova Despesa / Saída',
       message: `Registrada uma saída de R$ ${createExpenseDto.amount.toFixed(2)}: ${createExpenseDto.description}`,
@@ -29,15 +29,16 @@ export class ExpensesService {
     return expense;
   }
 
-  async findAll() {
+  async findAll(tenantId: number) {
     return (this.prisma as any).expense.findMany({
+      where: { tenantId },
       orderBy: { date: 'desc' },
     });
   }
 
-  async update(id: number, updateExpenseDto: UpdateExpenseDto) {
-    return (this.prisma as any).expense.update({
-      where: { id },
+  async update(id: number, updateExpenseDto: UpdateExpenseDto, tenantId: number) {
+    return (this.prisma as any).expense.updateMany({
+      where: { id, tenantId },
       data: {
         ...updateExpenseDto,
         date: updateExpenseDto.date ? new Date(updateExpenseDto.date) : undefined,
@@ -45,45 +46,46 @@ export class ExpensesService {
     });
   }
 
-  async remove(id: number) {
-    return (this.prisma as any).expense.delete({
-      where: { id },
+  async remove(id: number, tenantId: number) {
+    return (this.prisma as any).expense.deleteMany({
+      where: { id, tenantId },
     });
   }
 
   // Categories
-  async createCategory(name: string) {
+  async createCategory(name: string, tenantId: number) {
     return (this.prisma as any).expenseCategory.create({
-      data: { name },
+      data: { name, tenantId },
     });
   }
 
-  async findAllCategories() {
+  async findAllCategories(tenantId: number) {
     const categories = await (this.prisma as any).expenseCategory.findMany({
+      where: { tenantId },
       orderBy: { name: 'asc' },
     });
 
     if (categories.length === 0) {
-      // Seed defaults
       const defaults = ['Sangria', 'Insumos', 'Aluguel', 'Salários', 'Energia', 'Marketing', 'Manutenção', 'Impostos', 'Outros'];
       await (this.prisma as any).expenseCategory.createMany({
-        data: defaults.map(name => ({ name })),
+        data: defaults.map(name => ({ name, tenantId })),
         skipDuplicates: true,
       });
-      return (this.prisma as any).expenseCategory.findMany({ orderBy: { name: 'asc' } });
+      return (this.prisma as any).expenseCategory.findMany({ where: { tenantId }, orderBy: { name: 'asc' } });
     }
 
     return categories;
   }
 
-  async removeCategory(id: number) {
-    return (this.prisma as any).expenseCategory.delete({
-      where: { id },
+  async removeCategory(id: number, tenantId: number) {
+    return (this.prisma as any).expenseCategory.deleteMany({
+      where: { id, tenantId },
     });
   }
 
-  async exportCsv() {
+  async exportCsv(tenantId: number) {
     const expenses = await (this.prisma as any).expense.findMany({
+      where: { tenantId },
       orderBy: { date: 'desc' },
       include: { supplier: true },
     });

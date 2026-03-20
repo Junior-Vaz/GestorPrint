@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted, computed } from 'vue'
 import PaymentModal from '../components/PaymentModal.vue'
 import PaymentErrorModal from '../components/PaymentErrorModal.vue'
@@ -69,7 +70,7 @@ const sangriaForm = ref({
 const saveSangria = async () => {
   if (sangriaForm.value.amount <= 0) return
   try {
-    const res = await fetch('/api/expenses', {
+    const res = await apiFetch('/api/expenses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -104,9 +105,9 @@ const fetchAll = async () => {
   loading.value = true
   try {
     const [pRes, tRes, cRes] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/product-types'),
-      fetch('/api/customers')
+      apiFetch('/api/products'),
+      apiFetch('/api/product-types'),
+      apiFetch('/api/customers')
     ])
     if (pRes.ok) products.value = await pRes.json()
     if (tRes.ok) productTypes.value = await tRes.json()
@@ -119,7 +120,7 @@ const fetchAll = async () => {
     }
     
     // Check integration status
-    const statusRes = await fetch('/api/payments/config-status')
+    const statusRes = await apiFetch('/api/payments/config-status')
     if (statusRes.ok) {
       const statusData = await statusRes.json()
       isIntegrated.value = statusData.integrated
@@ -288,7 +289,7 @@ const finalizeSale = async () => {
       }
     }
 
-    const res = await fetch('/api/orders', {
+    const res = await apiFetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData)
@@ -313,7 +314,8 @@ const finalizeSale = async () => {
 }
 
 const printReceipt = (orderId: number) => {
-  window.open(`/api/orders/${orderId}/receipt`, '_blank')
+  const token = localStorage.getItem('gp_token') || ''
+  window.open(`/api/orders/${orderId}/receipt?token=${token}`, '_blank')
 }
 
 const confirmPix = (orderId: number) => {
@@ -324,7 +326,7 @@ const confirmPix = (orderId: number) => {
 const payPix = async (orderId: number) => {
   isConfirmingPix.value = false
   try {
-    const res = await fetch(`/api/payments/create/${orderId}?type=PIX`, {
+    const res = await apiFetch(`/api/payments/create/${orderId}?type=PIX`, {
       method: 'POST'
     })
     if (res.status === 500) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { apiFetch } from '../utils/api'
 
 const selectedPeriod = ref('30d')
 const summary = ref({
@@ -32,8 +33,8 @@ const fetchReports = async () => {
   loading.value = true
   try {
     const [sumRes, statsRes] = await Promise.all([
-      fetch(`/api/reports/summary?period=${selectedPeriod.value}`),
-      fetch(`/api/reports/stats?period=${selectedPeriod.value}`)
+      apiFetch(`/api/reports/summary?period=${selectedPeriod.value}`),
+      apiFetch(`/api/reports/stats?period=${selectedPeriod.value}`)
     ])
     
     if (sumRes.ok) summary.value = await sumRes.json()
@@ -50,7 +51,8 @@ const fetchReports = async () => {
 }
 
 const exportPdf = () => {
-  window.open(`/api/reports/export/pdf?period=${selectedPeriod.value}`, '_blank')
+  const token = localStorage.getItem('gp_token') || ''
+  window.open(`/api/reports/export/pdf?period=${selectedPeriod.value}&token=${token}`, '_blank')
 }
 
 // Chart helper

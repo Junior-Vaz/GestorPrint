@@ -19,7 +19,14 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const isAuthenticated = computed(() => !!token.value && !isTokenExpired(token.value))
+  const tenantId = computed(() => user.value?.tenantId ?? 1)
+
   const isAdmin = computed(() => user.value?.role === 'ADMIN' && isAuthenticated.value)
+  const isSuperAdmin = computed(() =>
+    user.value?.role === 'ADMIN' &&
+    (user.value?.tenantId === 1 || user.value?.tenantId == null) &&
+    isAuthenticated.value
+  )
   const isSales = computed(() => (user.value?.role === 'SALES' || user.value?.role === 'ADMIN') && isAuthenticated.value)
   const isProduction = computed(() => (user.value?.role === 'PRODUCTION' || user.value?.role === 'ADMIN') && isAuthenticated.value)
   const isOnlyProduction = computed(() => user.value?.role === 'PRODUCTION' && isAuthenticated.value)
@@ -42,8 +49,10 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     token,
+    tenantId,
     isAuthenticated,
     isAdmin,
+    isSuperAdmin,
     isSales,
     isProduction,
     isOnlyProduction,

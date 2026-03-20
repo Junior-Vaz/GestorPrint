@@ -11,14 +11,16 @@ export class AuditService {
     entity: string,
     entityId?: number,
     details?: any,
+    tenantId = 1,
   ) {
     try {
-      return await this.prisma.auditLog.create({
+      return await (this.prisma.auditLog as any).create({
         data: {
           userId,
           action,
           entity,
           entityId,
+          tenantId,
           details: details ? JSON.parse(JSON.stringify(details)) : null,
         },
       });
@@ -27,13 +29,13 @@ export class AuditService {
     }
   }
 
-  async findAll(query?: any) {
-    const where: any = {};
+  async findAll(tenantId: number, query?: any) {
+    const where: any = { tenantId };
     if (query?.entity) where.entity = query.entity;
     if (query?.action) where.action = query.action;
     if (query?.userId) where.userId = parseInt(query.userId);
 
-    return this.prisma.auditLog.findMany({
+    return (this.prisma.auditLog as any).findMany({
       where,
       include: {
         user: {
@@ -46,13 +48,13 @@ export class AuditService {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 200, // Limit for performance
+      take: 200,
     });
   }
 
-  async findOne(id: number) {
-    return this.prisma.auditLog.findUnique({
-      where: { id },
+  async findOne(id: number, tenantId: number) {
+    return (this.prisma.auditLog as any).findFirst({
+      where: { id, tenantId },
       include: {
         user: {
           select: {

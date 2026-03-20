@@ -7,35 +7,36 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SuppliersService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createSupplierDto: CreateSupplierDto) {
+  async create(createSupplierDto: CreateSupplierDto, tenantId: number) {
     return (this.prisma as any).supplier.create({
-      data: createSupplierDto,
+      data: { ...createSupplierDto, tenantId },
     });
   }
 
-  async findAll() {
+  async findAll(tenantId: number) {
     return (this.prisma as any).supplier.findMany({
+      where: { tenantId },
       orderBy: { name: 'asc' },
     });
   }
 
-  async findOne(id: number) {
-    return (this.prisma as any).supplier.findUnique({
-      where: { id },
+  async findOne(id: number, tenantId: number) {
+    return (this.prisma as any).supplier.findFirst({
+      where: { id, tenantId },
       include: { expenses: true },
     });
   }
 
-  async update(id: number, updateSupplierDto: UpdateSupplierDto) {
-    return (this.prisma as any).supplier.update({
-      where: { id },
+  async update(id: number, updateSupplierDto: UpdateSupplierDto, tenantId: number) {
+    return (this.prisma as any).supplier.updateMany({
+      where: { id, tenantId },
       data: updateSupplierDto,
     });
   }
 
-  async remove(id: number) {
-    return (this.prisma as any).supplier.delete({
-      where: { id },
+  async remove(id: number, tenantId: number) {
+    return (this.prisma as any).supplier.deleteMany({
+      where: { id, tenantId },
     });
   }
 }

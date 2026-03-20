@@ -9,10 +9,11 @@ export class NotificationsService {
     private readonly gateway: NotificationsGateway,
   ) {}
 
-  async create(data: { title: string; message: string; type?: string }) {
+  async create(data: { title: string; message: string; type?: string; tenantId?: number }) {
     const notification = await (this.prisma as any).notification.create({
       data: {
         ...data,
+        tenantId: data.tenantId ?? 1,
         type: data.type || 'INFO',
       },
     });
@@ -21,23 +22,24 @@ export class NotificationsService {
     return notification;
   }
 
-  async findAll() {
+  async findAll(tenantId: number) {
     return (this.prisma as any).notification.findMany({
+      where: { tenantId },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
   }
 
-  async markAsRead(id: number) {
-    return (this.prisma as any).notification.update({
-      where: { id },
+  async markAsRead(id: number, tenantId: number) {
+    return (this.prisma as any).notification.updateMany({
+      where: { id, tenantId },
       data: { read: true },
     });
   }
 
-  async markAllAsRead() {
+  async markAllAsRead(tenantId: number) {
     return (this.prisma as any).notification.updateMany({
-      where: { read: false },
+      where: { read: false, tenantId },
       data: { read: true },
     });
   }

@@ -220,7 +220,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Bot, Sparkles, MessageCircle, UserRound, Save, Info, Loader2 } from 'lucide-vue-next'
-import axios from 'axios'
+import { apiFetch } from '../utils/api'
 import { useToast } from '@/composables/useToast'
 
 const { showToast } = useToast()
@@ -241,9 +241,10 @@ const config = ref({
 
 const fetchConfig = async () => {
   try {
-    const response = await axios.get('/api/mcp/config')
-    if (response.data) {
-      config.value = { ...config.value, ...response.data }
+    const res = await apiFetch('/api/mcp/config')
+    if (res.ok) {
+      const data = await res.json()
+      config.value = { ...config.value, ...data }
     }
   } catch (error) {
     console.error('Error fetching AI config:', error)
@@ -252,8 +253,8 @@ const fetchConfig = async () => {
 
 const fetchProductTypes = async () => {
   try {
-    const response = await axios.get('/api/product-types')
-    productTypes.value = response.data
+    const res = await apiFetch('/api/product-types')
+    if (res.ok) productTypes.value = await res.json()
   } catch (error) {
     console.error('Error fetching product types:', error)
   }
@@ -262,8 +263,13 @@ const fetchProductTypes = async () => {
 const saveConfig = async () => {
   loading.value = true
   try {
-    await axios.patch('/api/mcp/config', config.value)
-    showToast('Configurações salvas com sucesso!', 'success')
+    const res = await apiFetch('/api/mcp/config', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config.value)
+    })
+    if (res.ok) showToast('Configurações salvas com sucesso!', 'success')
+    else showToast('Erro ao salvar configurações.', 'error')
   } catch (error) {
     showToast('Erro ao salvar configurações.', 'error')
     console.error('Error saving AI config:', error)

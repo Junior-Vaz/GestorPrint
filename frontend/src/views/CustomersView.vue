@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 
@@ -65,7 +66,7 @@ const openModal = (customer?: Customer) => {
 const fetchCustomers = async () => {
   loading.value = true
   try {
-    const res = await fetch('/api/customers')
+    const res = await apiFetch('/api/customers')
     if (res.ok) {
       customers.value = await res.json()
     }
@@ -85,7 +86,7 @@ const handleSave = async () => {
       ? `/api/customers/${editingId.value}`
       : '/api/customers'
 
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newCustomer.value)
@@ -104,7 +105,7 @@ const handleSave = async () => {
 const deleteCustomer = async (id: number) => {
   if (!confirm('Tem certeza que deseja excluir este cliente? Isso pode afetar orçamentos e pedidos vinculados.')) return
   try {
-    const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' })
+    const res = await apiFetch(`/api/customers/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchCustomers()
   } catch (e) {
     console.error('Error deleting customer', e)

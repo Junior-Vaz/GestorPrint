@@ -1,5 +1,7 @@
-import { Controller, Post, Body, Get, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common';
 import { McpService } from './mcp.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
 
 @Controller('mcp')
 export class McpController {
@@ -121,13 +123,15 @@ export class McpController {
   }
 
   // AI Configuration Endpoints (Dashboard)
+  @UseGuards(JwtAuthGuard)
   @Get('config')
-  getConfig() {
-    return this.mcpService.getAiConfig();
+  getConfig(@CurrentTenant() tenantId: number) {
+    return this.mcpService.getAiConfig(tenantId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('config')
-  updateConfig(@Body() body: any) {
-    return this.mcpService.updateAiConfig(body);
+  updateConfig(@Body() body: any, @CurrentTenant() tenantId: number) {
+    return this.mcpService.updateAiConfig(body, tenantId);
   }
 }

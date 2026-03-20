@@ -11,6 +11,21 @@ export class AuthService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    // Seed default tenant if none exists
+    const tenantCount = await (this.prisma as any).tenant.count();
+    if (tenantCount === 0) {
+      await (this.prisma as any).tenant.create({
+        data: {
+          id: 1,
+          name: 'GestorPrint',
+          slug: 'gestorprint',
+          plan: 'PRO',
+          planStatus: 'ACTIVE',
+        },
+      });
+      console.log('Default tenant seeded: GestorPrint (id=1)');
+    }
+
     // Seed admin user if none exists
     const adminCount = await this.prisma.user.count({ where: { role: 'ADMIN' } });
     if (adminCount === 0) {
@@ -21,14 +36,15 @@ export class AuthService implements OnModuleInit {
           password: hashedPassword,
           name: 'Administrador',
           role: 'ADMIN',
-        },
+          tenantId: 1,
+        } as any,
       });
       console.log('Admin user seeded: admin@gestorprint.com / admin123');
     }
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await (this.prisma.user as any).findFirst({ where: { email } });
     if (user && await bcrypt.compare(pass, user.password)) {
       const { password, ...result } = user;
       return result;
@@ -37,7 +53,7 @@ export class AuthService implements OnModuleInit {
   }
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user.id, role: user.role };
+    const payload = { email: user.email, sub: user.id, role: user.role, tenantId: user.tenantId };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -45,6 +61,7 @@ export class AuthService implements OnModuleInit {
         name: user.name,
         email: user.email,
         role: user.role,
+        tenantId: user.tenantId,
       }
     };
   }

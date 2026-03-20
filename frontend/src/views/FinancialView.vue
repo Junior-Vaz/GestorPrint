@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
 
 const stats = ref({
@@ -19,7 +20,8 @@ const sangriaForm = ref({
 })
 
 const exportReport = () => {
-  window.open('/api/reports/export/csv', '_blank')
+  const token = localStorage.getItem('gp_token') || ''
+  window.open(`/api/reports/export/csv?token=${token}`, '_blank')
 }
 
 const transactions = ref<any[]>([])
@@ -28,8 +30,8 @@ const fetchFinancialData = async () => {
   stats.value.loading = true
   try {
     const [statsRes, histRes] = await Promise.all([
-      fetch('/api/reports/summary'),
-      fetch('/api/payments/history')
+      apiFetch('/api/reports/summary'),
+      apiFetch('/api/payments/history')
     ])
 
     if (statsRes.ok) {
@@ -49,7 +51,7 @@ const fetchFinancialData = async () => {
 const saveSangria = async () => {
   if (sangriaForm.value.amount <= 0) return
   try {
-    const res = await fetch('/api/expenses', {
+    const res = await apiFetch('/api/expenses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -72,7 +74,7 @@ const saveSangria = async () => {
 const confirmPayment = async (id: number) => {
   if (!confirm('Deseja confirmar o pagamento manual desta transação?')) return
   try {
-    const res = await fetch(`/api/payments/confirm/${id}`, { method: 'POST' })
+    const res = await apiFetch(`/api/payments/confirm/${id}`, { method: 'POST' })
     if (res.ok) {
       await fetchFinancialData()
     }

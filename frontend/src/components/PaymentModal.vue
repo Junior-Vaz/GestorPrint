@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { apiFetch } from '../utils/api'
 
 const props = defineProps<{
   transactionId?: number;
@@ -20,7 +21,7 @@ const checkStatus = async () => {
   if (!props.transactionId || checking.value) return
   checking.value = true
   try {
-    const res = await fetch(`/api/payments/check/${props.transactionId}`)
+    const res = await apiFetch(`/api/payments/check/${props.transactionId}`)
     if (res.ok) {
       const data = await res.json()
       if (data.status === 'PAID') {

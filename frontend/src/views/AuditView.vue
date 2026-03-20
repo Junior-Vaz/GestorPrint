@@ -96,6 +96,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { apiFetch } from '../utils/api';
 
 const logs = ref([]);
 const loading = ref(false);
@@ -104,7 +105,7 @@ const auth = useAuthStore();
 const fetchLogs = async () => {
   loading.value = true;
   try {
-    const response = await fetch('/api/audit', {
+    const response = await apiFetch('/api/audit', {
       headers: {
         'Authorization': `Bearer ${auth.token}`
       }

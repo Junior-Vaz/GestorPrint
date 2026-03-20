@@ -65,6 +65,17 @@ services:
       - backend
     # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 80
 
+  # ─────────────────────────────────────────────
+  # 5. SaaS Admin Panel
+  # ─────────────────────────────────────────────
+  saas-admin:
+    image: ghcr.io/junior-vaz/gestorprint-saas-admin:24f849a7c00f6f2692785d30d077472bc2293532
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 80
+    # Sugestão de domínio: admin.gestorprint.com.br
+
 volumes:
   gestorprint_postgres_data:
   gestorprint_uploads:

@@ -5,17 +5,17 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
-  async getSummary(period = '30d') {
+  async getSummary(period = '30d', tenantId = 1) {
     try {
       const dateFilter = this.getDateFilter(period);
-      
+
       const [orders, transactions, products, expenses] = await Promise.all([
-        (this.prisma as any).order.findMany({ where: { createdAt: { gte: dateFilter } } }),
-        (this.prisma as any).transaction.findMany({ 
-          where: { status: 'PAID', createdAt: { gte: dateFilter } } 
+        (this.prisma as any).order.findMany({ where: { tenantId, createdAt: { gte: dateFilter } } }),
+        (this.prisma as any).transaction.findMany({
+          where: { status: 'PAID', createdAt: { gte: dateFilter }, order: { tenantId } }
         }),
-        (this.prisma as any).product.findMany(),
-        (this.prisma as any).expense.findMany({ where: { date: { gte: dateFilter } } }),
+        (this.prisma as any).product.findMany({ where: { tenantId } }),
+        (this.prisma as any).expense.findMany({ where: { tenantId, date: { gte: dateFilter } } }),
       ]);
 
       const totalRevenue = transactions.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
@@ -68,10 +68,9 @@ export class ReportsService {
     return date;
   }
 
-  async getStats(period = '30d') {
+  async getStats(period = '30d', tenantId = 1) {
     const dateFilter = this.getDateFilter(period);
-    
-    // Trend calculation
+
     const daysCount = period === '7d' ? 7 : 30;
     const trendDays = [];
     for (let i = daysCount - 1; i >= 0; i--) {
@@ -83,19 +82,19 @@ export class ReportsService {
 
     const [dailyTransactions, dailyExpenses, ordersWithProducts, expensesByCategory] = await Promise.all([
       (this.prisma as any).transaction.findMany({
-        where: { status: 'PAID', createdAt: { gte: dateFilter } },
+        where: { status: 'PAID', createdAt: { gte: dateFilter }, order: { tenantId } },
         select: { amount: true, createdAt: true },
       }),
       (this.prisma as any).expense.findMany({
-        where: { date: { gte: dateFilter } },
+        where: { tenantId, date: { gte: dateFilter } },
         select: { amount: true, date: true, category: true },
       }),
       (this.prisma as any).order.findMany({
-        where: { createdAt: { gte: dateFilter } },
+        where: { tenantId, createdAt: { gte: dateFilter } },
         include: { customer: true }
       }),
       (this.prisma as any).expense.groupBy({
-        where: { date: { gte: dateFilter } },
+        where: { tenantId, date: { gte: dateFilter } },
         by: ['category'],
         _sum: { amount: true }
       })
@@ -129,6 +128,7 @@ export class ReportsService {
     });
 
     const productionStatsRaw = await (this.prisma as any).order.groupBy({
+      where: { tenantId },
       by: ['status'],
       _count: { _all: true },
     });
@@ -163,18 +163,17 @@ export class ReportsService {
       }))
     };
   }
-  async exportDetailedReportPdf(period = '30d', res: any) {
-    const data = await this.getSummary(period);
-    const stats = await this.getStats(period);
+  async exportDetailedReportPdf(period = '30d', res: any, tenantId = 1) {
+    const data = await this.getSummary(period, tenantId);
+    const stats = await this.getStats(period, tenantId);
     const dateFilter = this.getDateFilter(period);
-    
-    // Fetch all relevant detailed data
+
     const [expenses, settings] = await Promise.all([
-      (this.prisma as any).expense.findMany({ 
-        where: { date: { gte: dateFilter } }, 
-        orderBy: { date: 'desc' } 
+      (this.prisma as any).expense.findMany({
+        where: { tenantId, date: { gte: dateFilter } },
+        orderBy: { date: 'desc' }
       }),
-      (this.prisma as any).settings.findUnique({ where: { id: 1 } })
+      (this.prisma as any).settings.findUnique({ where: { tenantId } })
     ]);
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -266,8 +265,9 @@ export class ReportsService {
     doc.end();
   }
 
-  async exportTransactionsCsv() {
+  async exportTransactionsCsv(tenantId = 1) {
     const transactions = await (this.prisma as any).transaction.findMany({
+      where: { order: { tenantId } },
       orderBy: { createdAt: 'desc' },
       include: { order: true },
     });

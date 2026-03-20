@@ -22,16 +22,17 @@ export class EstimatesService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  create(createEstimateDto: CreateEstimateDto) {
+  create(createEstimateDto: CreateEstimateDto, tenantId: number) {
     return this.prisma.estimate.create({
-      data: createEstimateDto as any,
+      data: { ...createEstimateDto, tenantId } as any,
       include: { customer: true }
     });
   }
 
-  findAll() {
+  findAll(tenantId: number) {
     return this.prisma.estimate.findMany({
-       include: { 
+       where: { tenantId } as any,
+       include: {
          customer: true,
          salesperson: { select: { id: true, name: true } }
        },
@@ -39,27 +40,26 @@ export class EstimatesService {
     });
   }
 
-  findOne(id: number) {
-    return this.prisma.estimate.findUnique({
-      where: { id },
-      include: { 
+  findOne(id: number, tenantId: number) {
+    return (this.prisma.estimate as any).findFirst({
+      where: { id, tenantId },
+      include: {
         customer: true,
         salesperson: { select: { id: true, name: true } }
       }
     });
   }
 
-  update(id: number, updateEstimateDto: UpdateEstimateDto) {
-    return this.prisma.estimate.update({
-      where: { id },
+  update(id: number, updateEstimateDto: UpdateEstimateDto, tenantId: number) {
+    return (this.prisma.estimate as any).updateMany({
+      where: { id, tenantId },
       data: updateEstimateDto as any,
-      include: { customer: true }
     });
   }
 
-  async convertToOrder(id: number) {
-    const estimate = await this.prisma.estimate.findUnique({
-      where: { id },
+  async convertToOrder(id: number, tenantId: number) {
+    const estimate = await (this.prisma.estimate as any).findFirst({
+      where: { id, tenantId },
       include: { customer: true }
     });
 
@@ -72,10 +72,11 @@ export class EstimatesService {
         customerId: estimate.customerId,
         estimateId: estimate.id,
         salespersonId: estimate.salespersonId,
+        tenantId,
         productDescription: `${details.productName || 'Impresso'} - ${details.width}x${details.height}cm - ${details.quantity}un`,
         amount: estimate.totalPrice,
         status: 'PENDING'
-      }
+      } as any
     });
 
     // 3. Update estimate status
@@ -104,11 +105,11 @@ export class EstimatesService {
     return { order, estimate: updatedEstimate };
   }
 
-  async generatePdf(id: number, res: any) {
-    const estimate = await this.findOne(id);
+  async generatePdf(id: number, res: any, tenantId: number) {
+    const estimate = await this.findOne(id, tenantId);
     if (!estimate) throw new Error('Orçamento não encontrado');
-    
-    const settings = await this.settingsService.getSettings();
+
+    const settings = await this.settingsService.getSettings(tenantId);
     const doc = new PDFDocument({ margin: 50 });
     doc.registerFont('Helvetica', 'Helvetica');
     doc.registerFont('Helvetica-Bold', 'Helvetica-Bold');
@@ -211,9 +212,9 @@ export class EstimatesService {
     doc.end();
   }
 
-  async getPayment(id: number) {
-    const estimate = await this.prisma.estimate.findUnique({
-      where: { id },
+  async getPayment(id: number, tenantId: number) {
+    const estimate = await (this.prisma.estimate as any).findFirst({
+      where: { id, tenantId },
       include: { orders: true }
     });
 
@@ -224,16 +225,16 @@ export class EstimatesService {
     if (estimate.orders.length > 0) {
       orderId = estimate.orders[0].id;
     } else {
-      const conversion = await this.convertToOrder(id);
+      const conversion = await this.convertToOrder(id, tenantId);
       orderId = conversion.order.id;
     }
 
     return this.paymentsService.createPayment(orderId, 'PIX');
   }
 
-  remove(id: number) {
-    return this.prisma.estimate.delete({
-      where: { id }
+  remove(id: number, tenantId: number) {
+    return (this.prisma.estimate as any).deleteMany({
+      where: { id, tenantId }
     });
   }
 }

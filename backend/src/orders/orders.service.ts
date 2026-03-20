@@ -25,9 +25,9 @@ export class OrdersService {
     private readonly auditService: AuditService,
   ) {}
 
-  async create(createOrderDto: CreateOrderDto) {
+  async create(createOrderDto: CreateOrderDto, tenantId: number) {
     let customer = await this.prisma.customer.findFirst({
-      where: { name: createOrderDto.customerName }
+      where: { name: createOrderDto.customerName, tenantId } as any
     });
 
     if (!customer) {
@@ -35,7 +35,8 @@ export class OrdersService {
         data: {
           name: createOrderDto.customerName,
           email: `contato_${Date.now()}@exemplo.com`,
-        }
+          tenantId,
+        } as any
       });
     }
 
@@ -57,6 +58,7 @@ export class OrdersService {
         amount: createOrderDto.amount,
         status: initialStatus,
         customerId: customer.id,
+        tenantId,
         salespersonId: createOrderDto.salespersonId || null,
         producerId: createOrderDto.producerId || null,
         details: createOrderDto.details || null,
@@ -73,6 +75,7 @@ export class OrdersService {
       title: createOrderDto.isPdv ? 'Venda PDV Realizada' : 'Novo Pedido Recebido',
       message: `Pedido #${newOrder.id} - ${customer.name} - R$ ${newOrder.amount.toFixed(2)}`,
       type: createOrderDto.isPdv ? 'SUCCESS' : 'INFO',
+      tenantId,
     });
     
     // Auto-create PAID transaction for PDV orders
@@ -120,9 +123,10 @@ export class OrdersService {
     return payload;
   }
 
-  async findAll() {
+  async findAll(tenantId: number) {
     const orders = await (this.prisma as any).order.findMany({
-      include: { 
+      where: { tenantId },
+      include: {
         customer: true,
         salesperson: true,
         producer: true,
@@ -149,9 +153,9 @@ export class OrdersService {
     }));
   }
 
-  async findOne(id: number) {
-    const o = await (this.prisma as any).order.findUnique({
-      where: { id },
+  async findOne(id: number, tenantId: number) {
+    const o = await (this.prisma as any).order.findFirst({
+      where: { id, tenantId },
       include: { 
         customer: true,
         salesperson: true,
@@ -180,9 +184,9 @@ export class OrdersService {
     };
   }
 
-  async update(id: number, updateOrderDto: UpdateOrderDto) {
-    const previousOrder = await (this.prisma as any).order.findUnique({
-      where: { id },
+  async update(id: number, updateOrderDto: UpdateOrderDto, tenantId: number) {
+    const previousOrder = await (this.prisma as any).order.findFirst({
+      where: { id, tenantId },
       include: { estimate: true }
     });
 
@@ -261,6 +265,14 @@ export class OrdersService {
       await this.messagingService.notifyOrderStatus(updatedOrder.id, 'COMPLETED');
     }
 
+    if (previousOrder?.status !== 'DELIVERED' && updatedOrder.status === 'DELIVERED') {
+      await this.messagingService.notifyOrderStatus(updatedOrder.id, 'DELIVERED');
+    }
+
+    if (previousOrder?.status !== 'CANCELLED' && updatedOrder.status === 'CANCELLED') {
+      await this.messagingService.notifyOrderStatus(updatedOrder.id, 'CANCELLED');
+    }
+
     const payload = {
       id: updatedOrder.id,
       customerName: updatedOrder.customer.name,
@@ -290,8 +302,8 @@ export class OrdersService {
 
       if (paperName && quantity > 0) {
         // Find product by name
-        const products = await this.productsService.findAll();
-        const product = products.find((p: any) => 
+        const products = await this.productsService.findAll(order.tenantId ?? 1);
+        const product = products.find((p: any) =>
           p.name.toLowerCase().includes(paperName.toLowerCase()) || 
           paperName.toLowerCase().includes(p.name.toLowerCase())
         );
@@ -311,14 +323,14 @@ export class OrdersService {
     }
   }
 
-  async remove(id: number) {
-    const order = await (this.prisma as any).order.findUnique({
-      where: { id },
+  async remove(id: number, tenantId: number) {
+    const order = await (this.prisma as any).order.findFirst({
+      where: { id, tenantId },
       include: { customer: true }
     });
 
-    const deleted = await this.prisma.order.delete({
-       where: { id }
+    const deleted = await this.prisma.order.deleteMany({
+       where: { id, tenantId } as any
     });
 
     // Audit Log
@@ -337,15 +349,15 @@ export class OrdersService {
     return deleted;
   }
 
-  async generateReceipt(id: number, res: any) {
-    const order = await (this.prisma as any).order.findUnique({
-      where: { id },
+  async generateReceipt(id: number, res: any, tenantId: number) {
+    const order = await (this.prisma as any).order.findFirst({
+      where: { id, tenantId },
       include: { customer: true }
     });
 
     if (!order) throw new Error('Pedido não encontrado');
 
-    const settings = await this.settingsService.getSettings();
+    const settings = await this.settingsService.getSettings(tenantId);
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
 
     doc.pipe(res);

@@ -5,6 +5,7 @@ import draggable from 'vuedraggable'
 import PaymentModal from './PaymentModal.vue'
 import PaymentErrorModal from './PaymentErrorModal.vue'
 import { useAuthStore } from '../stores/auth'
+import { apiFetch } from '../utils/api'
 
 const authStore = useAuthStore()
 const showStockWarningModal = ref(false)
@@ -13,12 +14,14 @@ interface Order {
   id: number;
   customerName: string;
   customerPhone?: string;
+  productDescription: string;
   amount: number;
   status: string;
   salesperson?: { id: number, name: string };
   producer?: { id: number, name: string };
   createdAt: string;
   attachments?: any[];
+  transactions?: any[];
 }
 
 const socket = ref<Socket | null>(null)
@@ -109,7 +112,7 @@ const updateOrderStatusLocal = async (newOrders: Order[], newStatus: string) => 
         showStockWarningModal.value = true
       }
       
-      const res = await fetch(`/api/orders/${movedOrder.id}`, {
+      const res = await apiFetch(`/api/orders/${movedOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -124,7 +127,7 @@ const updateOrderStatusLocal = async (newOrders: Order[], newStatus: string) => 
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/orders');
+    const res = await apiFetch('/api/orders');
     if (res.ok) {
       orders.value = await res.json()
     }
@@ -135,7 +138,7 @@ onMounted(async () => {
   }
 
   // Check integration status
-  const statusRes = await fetch('/api/payments/config-status')
+  const statusRes = await apiFetch('/api/payments/config-status')
   if (statusRes.ok) {
     const statusData = await statusRes.json()
     isIntegrated.value = statusData.integrated
@@ -150,10 +153,10 @@ onMounted(async () => {
   socket.value.on('order_updated', (updatedOrder: any) => {
     const index = orders.value.findIndex(o => o.id === updatedOrder.id)
     if (index > -1) {
-      const existing = orders.value[index]
+      const existing = orders.value[index]!
       // Merge intelligently: preserve attachments if the update doesn't have them
-      const attachments = (updatedOrder.attachments && updatedOrder.attachments.length > 0) 
-        ? updatedOrder.attachments 
+      const attachments = (updatedOrder.attachments && updatedOrder.attachments.length > 0)
+        ? updatedOrder.attachments
         : existing.attachments;
         
       orders.value[index] = { 
@@ -190,7 +193,7 @@ const confirmPix = (orderId: number) => {
 const generatePix = async (orderId: number) => {
   isConfirmingPix.value = false
   try {
-    const res = await fetch(`/api/payments/create/${orderId}?type=PIX`, {
+    const res = await apiFetch(`/api/payments/create/${orderId}?type=PIX`, {
       method: 'POST'
     })
     if (res.status === 500) {
@@ -218,12 +221,12 @@ const verifyPaymentDirectly = async (orderId: number) => {
   if (verifyingOrderId.value) return
   verifyingOrderId.value = orderId
   try {
-    const orderRes = await fetch(`/api/orders/${orderId}`)
+    const orderRes = await apiFetch(`/api/orders/${orderId}`)
     if (orderRes.ok) {
       const orderData = await orderRes.json()
       const lastTx = orderData.transactions?.find((t: any) => t.status === 'PENDING')
       if (lastTx) {
-        const res = await fetch(`/api/payments/check/${lastTx.id}`)
+        const res = await apiFetch(`/api/payments/check/${lastTx.id}`)
         if (res.ok) {
           const data = await res.json()
           if (data.status === 'PAID') {
@@ -252,7 +255,7 @@ const startDeleteOrder = (id: number) => {
 const confirmDeleteOrder = async () => {
   if (!orderToDelete.value) return;
   try {
-    const res = await fetch(`/api/orders/${orderToDelete.value}`, { method: 'DELETE' })
+    const res = await apiFetch(`/api/orders/${orderToDelete.value}`, { method: 'DELETE' })
     if (res.ok) {
       orders.value = orders.value.filter(o => o.id !== orderToDelete.value)
       triggerToast('Pedido excluído com sucesso!')
@@ -274,15 +277,36 @@ const triggerUpload = (orderId: number) => {
   if (input) input.click();
 }
 
+const BLOCKED_EXTENSIONS = new Set([
+  '.exe', '.bat', '.cmd', '.com', '.msi', '.ps1', '.psm1', '.vbs', '.vbe',
+  '.js', '.jse', '.wsf', '.wsh', '.scr', '.pif', '.reg', '.inf', '.cpl',
+  '.sh', '.bash', '.zsh', '.fish', '.py', '.rb', '.pl', '.php', '.jar',
+  '.dll', '.so', '.dylib', '.app', '.dmg', '.pkg', '.deb', '.rpm',
+])
+const MAX_UPLOAD_SIZE = 50 * 1024 * 1024 // 50 MB
+
 const handleFileUpload = async (event: any, orderId: number) => {
-  const file = event.target.files[0];
+  const file: File = event.target.files[0];
   if (!file) return;
+
+  // Validação local antes de enviar
+  const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+  if (BLOCKED_EXTENSIONS.has(ext)) {
+    alert(`Tipo de arquivo não permitido: ${ext}\nExecutáveis e scripts são bloqueados por segurança.`);
+    event.target.value = '';
+    return;
+  }
+  if (file.size > MAX_UPLOAD_SIZE) {
+    alert(`Arquivo muito grande: ${(file.size / 1024 / 1024).toFixed(1)} MB\nTamanho máximo permitido: 50 MB.`);
+    event.target.value = '';
+    return;
+  }
 
   const formData = new FormData();
   formData.append('file', file);
 
   try {
-    const res = await fetch(`/api/files/upload/${orderId}`, {
+    const res = await apiFetch(`/api/files/upload/${orderId}`, {
       method: 'POST',
       body: formData
     });
@@ -293,19 +317,24 @@ const handleFileUpload = async (event: any, orderId: number) => {
         if (!order.attachments) order.attachments = [];
         order.attachments.push(newAttachment);
       }
+    } else {
+      const err = await res.json().catch(() => ({ message: 'Erro no upload' }));
+      alert(err.message || 'Erro ao enviar arquivo.');
     }
   } catch (e) {
     console.error('Upload failed', e);
   }
+  event.target.value = '';
 }
 
 const downloadFile = (filename: string) => {
-  window.open(`/api/files/${filename}`, '_blank');
+  const token = localStorage.getItem('gp_token') || ''
+  window.open(`/api/files/${filename}?token=${token}`, '_blank');
 }
 
 const deleteAttachment = async (id: number, orderId: number) => {
   try {
-    const res = await fetch(`/api/files/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/files/${id}`, { method: 'DELETE' });
     if (res.ok) {
       const order = orders.value.find(o => o.id === orderId);
       if (order && order.attachments) {
@@ -340,7 +369,8 @@ const openOrderDetails = (order: Order) => {
 }
 
 const downloadReceipt = (orderId: number) => {
-  window.open(`/api/orders/${orderId}/receipt`, '_blank');
+  const token = localStorage.getItem('gp_token') || ''
+  window.open(`/api/orders/${orderId}/receipt?token=${token}`, '_blank');
 }
 
 const closeOrderDetails = () => {

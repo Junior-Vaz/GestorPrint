@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
 
 interface User {
@@ -64,7 +65,7 @@ const openModal = (user?: User) => {
 const fetchUsers = async () => {
   loading.value = true
   try {
-    const res = await fetch('/api/users')
+    const res = await apiFetch('/api/users')
     if (res.ok) {
       users.value = await res.json()
     }
@@ -91,7 +92,7 @@ const handleSave = async () => {
     const payload: any = { ...newUser.value }
     if (isEditing.value && !payload.password) delete payload.password
 
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -109,7 +110,7 @@ const handleSave = async () => {
 const deleteUser = async (id: number) => {
   if (!confirm('Deseja realmente remover este colaborador do sistema?')) return
   try {
-    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' })
+    const res = await apiFetch(`/api/users/${id}`, { method: 'DELETE' })
     if (res.ok) {
       await fetchUsers()
     } else {

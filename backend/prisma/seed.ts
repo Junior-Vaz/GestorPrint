@@ -3,10 +3,25 @@ import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '../.env' });
 
+const DEFAULT_TENANT_ID = 1;
+
 async function main() {
   const prisma = new PrismaClient();
 
   console.log('Seed started...');
+
+  // 0. Ensure default Tenant exists
+  await (prisma as any).tenant.upsert({
+    where: { id: DEFAULT_TENANT_ID },
+    update: {},
+    create: {
+      id: DEFAULT_TENANT_ID,
+      name: 'GestorPrint',
+      slug: 'gestorprint',
+      plan: 'PRO',
+      planStatus: 'ACTIVE',
+    },
+  });
 
   // 1. Seed ProductTypes
   const typeMap: Record<string, number> = {};
@@ -18,10 +33,10 @@ async function main() {
   ];
 
   for (const t of defaultTypes) {
-    const created = await prisma.productType.upsert({
-      where: { name: t.name },
+    const created = await (prisma as any).productType.upsert({
+      where: { name_tenantId: { name: t.name, tenantId: DEFAULT_TENANT_ID } },
       update: {},
-      create: t,
+      create: { ...t, tenantId: DEFAULT_TENANT_ID },
     });
     typeMap[t.name] = created.id;
   }
@@ -35,8 +50,8 @@ async function main() {
   ];
 
   for (const p of papers) {
-    const exists = await prisma.product.findFirst({ where: { name: p.name, typeId: p.typeId } });
-    if (!exists) await prisma.product.create({ data: p });
+    const exists = await prisma.product.findFirst({ where: { name: p.name, typeId: p.typeId, tenantId: DEFAULT_TENANT_ID } as any });
+    if (!exists) await prisma.product.create({ data: { ...p, tenantId: DEFAULT_TENANT_ID } as any });
   }
 
   // 3. Seed Products - Finishes
@@ -48,8 +63,8 @@ async function main() {
   ];
 
   for (const f of finishes) {
-    const exists = await prisma.product.findFirst({ where: { name: f.name, typeId: f.typeId } });
-    if (!exists) await prisma.product.create({ data: f });
+    const exists = await prisma.product.findFirst({ where: { name: f.name, typeId: f.typeId, tenantId: DEFAULT_TENANT_ID } as any });
+    if (!exists) await prisma.product.create({ data: { ...f, tenantId: DEFAULT_TENANT_ID } as any });
   }
 
   // 4. Initial Customers
@@ -59,10 +74,10 @@ async function main() {
   ];
 
   for (const c of customers) {
-    await prisma.customer.upsert({
-      where: { email: c.email },
+    await (prisma as any).customer.upsert({
+      where: { email_tenantId: { email: c.email, tenantId: DEFAULT_TENANT_ID } },
       update: {},
-      create: c,
+      create: { ...c, tenantId: DEFAULT_TENANT_ID },
     });
   }
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { io, Socket } from 'socket.io-client';
+import { apiFetch } from '../utils/api';
 
 export interface AppNotification {
   id: number;
@@ -22,7 +23,7 @@ export const useNotificationStore = defineStore('notification', () => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('/api/notifications');
+      const res = await apiFetch('/api/notifications');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -49,9 +50,9 @@ export const useNotificationStore = defineStore('notification', () => {
 
   const markAsRead = async (id: number) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+      await apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
       const index = notifications.value.findIndex(n => n.id === id);
-      if (index !== -1) notifications.value[index].read = true;
+      if (index !== -1) notifications.value[index]!.read = true;
     } catch (error) {
       console.error('Error marking as read:', error);
     }
@@ -59,7 +60,7 @@ export const useNotificationStore = defineStore('notification', () => {
 
   const markAllAsRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'POST' });
+      await apiFetch('/api/notifications/read-all', { method: 'POST' });
       notifications.value.forEach(n => n.read = true);
     } catch (error) {
       console.error('Error marking all as read:', error);

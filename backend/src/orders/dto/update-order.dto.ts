@@ -1,7 +1,11 @@
 import { PartialType, ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { CreateOrderDto } from './create-order.dto';
 
 export class UpdateOrderDto extends PartialType(CreateOrderDto) {
   @ApiProperty({ example: 'PRODUCTION', description: 'Current status of the order', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
   status?: string;
 }

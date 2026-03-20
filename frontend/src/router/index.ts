@@ -82,4 +82,12 @@ const router = createRouter({
   ],
 })
 
+router.beforeEach((to) => {
+  const token = localStorage.getItem('gp_token')
+  const publicRoutes = ['login']
+  if (!publicRoutes.includes(to.name as string) && !token) {
+    return { name: 'login' }
+  }
+})
+
 export default router

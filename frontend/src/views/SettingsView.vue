@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
 
 const settings = ref({
@@ -26,7 +27,7 @@ const logoInput = ref<HTMLInputElement | null>(null)
 const fetchSettings = async () => {
   loading.value = true
   try {
-    const res = await fetch('/api/settings')
+    const res = await apiFetch('/api/settings')
     if (res.ok) {
       settings.value = await res.json()
     }
@@ -40,10 +41,11 @@ const fetchSettings = async () => {
 const saveSettings = async () => {
   saving.value = true
   try {
-    const res = await fetch('/api/settings', {
+    const { id, tenantId, updatedAt, createdAt, ...payload } = settings.value as any
+    const res = await apiFetch('/api/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings.value)
+      body: JSON.stringify(payload)
     })
     if (res.ok) {
       showSuccess.value = true
@@ -65,7 +67,7 @@ const handleLogoUpload = async (event: Event) => {
   formData.append('file', file)
 
   try {
-    const res = await fetch('/api/settings/logo', {
+    const res = await apiFetch('/api/settings/logo', {
       method: 'POST',
       body: formData
     })

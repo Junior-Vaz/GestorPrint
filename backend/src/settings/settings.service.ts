@@ -10,12 +10,12 @@ export class SettingsService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
 
   async onModuleInit() {
-    // Ensure at least one settings record exists
-    const count = await this.prisma.settings.count();
+    // Ensure default tenant settings exist
+    const count = await (this.prisma as any).settings.count({ where: { tenantId: 1 } });
     if (count === 0) {
-      await this.prisma.settings.create({
+      await (this.prisma as any).settings.create({
         data: {
-          id: 1,
+          tenantId: 1,
           companyName: 'Minha Gráfica',
           cnpj: '00.000.000/0001-00',
           phone: '(00) 0000-0000',
@@ -26,24 +26,24 @@ export class SettingsService implements OnModuleInit {
     }
   }
 
-  async getSettings() {
-    const settings = await this.prisma.settings.findUnique({ where: { id: 1 } });
+  async getSettings(tenantId = 1) {
+    const settings = await (this.prisma as any).settings.findUnique({ where: { tenantId } });
     if (settings?.logoUrl) {
       const filename = settings.logoUrl.split('/').pop();
       const filePath = path.join(this.uploadPath, filename || '');
       if (!fs.existsSync(filePath)) {
-        // File lost (e.g. volume reset) — clear stale URL so frontend doesn't get 404
-        await this.prisma.settings.update({ where: { id: 1 }, data: { logoUrl: null } });
+        await (this.prisma as any).settings.update({ where: { tenantId }, data: { logoUrl: null } });
         return { ...settings, logoUrl: null };
       }
     }
     return settings;
   }
 
-  updateSettings(data: any) {
-    return this.prisma.settings.update({
-      where: { id: 1 },
-      data
+  updateSettings(data: any, tenantId = 1) {
+    return (this.prisma as any).settings.upsert({
+      where: { tenantId },
+      create: { ...data, tenantId },
+      update: data,
     });
   }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted, computed } from 'vue'
 
 interface ProductType {
@@ -60,9 +61,9 @@ const fetchAll = async () => {
   loading.value = true
   try {
     const [pRes, tRes, sRes] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/product-types'),
-      fetch('/api/suppliers'),
+      apiFetch('/api/products'),
+      apiFetch('/api/product-types'),
+      apiFetch('/api/suppliers'),
     ])
     if (pRes.ok) products.value = await pRes.json()
     if (tRes.ok) productTypes.value = await tRes.json()
@@ -96,13 +97,13 @@ const saveProduct = async () => {
   const url = isEditing.value
     ? `/api/products/${editingId.value}`
     : '/api/products'
-  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form.value) })
+  const res = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form.value) })
   if (res.ok) { showProductModal.value = false; await fetchAll() }
 }
 
 const deleteProduct = async (id: number) => {
   if (!confirm('Excluir este insumo?')) return
-  await fetch(`/api/products/${id}`, { method: 'DELETE' })
+  await apiFetch(`/api/products/${id}`, { method: 'DELETE' })
   await fetchAll()
 }
 
@@ -124,13 +125,13 @@ const saveType = async () => {
   const url = editingTypeId.value
     ? `/api/product-types/${editingTypeId.value}`
     : '/api/product-types'
-  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(typeForm.value) })
+  const res = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(typeForm.value) })
   if (res.ok) { showTypeModal.value = false; await fetchAll() }
 }
 
 const deleteType = async (id: number) => {
   if (!confirm('Excluir este tipo?')) return
-  const res = await fetch(`/api/product-types/${id}`, { method: 'DELETE' })
+  const res = await apiFetch(`/api/product-types/${id}`, { method: 'DELETE' })
   if (!res.ok) { const e = await res.json(); alert(e.message || 'Erro ao excluir') }
   await fetchAll()
 }
@@ -141,7 +142,7 @@ const adjustStock = async (product: Product) => {
   if (qtyStr === null) return
   const qty = parseFloat(qtyStr)
   if (isNaN(qty)) { alert('Valor inválido'); return }
-  await fetch(`/api/products/${product.id}/stock`, {
+  await apiFetch(`/api/products/${product.id}/stock`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ quantity: qty, type: qty > 0 ? 'PURCHASE' : 'ADJUSTMENT', reason: 'Ajuste manual' })

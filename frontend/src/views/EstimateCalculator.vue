@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
 import { useAuthStore } from '../stores/auth'
@@ -76,8 +77,8 @@ const fetchInitialData = async () => {
   loading.value = true
   try {
     const [pRes, cRes] = await Promise.all([
-      fetch('/api/products'),
-      fetch('/api/customers')
+      apiFetch('/api/products'),
+      apiFetch('/api/customers')
     ])
     
     if (pRes.ok) {
@@ -86,7 +87,7 @@ const fetchInitialData = async () => {
       papers.value = allProducts.filter(p => p.productType?.hasStock)
       // Products without stock = services/finishings charged per unit
       finishings.value = allProducts.filter(p => !p.productType?.hasStock)
-      if (papers.value.length > 0 && !isEditing.value) selectedPaperId.value = papers.value[0].id
+      if (papers.value.length > 0 && !isEditing.value) selectedPaperId.value = papers.value[0]!.id
     }
 
   if (cRes.ok) {
@@ -94,7 +95,7 @@ const fetchInitialData = async () => {
       const fallback = customers.value.find(c => c.name.toLowerCase().includes('balcão'))
       if (!isEditing.value) {
         if (fallback) { selectedCustomerId.value = fallback.id; customerSearch.value = fallback.name }
-        else if (customers.value.length > 0) { selectedCustomerId.value = customers.value[0].id; customerSearch.value = customers.value[0].name }
+        else if (customers.value.length > 0) { selectedCustomerId.value = customers.value[0]!.id; customerSearch.value = customers.value[0]!.name }
       }
     }
 
@@ -131,7 +132,6 @@ const handleCustomerBlur = () => {
 }
 
 // Clear ID if search text is manually changed (to force fresh selection)
-import { watch } from 'vue'
 watch(customerSearch, (newVal) => {
   const currentCustomer = customers.value.find(c => c.id === selectedCustomerId.value)
   if (currentCustomer && currentCustomer.name !== newVal) {
@@ -190,7 +190,7 @@ const handleSaveEstimate = async (convertToOrder = false) => {
       ? `/api/estimates/${ui.editingEstimate.id}`
       : '/api/estimates'
 
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(estimateData)
@@ -215,7 +215,7 @@ const handleSaveEstimate = async (convertToOrder = false) => {
 
 const handleConvertToOrder = async (estimateId: number) => {
   try {
-    const res = await fetch(`/api/estimates/${estimateId}/convert`, {
+    const res = await apiFetch(`/api/estimates/${estimateId}/convert`, {
       method: 'POST'
     })
     if (res.ok) {
@@ -232,7 +232,8 @@ const generatePDF = () => {
     alert('Por favor, salve o orçamento primeiro para gerar o documento PDF oficial.')
     return
   }
-  window.open(`/api/estimates/${lastEstimateId.value}/pdf`, '_blank')
+  const token = localStorage.getItem('gp_token') || ''
+  window.open(`/api/estimates/${lastEstimateId.value}/pdf?token=${token}`, '_blank')
 }
 
 onMounted(fetchInitialData)

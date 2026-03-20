@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted, computed } from 'vue'
 
 const stats = ref({
@@ -33,10 +34,10 @@ const fetchStats = async () => {
   stats.value.loading = true
   try {
     const [cRes, oRes, eRes, rRes] = await Promise.all([
-      fetch('/api/customers'),
-      fetch('/api/orders'),
-      fetch('/api/estimates'),
-      fetch('/api/reports/summary'),
+      apiFetch('/api/customers'),
+      apiFetch('/api/orders'),
+      apiFetch('/api/estimates'),
+      apiFetch('/api/reports/summary'),
     ])
 
     if (cRes.ok) stats.value.customers = (await cRes.json()).length
@@ -59,13 +60,13 @@ const fetchStats = async () => {
       stats.value.netProfit = summary.netProfit
     }
 
-    const pRes = await fetch('/api/products')
+    const pRes = await apiFetch('/api/products')
     if (pRes.ok) {
       const products = await pRes.json()
       stats.value.lowStockItems = products.filter((p: any) => p.stock <= p.minStock)
     }
 
-    const sRes = await fetch('/api/settings')
+    const sRes = await apiFetch('/api/settings')
     if (sRes.ok) {
       const settings = await sRes.json()
       stats.value.companyName = settings.companyName

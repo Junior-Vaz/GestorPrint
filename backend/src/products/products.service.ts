@@ -13,25 +13,18 @@ export class ProductsService {
     private readonly auditService: AuditService,
   ) {}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(createProductDto: CreateProductDto, tenantId: number) {
     const product = await this.prisma.product.create({
-      data: createProductDto as any
+      data: { ...createProductDto, tenantId } as any
     });
-    
-    // Audit Log
-    await this.auditService.logAction(
-      1, // Assuming admin for now or system
-      'CREATE',
-      'Product',
-      product.id,
-      createProductDto
-    );
 
+    await this.auditService.logAction(1, 'CREATE', 'Product', product.id, createProductDto);
     return product;
   }
 
-  findAll() {
+  findAll(tenantId: number) {
     return (this.prisma as any).product.findMany({
+      where: { tenantId },
       include: {
         productType: true,
         supplier: { select: { id: true, name: true } },
@@ -42,27 +35,16 @@ export class ProductsService {
   }
 
   async updateStock(id: number, quantity: number, type: 'PURCHASE' | 'SALE' | 'ADJUSTMENT', reason?: string) {
-    // We use a transaction to ensure stock and movement stay in sync
     return (this.prisma as any).$transaction(async (tx: any) => {
       const product = await tx.product.update({
         where: { id },
-        data: {
-          stock: {
-            increment: quantity
-          }
-        }
+        data: { stock: { increment: quantity } }
       });
 
       await tx.stockMovement.create({
-        data: {
-          productId: id,
-          quantity,
-          type,
-          reason
-        }
+        data: { productId: id, quantity, type, reason }
       });
 
-      // Check for low stock
       if (product.stock <= product.minStock) {
         await this.notificationsService.create({
           title: 'Estoque Baixo',
@@ -75,9 +57,9 @@ export class ProductsService {
     });
   }
 
-  findOne(id: number) {
-    return (this.prisma as any).product.findUnique({
-      where: { id },
+  findOne(id: number, tenantId: number) {
+    return (this.prisma as any).product.findFirst({
+      where: { id, tenantId },
       include: {
         productType: true,
         supplier: { select: { id: true, name: true } },
@@ -86,16 +68,16 @@ export class ProductsService {
     });
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return this.prisma.product.update({
-      where: { id },
+  update(id: number, updateProductDto: UpdateProductDto, tenantId: number) {
+    return (this.prisma as any).product.updateMany({
+      where: { id, tenantId },
       data: updateProductDto as any
     });
   }
 
-  remove(id: number) {
-    return this.prisma.product.delete({
-      where: { id }
+  remove(id: number, tenantId: number) {
+    return (this.prisma as any).product.deleteMany({
+      where: { id, tenantId }
     });
   }
 }

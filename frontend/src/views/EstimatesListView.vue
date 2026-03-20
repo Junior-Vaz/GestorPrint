@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
 import { useUiStore } from '../stores/ui'
 import { useAuthStore } from '../stores/auth'
@@ -10,6 +11,7 @@ interface Estimate {
   id: number;
   customerId: number;
   customer: { name: string, phone?: string | null };
+  salesperson?: { id: number, name: string } | null;
   status: string;
   totalPrice: number;
   details: any;
@@ -22,7 +24,7 @@ const loading = ref(true)
 const fetchEstimates = async () => {
   loading.value = true
   try {
-    const res = await fetch('/api/estimates')
+    const res = await apiFetch('/api/estimates')
     if (res.ok) {
       estimates.value = await res.json()
     }
@@ -36,7 +38,7 @@ const fetchEstimates = async () => {
 const deleteEstimate = async (id: number) => {
   if (!confirm('Tem certeza que deseja excluir este orçamento?')) return
   try {
-    const res = await fetch(`/api/estimates/${id}`, { method: 'DELETE' })
+    const res = await apiFetch(`/api/estimates/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchEstimates()
   } catch (e) {
     console.error('Error deleting estimate', e)
@@ -44,13 +46,14 @@ const deleteEstimate = async (id: number) => {
 }
 
 const openPdf = (id: number) => {
-  window.open(`/api/estimates/${id}/pdf`, '_blank')
+  const token = localStorage.getItem('gp_token') || ''
+  window.open(`/api/estimates/${id}/pdf?token=${token}`, '_blank')
 }
 
 const convertToOrder = async (id: number) => {
   if (!confirm('Deseja aprovar este orçamento e enviar para a produção?')) return
   try {
-    const res = await fetch(`/api/estimates/${id}/convert`, { method: 'POST' })
+    const res = await apiFetch(`/api/estimates/${id}/convert`, { method: 'POST' })
     if (res.ok) await fetchEstimates()
   } catch (e) {
     console.error('Error converting estimate', e)
@@ -60,7 +63,7 @@ const convertToOrder = async (id: number) => {
 const sendViaWhatsApp = async (est: Estimate) => {
   try {
     // 1. Get payment link
-    const res = await fetch(`/api/estimates/${est.id}/payment`, { method: 'POST' })
+    const res = await apiFetch(`/api/estimates/${est.id}/payment`, { method: 'POST' })
     const payment = await res.json()
     const paymentUrl = payment.paymentUrl || ''
 

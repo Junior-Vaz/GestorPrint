@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted, computed } from 'vue'
 
 interface Expense {
@@ -28,12 +29,13 @@ const form = ref<Partial<Expense>>({
 })
 
 const exportCsv = () => {
-  window.open('/api/expenses/export/csv', '_blank')
+  const token = localStorage.getItem('gp_token') || ''
+  window.open(`/api/expenses/export/csv?token=${token}`, '_blank')
 }
 
 const fetchExpenses = async () => {
   try {
-    const res = await fetch('/api/expenses')
+    const res = await apiFetch('/api/expenses')
     if (res.ok) expenses.value = await res.json()
   } catch (e) {
     console.error('Failed to fetch expenses', e)
@@ -42,7 +44,7 @@ const fetchExpenses = async () => {
 
 const fetchCategories = async () => {
   try {
-    const res = await fetch('/api/expense-categories')
+    const res = await apiFetch('/api/expense-categories')
     if (res.ok) {
       categories.value = await res.json()
       if (categories.value.length > 0 && !form.value.category) {
@@ -56,7 +58,7 @@ const fetchCategories = async () => {
 
 const fetchSuppliers = async () => {
   try {
-    const res = await fetch('/api/suppliers')
+    const res = await apiFetch('/api/suppliers')
     if (res.ok) suppliers.value = await res.json()
   } catch (e) {
     console.error('Failed to fetch suppliers', e)
@@ -66,7 +68,7 @@ const fetchSuppliers = async () => {
 const addCategory = async () => {
   if (!newCategoryName.value) return
   try {
-    const res = await fetch('/api/expense-categories', {
+    const res = await apiFetch('/api/expense-categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newCategoryName.value })
@@ -83,7 +85,7 @@ const addCategory = async () => {
 const deleteCategory = async (id: number) => {
   if (!confirm('Excluir esta categoria?')) return
   try {
-    const res = await fetch(`/api/expense-categories/${id}`, { method: 'DELETE' })
+    const res = await apiFetch(`/api/expense-categories/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchCategories()
   } catch (e) {
     console.error('Failed to delete category', e)
@@ -118,7 +120,7 @@ const saveExpense = async () => {
     : '/api/expenses'
 
   try {
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form.value)
@@ -135,7 +137,7 @@ const saveExpense = async () => {
 const deleteExpense = async (id: number) => {
   if (!confirm('Excluir esta despesa?')) return
   try {
-    const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' })
+    const res = await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' })
     if (res.ok) fetchExpenses()
   } catch (e) {
     console.error('Failed to delete expense', e)

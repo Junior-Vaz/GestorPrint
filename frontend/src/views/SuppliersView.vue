@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiFetch } from '../utils/api'
 import { ref, onMounted, computed } from 'vue'
 
 interface Supplier {
@@ -36,7 +37,7 @@ const categories = [
 
 const fetchSuppliers = async () => {
   try {
-    const res = await fetch('/api/suppliers')
+    const res = await apiFetch('/api/suppliers')
     if (res.ok) suppliers.value = await res.json()
   } catch (e) {
     console.error('Failed to fetch suppliers', e)
@@ -75,7 +76,7 @@ const saveSupplier = async () => {
     : '/api/suppliers'
 
   try {
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form.value)
@@ -92,7 +93,7 @@ const saveSupplier = async () => {
 const deleteSupplier = async (id: number) => {
   if (!confirm('Excluir este fornecedor?')) return
   try {
-    const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' })
+    const res = await apiFetch(`/api/suppliers/${id}`, { method: 'DELETE' })
     if (res.ok) fetchSuppliers()
   } catch (e) {
     console.error('Failed to delete supplier', e)

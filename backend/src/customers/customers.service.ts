@@ -7,40 +7,39 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  create(createCustomerDto: CreateCustomerDto) {
-    const data = { ...createCustomerDto };
-    if (data.document === "") data.document = null;
-    if (data.email === "") data.email = null;
-    return this.prisma.customer.create({
-      data,
-    });
+  create(createCustomerDto: CreateCustomerDto, tenantId: number) {
+    const data: any = { ...createCustomerDto, tenantId };
+    if (data.document === '') data.document = null;
+    if (data.email === '') data.email = null;
+    return this.prisma.customer.create({ data });
   }
 
-  findAll() {
+  findAll(tenantId: number) {
     return this.prisma.customer.findMany({
+      where: { tenantId },
       orderBy: { name: 'asc' },
     });
   }
 
-  findOne(id: number) {
-    return this.prisma.customer.findUnique({
-      where: { id },
+  findOne(id: number, tenantId: number) {
+    return this.prisma.customer.findFirst({
+      where: { id, tenantId },
     });
   }
 
-  update(id: number, updateCustomerDto: UpdateCustomerDto) {
-    const data = { ...updateCustomerDto };
-    if (data.document === "") data.document = null;
-    if (data.email === "") data.email = null;
+  update(id: number, updateCustomerDto: UpdateCustomerDto, tenantId: number) {
+    const data: any = { ...updateCustomerDto };
+    if (data.document === '') data.document = null;
+    if (data.email === '') data.email = null;
     return this.prisma.customer.update({
       where: { id },
       data,
     });
   }
 
-  remove(id: number) {
-    return this.prisma.customer.delete({
-      where: { id },
+  remove(id: number, tenantId: number) {
+    return this.prisma.customer.deleteMany({
+      where: { id, tenantId },
     });
   }
 }
