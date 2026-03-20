@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+// "2026-03-20" → "2026-03-20T00:00:00.000Z" (Prisma DateTime exige ISO completo)
+function toDateTime(s?: string | null): string | null | undefined {
+  if (!s) return s === null ? null : undefined;
+  return s.length === 10 ? `${s}T00:00:00.000Z` : s;
+}
+
 @Injectable()
 export class TenantsService {
   constructor(private prisma: PrismaService) {}
@@ -30,30 +36,36 @@ export class TenantsService {
   }
 
   async create(data: {
-    name: string;
-    slug: string;
-    plan?: string;
-    ownerName?: string;
-    ownerEmail?: string;
-    ownerPhone?: string;
+    name: string; slug: string; plan?: string; planStatus?: string;
+    trialEndsAt?: string | null; planExpiresAt?: string | null;
+    maxUsers?: number; maxOrders?: number;
+    ownerName?: string; ownerEmail?: string; ownerPhone?: string;
+    cpfCnpj?: string; isActive?: boolean;
   }) {
-    return (this.prisma as any).tenant.create({ data });
+    return (this.prisma as any).tenant.create({
+      data: {
+        ...data,
+        trialEndsAt:   toDateTime(data.trialEndsAt),
+        planExpiresAt: toDateTime(data.planExpiresAt),
+      },
+    });
   }
 
   async update(id: number, data: {
-    name?: string;
-    plan?: string;
-    planStatus?: string;
-    planExpiresAt?: string | null;
-    trialEndsAt?: string | null;
-    maxUsers?: number;
-    maxOrders?: number;
-    ownerName?: string;
-    ownerEmail?: string;
-    ownerPhone?: string;
-    isActive?: boolean;
+    name?: string; slug?: string; plan?: string; planStatus?: string;
+    planExpiresAt?: string | null; trialEndsAt?: string | null;
+    maxUsers?: number; maxOrders?: number;
+    ownerName?: string; ownerEmail?: string; ownerPhone?: string;
+    cpfCnpj?: string; isActive?: boolean;
   }) {
-    return (this.prisma as any).tenant.update({ where: { id }, data });
+    return (this.prisma as any).tenant.update({
+      where: { id },
+      data: {
+        ...data,
+        trialEndsAt:   toDateTime(data.trialEndsAt),
+        planExpiresAt: toDateTime(data.planExpiresAt),
+      },
+    });
   }
 
   async getDashboard() {
