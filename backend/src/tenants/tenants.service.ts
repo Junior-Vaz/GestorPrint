@@ -44,8 +44,8 @@ export class TenantsService {
     name?: string;
     plan?: string;
     planStatus?: string;
-    planExpiresAt?: Date;
-    trialEndsAt?: Date;
+    planExpiresAt?: string | null;
+    trialEndsAt?: string | null;
     maxUsers?: number;
     maxOrders?: number;
     ownerName?: string;
