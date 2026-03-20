@@ -55,8 +55,15 @@ export class BillingService {
       return { asaasCustomerId: tenant.asaasCustomerId };
     }
 
+    if (!tenant.cpfCnpj) {
+      throw new BadRequestException(
+        'Cadastre o CPF/CNPJ do responsável no tenant antes de criar o cliente no Asaas',
+      );
+    }
+
     const result = await this.asaas('POST', '/customers', {
       name: tenant.ownerName || tenant.name,
+      cpfCnpj: tenant.cpfCnpj,
       email: tenant.ownerEmail || undefined,
       mobilePhone: tenant.ownerPhone || undefined,
       externalReference: String(tenantId),
@@ -98,8 +105,10 @@ export class BillingService {
       value,
       nextDueDate: dueDateStr,
       cycle: 'MONTHLY',
-      description: `GestorPrint — Plano ${tenant.plan}`,
-      externalReference: String(tenantId),
+      description: `GestorPrint — Plano ${tenant.plan} (${tenant.name})`,
+      externalReference: tenant.slug || String(tenantId),
+      fine: { value: 2, type: 'PERCENTAGE' },
+      interest: { value: 1 },
     });
 
     await (this.prisma as any).tenant.update({
@@ -152,7 +161,9 @@ export class BillingService {
       PAYMENT_RECEIVED:    { planStatus: 'ACTIVE',     isActive: true  },
       PAYMENT_OVERDUE:     { planStatus: 'SUSPENDED',  isActive: false },
       PAYMENT_DELETED:     { planStatus: 'CANCELLED',  isActive: false },
-      SUBSCRIPTION_INACTIVATED: { planStatus: 'CANCELLED', isActive: false },
+      PAYMENT_REFUNDED:    { planStatus: 'SUSPENDED',  isActive: false },
+      PAYMENT_CHARGEBACK_REQUESTED: { planStatus: 'SUSPENDED', isActive: false },
+      SUBSCRIPTION_INACTIVATED:     { planStatus: 'CANCELLED', isActive: false },
     };
 
     const update = statusMap[event];
@@ -162,5 +173,17 @@ export class BillingService {
         data: update,
       });
     }
+    // Eventos informativos — sem ação de estado, apenas log implícito
+    // PAYMENT_CREATED, PAYMENT_UPDATED, PAYMENT_DUEDATE_WARNING → ignorados sem erro
+  }
+
+  // ─── Subscription status ────────────────────────────────────────────────────
+
+  async getSubscription(tenantId: number): Promise<any> {
+    const tenant = await (this.prisma as any).tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant não encontrado');
+    if (!tenant.asaasSubscriptionId) throw new BadRequestException('Tenant não tem assinatura ativa');
+
+    return this.asaas('GET', `/subscriptions/${tenant.asaasSubscriptionId}`);
   }
 }

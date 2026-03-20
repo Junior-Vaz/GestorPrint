@@ -230,13 +230,18 @@
           <!-- Owner -->
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Responsável</label>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-3 gap-3 mb-3">
               <input v-model="form.ownerName" placeholder="Nome completo"
                 class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               <input v-model="form.ownerPhone" placeholder="Telefone"
                 class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               <input v-model="form.ownerEmail" type="email" placeholder="E-mail"
                 class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div class="relative">
+              <input v-model="form.cpfCnpj" placeholder="CPF (11 dígitos) ou CNPJ (14 dígitos) — obrigatório para cobrança Asaas"
+                class="w-full border border-amber-200 bg-amber-50/50 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder-slate-400" />
+              <span class="absolute right-3 top-2.5 text-xs font-bold text-amber-500">Asaas</span>
             </div>
           </div>
         </div>
@@ -262,6 +267,7 @@ import { apiFetch } from '../utils/api'
 interface Tenant {
   id: number; name: string; slug: string; plan: string; planStatus: string;
   isActive: boolean; ownerName?: string; ownerEmail?: string; ownerPhone?: string;
+  cpfCnpj?: string;
   maxUsers: number; maxOrders: number; trialEndsAt?: string; planExpiresAt?: string;
   createdAt: string;
   _count?: { users: number; orders: number; customers: number };
@@ -302,7 +308,7 @@ const emptyForm = () => ({
   name: '', slug: '', plan: 'FREE', planStatus: 'TRIAL' as string,
   isActive: true, trialEndsAt: '', planExpiresAt: '',
   maxUsers: 3, maxOrders: 100,
-  ownerName: '', ownerEmail: '', ownerPhone: '',
+  ownerName: '', ownerEmail: '', ownerPhone: '', cpfCnpj: '',
 })
 const form = ref(emptyForm())
 
@@ -355,6 +361,7 @@ const openEdit = (t: Tenant) => {
     maxUsers: t.maxUsers, maxOrders: t.maxOrders,
     ownerName: t.ownerName || '', ownerEmail: t.ownerEmail || '', ownerPhone: t.ownerPhone || '',
   }
+  form.value.cpfCnpj = t.cpfCnpj || ''
   isEditing.value = true
   editingId.value = t.id
   showModal.value = true

@@ -60,4 +60,11 @@ export class BillingController {
   getInvoices(@Param('tenantId', ParseIntPipe) tenantId: number) {
     return this.billingService.getInvoices(tenantId);
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('subscriptions/:tenantId')
+  getSubscription(@Param('tenantId', ParseIntPipe) tenantId: number) {
+    return this.billingService.getSubscription(tenantId);
+  }
 }

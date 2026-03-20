@@ -200,20 +200,38 @@
           <div v-else class="space-y-3">
             <div v-for="inv in invoices" :key="inv.id"
               class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-              <div class="flex items-center justify-between mb-3">
-                <span :class="['px-3 py-1 rounded-full text-xs font-black', INVOICE_STATUS[inv.status] || 'bg-slate-100 text-slate-500']">
-                  {{ inv.status }}
-                </span>
-                <span class="text-lg font-extrabold text-slate-800">R$ {{ inv.value?.toFixed(2) }}</span>
+              <!-- Status + Tipo + Valor -->
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span :class="['px-2.5 py-1 rounded-full text-xs font-black', INVOICE_STATUS[inv.status] || 'bg-slate-100 text-slate-500']">
+                    {{ inv.status }}
+                  </span>
+                  <span v-if="inv.billingType" :class="['px-2.5 py-1 rounded-lg text-xs font-bold', BILLING_TYPE_BADGE[inv.billingType] || 'bg-slate-50 text-slate-500']">
+                    {{ inv.billingType }}
+                  </span>
+                </div>
+                <div class="text-right">
+                  <p class="text-lg font-extrabold text-slate-800">R$ {{ inv.value?.toFixed(2) }}</p>
+                  <p v-if="inv.netValue && inv.netValue !== inv.value" class="text-xs text-slate-400">
+                    Líquido: R$ {{ inv.netValue?.toFixed(2) }}
+                  </p>
+                </div>
               </div>
-              <div class="flex items-center justify-between text-xs text-slate-500">
+              <!-- Datas -->
+              <div class="flex items-center justify-between text-xs text-slate-500 mb-3">
                 <span class="font-semibold">Vence: {{ inv.dueDate }}</span>
+                <span v-if="inv.paymentDate" class="text-emerald-600 font-bold">
+                  Pago em: {{ inv.paymentDate }}
+                </span>
+              </div>
+              <!-- Links -->
+              <div class="flex gap-2">
                 <a v-if="inv.invoiceUrl" :href="inv.invoiceUrl" target="_blank"
-                  class="text-indigo-600 hover:text-indigo-700 font-bold transition-colors">
+                  class="flex-1 text-center py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition-colors border border-indigo-100">
                   Ver fatura →
                 </a>
-                <a v-else-if="inv.bankSlipUrl" :href="inv.bankSlipUrl" target="_blank"
-                  class="text-indigo-600 hover:text-indigo-700 font-bold transition-colors">
+                <a v-if="inv.bankSlipUrl" :href="inv.bankSlipUrl" target="_blank"
+                  class="flex-1 text-center py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg transition-colors border border-blue-100">
                   Boleto →
                 </a>
               </div>
@@ -248,6 +266,15 @@ const INVOICE_STATUS: Record<string, string> = {
   RECEIVED:  'bg-emerald-100 text-emerald-700',
   PENDING:   'bg-amber-100 text-amber-700',
   OVERDUE:   'bg-red-100 text-red-700',
+  REFUNDED:  'bg-slate-100 text-slate-500',
+  CHARGEBACK_REQUESTED: 'bg-red-100 text-red-700',
+}
+
+const BILLING_TYPE_BADGE: Record<string, string> = {
+  PIX:    'bg-emerald-50 text-emerald-700 border border-emerald-100',
+  BOLETO: 'bg-blue-50 text-blue-700 border border-blue-100',
+  CREDIT_CARD: 'bg-purple-50 text-purple-700 border border-purple-100',
+  UNDEFINED: 'bg-slate-50 text-slate-500 border border-slate-100',
 }
 
 const config = ref<any>(null)
