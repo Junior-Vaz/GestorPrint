@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(manual)",
+      "Bash(temp \")",
+      "mcp__Desktop_Commander__list_directory",
+      "mcp__Desktop_Commander__get_file_info",
+      "mcp__Desktop_Commander__read_multiple_files",
+      "mcp__Desktop_Commander__start_process",
+      "mcp__Desktop_Commander__read_process_output"
+    ]
+  }
+}
