@@ -21,7 +21,7 @@ services:
   # 2. Backend (API)
   # ─────────────────────────────────────────────
   backend:
-    image: ghcr.io/junior-vaz/gestorprint-backend:7997a6d00569b798ed51e4cc6202b973f953085f
+    image: ghcr.io/junior-vaz/gestorprint-backend:c29fac8ac29f88144ac37eca262498eb4d540dc9
     restart: unless-stopped
     depends_on:
       db:
@@ -48,7 +48,7 @@ services:
   # 3. WhatsApp AI Agent
   # ─────────────────────────────────────────────
   whatsapp-ai:
-    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:7997a6d00569b798ed51e4cc6202b973f953085f
+    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:c29fac8ac29f88144ac37eca262498eb4d540dc9
     restart: unless-stopped
     depends_on:
       backend:
@@ -62,7 +62,7 @@ services:
   # 4. Frontend (Web)
   # ─────────────────────────────────────────────
   frontend:
-    image: ghcr.io/junior-vaz/gestorprint-frontend:7997a6d00569b798ed51e4cc6202b973f953085f
+    image: ghcr.io/junior-vaz/gestorprint-frontend:c29fac8ac29f88144ac37eca262498eb4d540dc9
     restart: unless-stopped
     depends_on:
       - backend
@@ -72,7 +72,7 @@ services:
   # 5. SaaS Admin Panel
   # ─────────────────────────────────────────────
   saas-admin:
-    image: ghcr.io/junior-vaz/gestorprint-saas-admin:7997a6d00569b798ed51e4cc6202b973f953085f
+    image: ghcr.io/junior-vaz/gestorprint-saas-admin:c29fac8ac29f88144ac37eca262498eb4d540dc9
     restart: unless-stopped
     depends_on:
       - backend
