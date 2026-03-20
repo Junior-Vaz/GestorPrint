@@ -1,48 +1,53 @@
 <template>
-  <div class="flex h-screen bg-slate-50 overflow-hidden">
+  <div class="flex h-screen overflow-hidden bg-linear-to-br from-slate-100 via-indigo-50/40 to-purple-50/30">
+
     <!-- Sidebar -->
-    <aside class="w-64 flex-shrink-0 bg-slate-900 flex flex-col">
-      <!-- Logo -->
-      <div class="h-16 flex items-center gap-3 px-5 border-b border-slate-700/50">
-        <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+    <aside class="w-64 flex-shrink-0 flex flex-col bg-white/80 backdrop-blur-xl border-r border-white/60 shadow-xl shadow-slate-200/40 z-20">
+
+      <!-- Logo (igual ao GestorPrint principal) -->
+      <div class="h-16 flex items-center gap-3 px-5 border-b border-slate-100">
+        <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100 shadow-sm shrink-0">
+          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
           </svg>
         </div>
         <div>
-          <p class="text-white text-sm font-bold leading-none">GestorPrint</p>
-          <p class="text-indigo-400 text-xs mt-0.5">Admin Panel</p>
+          <h1 class="text-xl font-extrabold tracking-tight text-slate-900 leading-tight">GestorPrint</h1>
+          <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest leading-none">Admin Panel</p>
         </div>
       </div>
 
       <!-- Nav -->
-      <nav class="flex-1 px-3 py-4 space-y-1">
+      <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         <RouterLink
           v-for="item in navItems" :key="item.to"
           :to="item.to"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
           :class="route.path === item.to
-            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40'
-            : 'text-slate-400 hover:text-white hover:bg-slate-800'"
+            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]'
+            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'"
         >
           <span v-html="item.icon" class="w-5 h-5 flex-shrink-0"></span>
           {{ item.label }}
         </RouterLink>
       </nav>
 
-      <!-- User + Logout -->
-      <div class="p-3 border-t border-slate-700/50">
-        <div class="flex items-center gap-3 px-2 py-2 mb-1">
-          <div class="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+      <!-- Divider -->
+      <div class="mx-4 border-t border-slate-100"></div>
+
+      <!-- User Info -->
+      <div class="p-3 pb-4">
+        <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 mb-2">
+          <div class="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 text-xs font-extrabold shrink-0">
             {{ initials }}
           </div>
-          <div class="min-w-0">
-            <p class="text-white text-xs font-semibold truncate">{{ auth.user?.name || auth.user?.email }}</p>
-            <p class="text-slate-500 text-xs truncate">Super Admin</p>
+          <div class="min-w-0 flex-1">
+            <p class="text-slate-800 text-xs font-bold truncate">{{ auth.user?.name || auth.user?.email }}</p>
+            <p class="text-indigo-500 text-[10px] font-bold uppercase tracking-wider truncate">Super Admin</p>
           </div>
         </div>
         <button @click="handleLogout"
-          class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200">
           <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
           </svg>
@@ -51,11 +56,20 @@
       </div>
     </aside>
 
-    <!-- Main content -->
+    <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <!-- Topbar -->
-      <header class="h-16 flex-shrink-0 bg-white border-b border-slate-200 flex items-center px-6">
-        <h1 class="text-lg font-bold text-slate-800">{{ pageTitle }}</h1>
+      <header class="h-16 flex-shrink-0 bg-white/60 backdrop-blur-md border-b border-white/60 shadow-sm flex items-center justify-between px-6 z-10">
+        <div class="flex items-center gap-2">
+          <div class="w-1.5 h-5 rounded-full" :style="{ backgroundColor: accentColor }"></div>
+          <h1 class="text-base font-extrabold text-slate-800 tracking-tight">{{ pageTitle }}</h1>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          Plataforma segura
+        </div>
       </header>
 
       <!-- Page content -->
@@ -84,7 +98,7 @@ const navItems = [
   {
     to: '/tenants',
     label: 'Tenants',
-    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>',
   },
   {
     to: '/billing',
@@ -93,12 +107,14 @@ const navItems = [
   },
 ]
 
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/tenants': 'Tenants',
-  '/billing': 'Cobrança — Asaas',
+const pageMeta: Record<string, { title: string; color: string }> = {
+  '/dashboard': { title: 'Dashboard da Plataforma', color: '#6366f1' },
+  '/tenants':   { title: 'Gestão de Tenants',        color: '#a855f7' },
+  '/billing':   { title: 'Cobrança — Asaas',         color: '#10b981' },
 }
-const pageTitle = computed(() => pageTitles[route.path] || 'Admin Panel')
+
+const pageTitle  = computed(() => pageMeta[route.path]?.title  || 'Admin Panel')
+const accentColor = computed(() => pageMeta[route.path]?.color || '#6366f1')
 
 const initials = computed(() => {
   const name: string = auth.user?.name || auth.user?.email || 'SA'
