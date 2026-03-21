@@ -69,16 +69,64 @@ export class PlansService {
     }
   }
 
-  // ── Get plan features for a tenant ────────────────────────────────────────
-  async getPlanFeatures(tenantId: number) {
+  // ── Get plan features + usage for the current tenant (frontend use) ───────
+  async getMyPlan(tenantId: number) {
     const tenant = await (this.prisma as any).tenant.findUnique({
       where: { id: tenantId },
-      select: { plan: true },
+      select: {
+        plan: true, planStatus: true, isActive: true,
+        maxUsers: true, maxOrders: true, maxCustomers: true,
+        trialEndsAt: true, planExpiresAt: true,
+      },
     });
     if (!tenant) throw new NotFoundException('Tenant não encontrado');
-    const plan = await (this.prisma as any).planConfig.findUnique({
+
+    const planConfig = await (this.prisma as any).planConfig.findUnique({
       where: { name: tenant.plan },
     });
-    return plan ?? null;
+
+    // Current usage
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const [usersCount, ordersThisMonth, customersCount] = await Promise.all([
+      (this.prisma as any).user.count({ where: { tenantId } }),
+      (this.prisma as any).order.count({ where: { tenantId, createdAt: { gte: startOfMonth } } }),
+      (this.prisma as any).customer.count({ where: { tenantId } }),
+    ]);
+
+    return {
+      plan: tenant.plan,
+      planStatus: tenant.planStatus,
+      isActive: tenant.isActive,
+      trialEndsAt: tenant.trialEndsAt,
+      planExpiresAt: tenant.planExpiresAt,
+      // Limits from tenant (may differ from planConfig if manually adjusted)
+      maxUsers: tenant.maxUsers,
+      maxOrders: tenant.maxOrders,
+      maxCustomers: tenant.maxCustomers,
+      // Current usage
+      usersCount,
+      ordersThisMonth,
+      customersCount,
+      // Feature flags from planConfig
+      ...(planConfig ? {
+        displayName: planConfig.displayName,
+        price: planConfig.price,
+        hasPdf: planConfig.hasPdf,
+        hasReports: planConfig.hasReports,
+        hasKanban: planConfig.hasKanban,
+        hasFileUpload: planConfig.hasFileUpload,
+        hasWhatsapp: planConfig.hasWhatsapp,
+        hasPix: planConfig.hasPix,
+        hasAudit: planConfig.hasAudit,
+        hasCommissions: planConfig.hasCommissions,
+        hasApiAccess: planConfig.hasApiAccess,
+      } : {
+        // Fallback: all features enabled if planConfig not found (safety net)
+        displayName: tenant.plan,
+        price: 0,
+        hasPdf: true, hasReports: true, hasKanban: true, hasFileUpload: true,
+        hasWhatsapp: true, hasPix: true, hasAudit: true, hasCommissions: true, hasApiAccess: true,
+      }),
+    };
   }
 }

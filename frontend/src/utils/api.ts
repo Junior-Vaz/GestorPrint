@@ -22,5 +22,12 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
     window.location.href = '/login'
   }
 
+  if (response.status === 403) {
+    response.clone().json().then((body: any) => {
+      const msg = body?.message || 'Funcionalidade não disponível no seu plano atual.'
+      window.dispatchEvent(new CustomEvent('plan:limit', { detail: msg }))
+    }).catch(() => {})
+  }
+
   return response
 }

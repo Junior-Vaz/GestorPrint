@@ -6,10 +6,11 @@ import { OrdersModule } from '../orders/orders.module';
 import { EstimatesModule } from '../estimates/estimates.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { FilesModule } from '../files/files.module';
+import { PlansModule } from '../plans/plans.module';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
-  imports: [ProductsModule, OrdersModule, EstimatesModule, PaymentsModule, FilesModule],
+  imports: [ProductsModule, OrdersModule, EstimatesModule, PaymentsModule, FilesModule, PlansModule],
   controllers: [McpController],
   providers: [McpService, PrismaService],
 })

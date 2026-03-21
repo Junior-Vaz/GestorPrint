@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import AppBoard from './components/AppBoard.vue'
 import EstimateCalculator from './views/EstimateCalculator.vue'
 import CustomersView from './views/CustomersView.vue'
@@ -20,9 +20,23 @@ import NotificationBell from '@/components/NotificationBell.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import { useAuthStore } from './stores/auth'
 import { useUiStore } from './stores/ui'
+import { usePlanStore } from './stores/plan'
 
 const auth = useAuthStore()
 const ui = useUiStore()
+const plan = usePlanStore()
+
+// Load plan data when the user authenticates
+watch(() => auth.isAuthenticated, (val) => {
+  if (val) plan.load()
+}, { immediate: true })
+
+// Receive 403 plan-limit errors dispatched by apiFetch
+function onPlanLimit(e: Event) {
+  plan.setLimitError((e as CustomEvent).detail)
+}
+onMounted(() => window.addEventListener('plan:limit', onPlanLimit))
+onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
 </script>
 
 <template>
@@ -54,12 +68,13 @@ const ui = useUiStore()
           Dashboard
         </button>
 
-        <button 
+        <button
           v-if="auth.isProduction"
-          @click="ui.setTab('board')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'board' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          @click="plan.hasKanban ? ui.setTab('board') : plan.setLimitError('Fila de Produção (Kanban) não está disponível no seu plano atual. Faça upgrade para acessar esta funcionalidade.')"
+          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'board' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasKanban ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
           Produção
+          <svg v-if="!plan.hasKanban" class="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
         </button>
 
         <button 
@@ -150,27 +165,30 @@ const ui = useUiStore()
           Gestão de Equipe
         </button>
 
-        <button 
+        <button
           v-if="auth.isAdmin"
-          @click="ui.setTab('reports')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          @click="plan.hasReports ? ui.setTab('reports') : plan.setLimitError('Relatórios & BI não está disponível no seu plano atual. Faça upgrade para acessar esta funcionalidade.')"
+          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasReports ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
           Relatórios & BI
+          <svg v-if="!plan.hasReports" class="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
         </button>
-        <button 
+        <button
           v-if="auth.isAdmin"
-          @click="ui.setTab('audit')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'audit' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          @click="plan.hasAudit ? ui.setTab('audit') : plan.setLimitError('Auditoria de Ações não está disponível no seu plano atual. Faça upgrade para acessar esta funcionalidade.')"
+          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'audit' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasAudit ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
           Auditoria
+          <svg v-if="!plan.hasAudit" class="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
         </button>
 
         <button
           v-if="auth.isAdmin"
-          @click="ui.setTab('ai')"
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          @click="plan.hasWhatsapp ? ui.setTab('ai') : plan.setLimitError('Agente de IA (WhatsApp) não está disponível no seu plano atual. Faça upgrade para acessar esta funcionalidade.')"
+          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasWhatsapp ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           Agente de IA
+          <svg v-if="!plan.hasWhatsapp" class="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
         </button>
 
         <!-- Logout Button -->
@@ -183,6 +201,41 @@ const ui = useUiStore()
           </button>
         </div>
       </nav>
+
+      <!-- Plan Usage Widget -->
+      <div v-if="plan.data" class="px-4 py-3 border-t border-slate-100">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-black text-slate-700 truncate">{{ plan.planName }}</span>
+          <span v-if="plan.isTrial" class="ml-1 shrink-0 text-[9px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">TRIAL</span>
+          <span v-else-if="plan.isSuspended" class="ml-1 shrink-0 text-[9px] font-black bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">SUSPENSO</span>
+        </div>
+        <div class="space-y-1.5">
+          <div>
+            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+              <span>Usuários</span><span>{{ plan.data.usersCount }}/{{ plan.data.maxUsers }}</span>
+            </div>
+            <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div :class="['h-full rounded-full transition-all', plan.usersPct >= 90 ? 'bg-red-400' : plan.usersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.usersPct}%`"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+              <span>Pedidos/mês</span><span>{{ plan.data.ordersThisMonth }}/{{ plan.data.maxOrders }}</span>
+            </div>
+            <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div :class="['h-full rounded-full transition-all', plan.ordersPct >= 90 ? 'bg-red-400' : plan.ordersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.ordersPct}%`"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+              <span>Clientes</span><span>{{ plan.data.customersCount }}/{{ plan.data.maxCustomers }}</span>
+            </div>
+            <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div :class="['h-full rounded-full transition-all', plan.customersPct >= 90 ? 'bg-red-400' : plan.customersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.customersPct}%`"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- User Profile Mini -->
       <div class="p-4 border-t border-slate-100 bg-slate-50/50">
@@ -221,6 +274,12 @@ const ui = useUiStore()
         </div>
       </header>
 
+      <!-- Suspended/Cancelled Banner -->
+      <div v-if="plan.isSuspended" class="bg-red-50 border-b border-red-200 px-4 md:px-8 py-2.5 flex items-center gap-3 shrink-0">
+        <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <p class="text-sm font-bold text-red-700">Conta suspensa ou cancelada. Entre em contato com o suporte para reativação.</p>
+      </div>
+
       <main class="flex-1 overflow-x-auto overflow-y-auto p-4 md:p-8 custom-scrollbar">
         <HomeView v-if="ui.currentTab === 'home'" />
         <AppBoard v-if="ui.currentTab === 'board'" />
@@ -242,6 +301,30 @@ const ui = useUiStore()
     </div>
 
   </div>
+
+  <!-- Plan Limit / Upgrade Modal -->
+  <Teleport to="body">
+    <div v-if="plan.limitError" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" @click.self="plan.clearLimitError()">
+      <div class="bg-white rounded-2xl p-8 max-w-sm mx-4 shadow-2xl text-center">
+        <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-black text-slate-900 mb-2">Recurso não disponível</h3>
+        <p class="text-sm text-slate-500 mb-6 leading-relaxed">{{ plan.limitError }}</p>
+        <div class="flex gap-3">
+          <button @click="plan.clearLimitError()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+            Fechar
+          </button>
+          <button @click="plan.clearLimitError()" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 transition-colors">
+            Fazer Upgrade
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
 </template>
 
 <style>

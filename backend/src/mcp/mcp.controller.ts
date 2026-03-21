@@ -1,11 +1,15 @@
 import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common';
 import { McpService } from './mcp.service';
+import { PlansService } from '../plans/plans.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
 
 @Controller('mcp')
 export class McpController {
-  constructor(private readonly mcpService: McpService) { }
+  constructor(
+    private readonly mcpService: McpService,
+    private readonly plansService: PlansService,
+  ) { }
 
   @Post('rpc')
   async handleRpc(@Body() body: any) {
@@ -73,6 +77,10 @@ export class McpController {
         };
 
       case 'tools/call':
+        // If the AI agent sends tenantId, enforce hasWhatsapp feature
+        if (body.tenantId) {
+          await this.plansService.requireFeature(body.tenantId, 'hasWhatsapp');
+        }
         return this.callTool(params.name, params.arguments);
 
       default:

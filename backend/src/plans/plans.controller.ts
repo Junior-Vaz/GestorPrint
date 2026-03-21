@@ -4,6 +4,7 @@ import {
 import { PlansService } from './plans.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
+import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
 
 @Controller('plans')
 export class PlansController {
@@ -12,6 +13,12 @@ export class PlansController {
   @Get()
   findAll() {
     return this.plansService.findAll();
+  }
+
+  // Returns the current tenant's plan features + usage — used by tenant frontend
+  @Get('my')
+  getMyPlan(@CurrentTenant() tenantId: number) {
+    return this.plansService.getMyPlan(tenantId);
   }
 
   @Get(':id')
