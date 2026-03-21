@@ -40,6 +40,7 @@ services:
       PORT: 3000
       ASAAS_API_KEY: ${ASAAS_API_KEY}
       ASAAS_ENV: ${ASAAS_ENV:-sandbox}
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN}
       API_URL: ${API_URL:-http://localhost:3000}
     ports:
       - "${BACKEND_PORT:-3000}:3000"

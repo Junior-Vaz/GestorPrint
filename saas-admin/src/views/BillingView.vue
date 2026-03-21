@@ -89,6 +89,7 @@
                 <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Nome</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Plano</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">CPF/CNPJ</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente Asaas</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Assinatura</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Ações</th>
@@ -107,6 +108,13 @@
                   <span :class="['px-3 py-1 rounded-full text-xs font-black inline-flex', STATUS_COLORS[t.planStatus] || 'bg-slate-100 text-slate-500']">{{ t.planStatus }}</span>
                 </td>
                 <td class="px-6 py-4">
+                  <span v-if="t.cpfCnpj" class="font-mono text-xs text-slate-700 bg-slate-100 px-2 py-1 rounded-lg">{{ t.cpfCnpj }}</span>
+                  <span v-else class="inline-flex items-center gap-1 text-xs text-amber-600 font-bold bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Pendente
+                  </span>
+                </td>
+                <td class="px-6 py-4">
                   <span v-if="t.asaasCustomerId" class="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded-lg">{{ t.asaasCustomerId }}</span>
                   <span v-else class="text-xs text-slate-400 italic">Não criado</span>
                 </td>
@@ -116,11 +124,15 @@
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex gap-1.5 flex-wrap">
-                    <button v-if="!t.asaasCustomerId" @click="createCustomer(t)"
-                      :disabled="!!loading[t.id]"
-                      class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
-                      {{ loading[t.id] === 'customer' ? '...' : 'Criar cliente' }}
-                    </button>
+                    <!-- Criar cliente: desabilitado sem CPF/CNPJ -->
+                    <div class="relative group/btn" v-if="!t.asaasCustomerId">
+                      <button
+                        @click="t.cpfCnpj ? createCustomer(t) : showAlert('warning', 'CPF/CNPJ obrigatório', 'Cadastre o CPF/CNPJ do responsável no módulo Tenants antes de criar o cliente no Asaas.')"
+                        :disabled="!!loading[t.id]"
+                        :class="['px-3 py-1.5 text-xs font-bold rounded-lg transition-colors', t.cpfCnpj ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-100 text-slate-400 cursor-pointer']">
+                        {{ loading[t.id] === 'customer' ? '...' : 'Criar cliente' }}
+                      </button>
+                    </div>
                     <button v-if="t.asaasCustomerId && t.plan !== 'FREE'" @click="openSubscriptionModal(t)"
                       class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors">
                       {{ t.asaasSubscriptionId ? 'Alterar' : 'Assinar' }}
@@ -138,7 +150,7 @@
                 </td>
               </tr>
               <tr v-if="tenants.length === 0 && !pageLoading">
-                <td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium italic">
+                <td colspan="7" class="px-6 py-12 text-center text-slate-400 font-medium italic">
                   Nenhum tenant encontrado.
                 </td>
               </tr>
@@ -200,7 +212,6 @@
           <div v-else class="space-y-3">
             <div v-for="inv in invoices" :key="inv.id"
               class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-              <!-- Status + Tipo + Valor -->
               <div class="flex items-start justify-between mb-3">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span :class="['px-2.5 py-1 rounded-full text-xs font-black', INVOICE_STATUS[inv.status] || 'bg-slate-100 text-slate-500']">
@@ -217,14 +228,12 @@
                   </p>
                 </div>
               </div>
-              <!-- Datas -->
               <div class="flex items-center justify-between text-xs text-slate-500 mb-3">
                 <span class="font-semibold">Vence: {{ inv.dueDate }}</span>
                 <span v-if="inv.paymentDate" class="text-emerald-600 font-bold">
                   Pago em: {{ inv.paymentDate }}
                 </span>
               </div>
-              <!-- Links -->
               <div class="flex gap-2">
                 <a v-if="inv.invoiceUrl" :href="inv.invoiceUrl" target="_blank"
                   class="flex-1 text-center py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-lg transition-colors border border-indigo-100">
@@ -240,17 +249,27 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de erro/aviso/sucesso -->
+    <AlertModal
+      :show="alert.show"
+      :type="alert.type"
+      :title="alert.title"
+      :message="alert.message"
+      @close="alert.show = false"
+    />
   </SidebarLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import SidebarLayout from '../components/SidebarLayout.vue'
+import AlertModal from '../components/AlertModal.vue'
 import { apiFetch } from '../utils/api'
 
 interface Tenant {
   id: number; name: string; plan: string; planStatus: string;
-  ownerEmail?: string; asaasCustomerId?: string; asaasSubscriptionId?: string;
+  ownerEmail?: string; cpfCnpj?: string; asaasCustomerId?: string; asaasSubscriptionId?: string;
 }
 
 const PLAN_BADGE: Record<string, string> = {
@@ -269,12 +288,11 @@ const INVOICE_STATUS: Record<string, string> = {
   REFUNDED:  'bg-slate-100 text-slate-500',
   CHARGEBACK_REQUESTED: 'bg-red-100 text-red-700',
 }
-
 const BILLING_TYPE_BADGE: Record<string, string> = {
-  PIX:    'bg-emerald-50 text-emerald-700 border border-emerald-100',
-  BOLETO: 'bg-blue-50 text-blue-700 border border-blue-100',
+  PIX:         'bg-emerald-50 text-emerald-700 border border-emerald-100',
+  BOLETO:      'bg-blue-50 text-blue-700 border border-blue-100',
   CREDIT_CARD: 'bg-purple-50 text-purple-700 border border-purple-100',
-  UNDEFINED: 'bg-slate-50 text-slate-500 border border-slate-100',
+  UNDEFINED:   'bg-slate-50 text-slate-500 border border-slate-100',
 }
 
 const config = ref<any>(null)
@@ -291,22 +309,53 @@ const invoicePanel = ref(false)
 const invoices = ref<any[]>([])
 const invoicesLoading = ref(false)
 
+// Alert modal state
+const alert = ref({ show: false, type: 'error' as 'error' | 'warning' | 'success', title: '', message: '' })
+const showAlert = (type: 'error' | 'warning' | 'success', title: string, message: string) => {
+  alert.value = { show: true, type, title, message }
+}
+
+const parseError = async (res: Response): Promise<string> => {
+  try {
+    const err = await res.json()
+    const msg = err?.message || err?.error || 'Erro desconhecido'
+    return Array.isArray(msg) ? msg.join(', ') : String(msg)
+  } catch {
+    return `Erro ${res.status}`
+  }
+}
+
 const fetchAll = async () => {
   pageLoading.value = true
-  const [cfgRes, tenantsRes] = await Promise.all([
-    apiFetch('/api/billing/config'),
-    apiFetch('/api/tenants'),
-  ])
-  if (cfgRes.ok) config.value = await cfgRes.json()
-  if (tenantsRes.ok) tenants.value = await tenantsRes.json()
-  pageLoading.value = false
+  try {
+    const [cfgRes, tenantsRes] = await Promise.all([
+      apiFetch('/api/billing/config'),
+      apiFetch('/api/tenants'),
+    ])
+    if (cfgRes.ok) config.value = await cfgRes.json()
+    if (tenantsRes.ok) tenants.value = await tenantsRes.json()
+  } catch {
+    showAlert('error', 'Erro de Conexão', 'Não foi possível conectar ao servidor. Verifique se o backend está online.')
+  } finally {
+    pageLoading.value = false
+  }
 }
 
 const createCustomer = async (t: Tenant) => {
   loading.value[t.id] = 'customer'
-  const res = await apiFetch(`/api/billing/customers/${t.id}`, { method: 'POST' })
-  loading.value[t.id] = false
-  if (res.ok) await fetchAll()
+  try {
+    const res = await apiFetch(`/api/billing/customers/${t.id}`, { method: 'POST' })
+    if (!res.ok) {
+      showAlert('error', 'Erro ao criar cliente', await parseError(res))
+    } else {
+      showAlert('success', 'Cliente criado!', `Cliente Asaas criado com sucesso para "${t.name}".`)
+      await fetchAll()
+    }
+  } catch {
+    showAlert('error', 'Erro de Conexão', 'Não foi possível criar o cliente no Asaas.')
+  } finally {
+    loading.value[t.id] = false
+  }
 }
 
 const openSubscriptionModal = (t: Tenant) => {
@@ -318,21 +367,42 @@ const openSubscriptionModal = (t: Tenant) => {
 const confirmSubscription = async () => {
   if (!selectedTenant.value || !selectedBillingType.value) return
   subscriptionLoading.value = true
-  const res = await apiFetch(`/api/billing/subscriptions/${selectedTenant.value.id}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ billingType: selectedBillingType.value }),
-  })
-  subscriptionLoading.value = false
-  if (res.ok) { subscriptionModal.value = false; await fetchAll() }
+  try {
+    const res = await apiFetch(`/api/billing/subscriptions/${selectedTenant.value.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ billingType: selectedBillingType.value }),
+    })
+    if (!res.ok) {
+      showAlert('error', 'Erro na Assinatura', await parseError(res))
+    } else {
+      subscriptionModal.value = false
+      showAlert('success', 'Assinatura ativada!', `Assinatura ${selectedBillingType.value} criada com sucesso.`)
+      await fetchAll()
+    }
+  } catch {
+    showAlert('error', 'Erro de Conexão', 'Não foi possível criar a assinatura no Asaas.')
+  } finally {
+    subscriptionLoading.value = false
+  }
 }
 
 const cancelSubscription = async (t: Tenant) => {
   if (!confirm(`Cancelar assinatura de "${t.name}"?`)) return
   loading.value[t.id] = 'cancel'
-  await apiFetch(`/api/billing/subscriptions/${t.id}`, { method: 'DELETE' })
-  loading.value[t.id] = false
-  await fetchAll()
+  try {
+    const res = await apiFetch(`/api/billing/subscriptions/${t.id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      showAlert('error', 'Erro ao Cancelar', await parseError(res))
+    } else {
+      showAlert('success', 'Assinatura cancelada', `A assinatura de "${t.name}" foi cancelada com sucesso.`)
+      await fetchAll()
+    }
+  } catch {
+    showAlert('error', 'Erro de Conexão', 'Não foi possível cancelar a assinatura.')
+  } finally {
+    loading.value[t.id] = false
+  }
 }
 
 const openInvoices = async (t: Tenant) => {
@@ -340,9 +410,20 @@ const openInvoices = async (t: Tenant) => {
   invoicePanel.value = true
   invoicesLoading.value = true
   invoices.value = []
-  const res = await apiFetch(`/api/billing/invoices/${t.id}`)
-  invoicesLoading.value = false
-  if (res.ok) invoices.value = await res.json()
+  try {
+    const res = await apiFetch(`/api/billing/invoices/${t.id}`)
+    if (res.ok) {
+      invoices.value = await res.json()
+    } else {
+      showAlert('error', 'Erro ao carregar faturas', await parseError(res))
+      invoicePanel.value = false
+    }
+  } catch {
+    showAlert('error', 'Erro de Conexão', 'Não foi possível carregar as faturas.')
+    invoicePanel.value = false
+  } finally {
+    invoicesLoading.value = false
+  }
 }
 
 const copyWebhookUrl = () => {

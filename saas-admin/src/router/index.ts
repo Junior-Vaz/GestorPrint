@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import TenantsView from '../views/TenantsView.vue'
 import BillingView from '../views/BillingView.vue'
+import SettingsView from '../views/SettingsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -11,6 +12,7 @@ const router = createRouter({
     { path: '/dashboard', name: 'dashboard', component: DashboardView },
     { path: '/tenants', name: 'tenants', component: TenantsView },
     { path: '/billing', name: 'billing', component: BillingView },
+    { path: '/settings', name: 'settings', component: SettingsView },
     { path: '/', redirect: '/dashboard' },
     { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
   ],

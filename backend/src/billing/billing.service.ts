@@ -1,5 +1,5 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import axios from 'axios';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import axios, { AxiosError } from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 
 const PLAN_VALUES: Record<string, number> = {
@@ -11,6 +11,8 @@ const PLAN_VALUES: Record<string, number> = {
 
 @Injectable()
 export class BillingService {
+  private readonly logger = new Logger(BillingService.name);
+
   private readonly baseUrl =
     process.env.ASAAS_ENV === 'production'
       ? 'https://api.asaas.com/v3'
@@ -24,16 +26,30 @@ export class BillingService {
     const apiKey = process.env.ASAAS_API_KEY;
     if (!apiKey) throw new BadRequestException('ASAAS_API_KEY não configurada');
 
-    const res = await axios({
-      method,
-      url: `${this.baseUrl}${path}`,
-      data,
-      headers: {
-        access_token: apiKey,
-        'Content-Type': 'application/json',
-      },
-    });
-    return res.data;
+    try {
+      const res = await axios({
+        method,
+        url: `${this.baseUrl}${path}`,
+        data,
+        headers: {
+          access_token: apiKey,
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000,
+      });
+      return res.data;
+    } catch (err) {
+      const axiosErr = err as AxiosError<any>;
+      const apiErrors = axiosErr.response?.data?.errors;
+      if (apiErrors?.length) {
+        const messages = apiErrors.map((e: any) => e.description || e.code).join(', ');
+        this.logger.error(`Asaas API error [${method} ${path}]: ${messages}`);
+        throw new BadRequestException(`Asaas: ${messages}`);
+      }
+      const fallback = axiosErr.response?.data?.message || axiosErr.message || 'Erro na API Asaas';
+      this.logger.error(`Asaas request failed [${method} ${path}]: ${fallback}`);
+      throw new BadRequestException(fallback);
+    }
   }
 
   // ─── Config status ──────────────────────────────────────────────────────────
@@ -43,6 +59,20 @@ export class BillingService {
       configured: !!process.env.ASAAS_API_KEY,
       env: process.env.ASAAS_ENV || 'sandbox',
       webhookUrl: `${process.env.API_URL || 'https://api.gestorprint.com.br'}/api/billing/webhooks`,
+    };
+  }
+
+  getPlatformSettings() {
+    const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN || '';
+    const smtpHost = process.env.SMTP_HOST || '';
+    return {
+      asaasConfigured: !!process.env.ASAAS_API_KEY,
+      asaasEnv: process.env.ASAAS_ENV || 'sandbox',
+      webhookUrl: `${process.env.API_URL || 'https://api.gestorprint.com.br'}/api/billing/webhooks`,
+      webhookTokenConfigured: !!webhookToken,
+      webhookTokenMask: webhookToken ? `${webhookToken.slice(0, 8)}${'*'.repeat(8)}` : '',
+      smtpConfigured: !!smtpHost,
+      smtpHost: smtpHost || '',
     };
   }
 
@@ -67,6 +97,7 @@ export class BillingService {
       email: tenant.ownerEmail || undefined,
       mobilePhone: tenant.ownerPhone || undefined,
       externalReference: String(tenantId),
+      notificationDisabled: false,
     });
 
     await (this.prisma as any).tenant.update({
@@ -74,6 +105,7 @@ export class BillingService {
       data: { asaasCustomerId: result.id },
     });
 
+    this.logger.log(`Asaas customer created for tenant ${tenantId}: ${result.id}`);
     return { asaasCustomerId: result.id };
   }
 
@@ -96,7 +128,11 @@ export class BillingService {
 
     // Se já tem assinatura, cancela antes de criar nova
     if (tenant.asaasSubscriptionId) {
-      await this.asaas('DELETE', `/subscriptions/${tenant.asaasSubscriptionId}`).catch(() => null);
+      try {
+        await this.asaas('DELETE', `/subscriptions/${tenant.asaasSubscriptionId}`);
+      } catch (err) {
+        this.logger.warn(`Could not delete old subscription ${tenant.asaasSubscriptionId}: ${err}`);
+      }
     }
 
     const result = await this.asaas('POST', '/subscriptions', {
@@ -113,9 +149,10 @@ export class BillingService {
 
     await (this.prisma as any).tenant.update({
       where: { id: tenantId },
-      data: { asaasSubscriptionId: result.id },
+      data: { asaasSubscriptionId: result.id, planStatus: 'ACTIVE', isActive: true },
     });
 
+    this.logger.log(`Asaas subscription created for tenant ${tenantId}: ${result.id}`);
     return { asaasSubscriptionId: result.id };
   }
 
@@ -130,6 +167,8 @@ export class BillingService {
       where: { id: tenantId },
       data: { asaasSubscriptionId: null, planStatus: 'CANCELLED', isActive: false },
     });
+
+    this.logger.log(`Asaas subscription cancelled for tenant ${tenantId}`);
   }
 
   // ─── Invoices ───────────────────────────────────────────────────────────────
@@ -149,21 +188,26 @@ export class BillingService {
     const event: string = payload?.event;
     const customerId: string = payload?.payment?.customer;
 
+    this.logger.log(`Webhook received: event=${event}, customer=${customerId}`);
+
     if (!customerId) return;
 
     const tenant = await (this.prisma as any).tenant.findFirst({
       where: { asaasCustomerId: customerId },
     });
-    if (!tenant) return;
+    if (!tenant) {
+      this.logger.warn(`Webhook: no tenant found for Asaas customer ${customerId}`);
+      return;
+    }
 
     const statusMap: Record<string, { planStatus: string; isActive: boolean }> = {
-      PAYMENT_CONFIRMED:   { planStatus: 'ACTIVE',     isActive: true  },
-      PAYMENT_RECEIVED:    { planStatus: 'ACTIVE',     isActive: true  },
-      PAYMENT_OVERDUE:     { planStatus: 'SUSPENDED',  isActive: false },
-      PAYMENT_DELETED:     { planStatus: 'CANCELLED',  isActive: false },
-      PAYMENT_REFUNDED:    { planStatus: 'SUSPENDED',  isActive: false },
-      PAYMENT_CHARGEBACK_REQUESTED: { planStatus: 'SUSPENDED', isActive: false },
-      SUBSCRIPTION_INACTIVATED:     { planStatus: 'CANCELLED', isActive: false },
+      PAYMENT_CONFIRMED:              { planStatus: 'ACTIVE',     isActive: true  },
+      PAYMENT_RECEIVED:               { planStatus: 'ACTIVE',     isActive: true  },
+      PAYMENT_OVERDUE:                { planStatus: 'SUSPENDED',  isActive: false },
+      PAYMENT_DELETED:                { planStatus: 'CANCELLED',  isActive: false },
+      PAYMENT_REFUNDED:               { planStatus: 'SUSPENDED',  isActive: false },
+      PAYMENT_CHARGEBACK_REQUESTED:   { planStatus: 'SUSPENDED',  isActive: false },
+      SUBSCRIPTION_INACTIVATED:       { planStatus: 'CANCELLED',  isActive: false },
     };
 
     const update = statusMap[event];
@@ -172,9 +216,10 @@ export class BillingService {
         where: { id: tenant.id },
         data: update,
       });
+      this.logger.log(`Tenant ${tenant.id} updated to ${update.planStatus} via webhook event ${event}`);
     }
-    // Eventos informativos — sem ação de estado, apenas log implícito
-    // PAYMENT_CREATED, PAYMENT_UPDATED, PAYMENT_DUEDATE_WARNING → ignorados sem erro
+    // Eventos informativos — sem ação de estado
+    // PAYMENT_CREATED, PAYMENT_UPDATED, PAYMENT_DUEDATE_WARNING, PAYMENT_ANTICIPATED → apenas log
   }
 
   // ─── Subscription status ────────────────────────────────────────────────────

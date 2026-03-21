@@ -256,12 +256,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de erro/aviso/sucesso -->
+    <AlertModal
+      :show="alert.show"
+      :type="alert.type"
+      :title="alert.title"
+      :message="alert.message"
+      @close="alert.show = false"
+    />
   </SidebarLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import SidebarLayout from '../components/SidebarLayout.vue'
+import AlertModal from '../components/AlertModal.vue'
 import { apiFetch } from '../utils/api'
 
 interface Tenant {
@@ -297,6 +307,17 @@ const STATUS_FILTERS = [
 
 const tenants = ref<Tenant[]>([])
 const loading = ref(false)
+const alert = ref({ show: false, type: 'error' as 'error' | 'warning' | 'success', title: '', message: '' })
+const showAlert = (type: 'error' | 'warning' | 'success', title: string, message: string) => {
+  alert.value = { show: true, type, title, message }
+}
+const parseError = async (res: Response): Promise<string> => {
+  try {
+    const err = await res.json()
+    const msg = err?.message || err?.error || 'Erro desconhecido'
+    return Array.isArray(msg) ? msg.join(', ') : String(msg)
+  } catch { return `Erro ${res.status}` }
+}
 const searchQuery = ref('')
 const statusFilter = ref('')
 const showModal = ref(false)
@@ -373,22 +394,38 @@ const save = async () => {
   if (!payload.trialEndsAt) payload.trialEndsAt = null
   if (!payload.planExpiresAt) payload.planExpiresAt = null
   const url = isEditing.value ? `/api/tenants/${editingId.value}` : '/api/tenants'
-  const res = await apiFetch(url, {
-    method: isEditing.value ? 'PATCH' : 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  saving.value = false
-  if (res.ok) { showModal.value = false; await fetchTenants() }
+  try {
+    const res = await apiFetch(url, {
+      method: isEditing.value ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (res.ok) {
+      showModal.value = false
+      await fetchTenants()
+    } else {
+      showAlert('error', isEditing.value ? 'Erro ao salvar' : 'Erro ao criar tenant', await parseError(res))
+    }
+  } catch {
+    showAlert('error', 'Erro de Conexão', 'Não foi possível salvar o tenant.')
+  } finally {
+    saving.value = false
+  }
 }
 
 const suspend = async (id: number) => {
-  await apiFetch(`/api/tenants/${id}/suspend`, { method: 'PATCH' })
-  await fetchTenants()
+  try {
+    const res = await apiFetch(`/api/tenants/${id}/suspend`, { method: 'PATCH' })
+    if (res.ok) { await fetchTenants() }
+    else { showAlert('error', 'Erro ao suspender', await parseError(res)) }
+  } catch { showAlert('error', 'Erro de Conexão', 'Não foi possível suspender o tenant.') }
 }
 const activate = async (id: number) => {
-  await apiFetch(`/api/tenants/${id}/activate`, { method: 'PATCH' })
-  await fetchTenants()
+  try {
+    const res = await apiFetch(`/api/tenants/${id}/activate`, { method: 'PATCH' })
+    if (res.ok) { await fetchTenants() }
+    else { showAlert('error', 'Erro ao ativar', await parseError(res)) }
+  } catch { showAlert('error', 'Erro de Conexão', 'Não foi possível ativar o tenant.') }
 }
 
 onMounted(fetchTenants)
