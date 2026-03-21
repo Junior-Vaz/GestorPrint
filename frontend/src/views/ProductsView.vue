@@ -154,24 +154,31 @@ onMounted(fetchAll)
 </script>
 
 <template>
-  <div class="flex flex-col space-y-6 h-full">
-
+  <div class="p-6 max-w-7xl mx-auto space-y-6">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl shadow-slate-200/50">
       <div>
-        <h2 class="text-3xl font-black text-slate-900 tracking-tight">Insumos & Serviços</h2>
-        <p class="text-slate-500 font-medium">Gerencie papéis, acabamentos, tintas e serviços com categorias personalizadas.</p>
+        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+          <div class="p-2 bg-violet-500 rounded-xl text-white shadow-lg shadow-violet-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          Insumos & Serviços
+        </h1>
+        <p class="text-slate-500 mt-1 font-medium italic">Gerencie papéis, acabamentos, tintas e serviços com categorias personalizadas</p>
       </div>
+
       <div class="flex items-center gap-3 flex-wrap">
         <div v-if="lowStockCount > 0" class="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-black animate-pulse">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
           {{ lowStockCount }} Estoque Baixo
         </div>
-        <button @click="openTypeModal()" class="px-5 py-2.5 border border-slate-200 text-slate-600 font-black rounded-2xl hover:bg-slate-50 transition-all text-sm flex items-center gap-2">
+        <button @click="openTypeModal()" class="flex items-center gap-2 px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z"></path></svg>
           Gerenciar Tipos
         </button>
-        <button @click="openProductModal()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-indigo-200 text-sm flex items-center gap-2 active:scale-95">
+        <button @click="openProductModal()" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-100 active:scale-95">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           Novo Insumo
         </button>
@@ -198,7 +205,7 @@ onMounted(fetchAll)
     </div>
 
     <!-- Products Table -->
-    <div class="flex-1 bg-white rounded-[28px] border border-slate-200 shadow-sm overflow-hidden">
+    <div class="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl shadow-slate-200/60 overflow-hidden">
       <div v-if="loading" class="flex items-center justify-center p-20">
         <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
@@ -215,16 +222,16 @@ onMounted(fetchAll)
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-slate-50/80 border-b border-slate-100">
-              <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Insumo</th>
-              <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
-              <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estoque</th>
-              <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Preço Base</th>
-              <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Margem de Lucro</th>
-              <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Insumo</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Tipo</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Estoque</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Preço Base</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Margem</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider text-right">Ações</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="product in filteredProducts" :key="product.id" class="hover:bg-slate-50/50 transition-colors group">
+          <tbody class="divide-y divide-slate-50">
+            <tr v-for="product in filteredProducts" :key="product.id" class="hover:bg-indigo-50/30 transition-colors group">
               <td class="px-6 py-4">
                 <div class="font-black text-slate-800">{{ product.name }}</div>
                 <div class="text-[10px] text-slate-400 mt-0.5">
@@ -234,7 +241,7 @@ onMounted(fetchAll)
               </td>
               <td class="px-6 py-4">
                 <span
-                  class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-white"
+                  class="px-3 py-1 text-xs font-black rounded-lg inline-flex text-white"
                   :style="{ backgroundColor: product.productType.color }"
                 >
                   {{ product.productType.name }}
@@ -287,104 +294,101 @@ onMounted(fetchAll)
     </div>
 
     <!-- Product Modal -->
-    <div v-if="showProductModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-[32px] shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 class="font-black text-xl text-slate-800">{{ isEditing ? 'Editar Insumo' : 'Novo Insumo' }}</h3>
-          <button @click="showProductModal = false" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-all">
+    <div v-if="showProductModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div class="bg-white rounded-3xl p-8 shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="font-extrabold text-xl text-slate-800">{{ isEditing ? 'Editar Insumo' : 'Novo Insumo' }}</h3>
+          <button @click="showProductModal = false" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
-        <form @submit.prevent="saveProduct">
-          <div class="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+        <form @submit.prevent="saveProduct" class="space-y-4">
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Nome *</label>
+            <input v-model="form.name" required type="text" placeholder="Ex: Couchê 300g Brilho" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+          </div>
 
-            <!-- Name + Type -->
+          <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Nome *</label>
-              <input v-model="form.name" required type="text" placeholder="Ex: Couchê 300g Brilho" class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm font-bold">
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Categoria *</label>
+              <select v-model.number="form.typeId" required class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                <option v-for="t in productTypes" :key="t.id" :value="t.id">{{ t.name }}</option>
+              </select>
             </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Categoria *</label>
-                <select v-model.number="form.typeId" required class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 outline-none bg-white text-sm font-bold">
-                  <option v-for="t in productTypes" :key="t.id" :value="t.id">{{ t.name }}</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Unidade</label>
-                <select v-model="form.unit" class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 outline-none bg-white text-sm font-bold">
-                  <option value="un">Unidade (un)</option>
-                  <option value="m²">Metro² (m²)</option>
-                  <option value="kg">Quilograma (kg)</option>
-                  <option value="h">Hora (h)</option>
-                  <option value="l">Litro (l)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Preço Base (R$) *</label>
-                <input v-model.number="form.unitPrice" required type="number" step="0.01" class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm font-bold">
-              </div>
-              <div>
-                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Margem de Lucro (%)</label>
-                <input v-model.number="form.markup" type="number" step="1" placeholder="0" class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-sm font-bold">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Estoque Atual</label>
-                <input v-model.number="form.stock" type="number" step="0.1" class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 outline-none transition-all text-sm font-bold">
-              </div>
-              <div>
-                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Estoque Mínimo</label>
-                <input v-model.number="form.minStock" type="number" step="0.1" class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 outline-none transition-all text-sm font-bold">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Marca / Fabricante</label>
-                <input v-model="form.brand" type="text" placeholder="Ex: Suzano, IP..." class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 outline-none transition-all text-sm font-bold">
-              </div>
-              <div>
-                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Fornecedor</label>
-                <select v-model.number="form.supplierId" class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 outline-none bg-white text-sm font-bold">
-                  <option :value="null">Nenhum</option>
-                  <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
-                </select>
-              </div>
-            </div>
-
             <div>
-              <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Descrição</label>
-              <textarea v-model="form.description" rows="2" placeholder="Observações adicionais..." class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-indigo-500 outline-none transition-all text-sm font-bold resize-none"></textarea>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Unidade</label>
+              <select v-model="form.unit" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                <option value="un">Unidade (un)</option>
+                <option value="m²">Metro² (m²)</option>
+                <option value="kg">Quilograma (kg)</option>
+                <option value="h">Hora (h)</option>
+                <option value="l">Litro (l)</option>
+              </select>
             </div>
           </div>
-          <div class="p-5 border-t border-slate-100 flex gap-3">
-            <button type="button" @click="showProductModal = false" class="flex-1 py-3 border border-slate-200 text-slate-600 font-black rounded-2xl hover:bg-slate-50 transition-all text-sm">Cancelar</button>
-            <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-500 transition-all shadow-sm text-sm">{{ isEditing ? 'Atualizar' : 'Salvar' }}</button>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Preço Base (R$) *</label>
+              <input v-model.number="form.unitPrice" required type="number" step="0.01" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Margem de Lucro (%)</label>
+              <input v-model.number="form.markup" type="number" step="1" placeholder="0" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Estoque Atual</label>
+              <input v-model.number="form.stock" type="number" step="0.1" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Estoque Mínimo</label>
+              <input v-model.number="form.minStock" type="number" step="0.1" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Marca / Fabricante</label>
+              <input v-model="form.brand" type="text" placeholder="Ex: Suzano, IP..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Fornecedor</label>
+              <select v-model.number="form.supplierId" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                <option :value="null">Nenhum</option>
+                <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Descrição</label>
+            <textarea v-model="form.description" rows="2" placeholder="Observações adicionais..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"></textarea>
+          </div>
+
+          <div class="flex gap-3 pt-2 border-t border-slate-100">
+            <button type="button" @click="showProductModal = false" class="flex-1 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm">Cancelar</button>
+            <button type="submit" class="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95 text-sm">{{ isEditing ? 'Atualizar' : 'Salvar' }}</button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- Type Manager Modal -->
-    <div v-if="showTypeModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 class="font-black text-xl text-slate-800">Categorias de Insumo</h3>
-          <button @click="showTypeModal = false" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-all">
+    <div v-if="showTypeModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div class="bg-white rounded-3xl p-8 shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="font-extrabold text-xl text-slate-800">Categorias de Insumo</h3>
+          <button @click="showTypeModal = false" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
 
         <!-- Existing types list -->
-        <div class="p-4 space-y-2 max-h-[40vh] overflow-y-auto">
-          <div v-for="type in productTypes" :key="type.id" class="flex items-center justify-between px-4 py-3 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all group">
+        <div class="space-y-2 max-h-[40vh] overflow-y-auto mb-6">
+          <div v-for="type in productTypes" :key="type.id" class="flex items-center justify-between px-4 py-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-all group">
             <div class="flex items-center gap-3">
               <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: type.color }"></span>
               <div>
@@ -403,23 +407,22 @@ onMounted(fetchAll)
           </div>
         </div>
 
-        <!-- Add new type form -->
-        <div class="p-5 border-t border-slate-100 bg-slate-50/50">
+        <!-- Add/Edit new type form -->
+        <div class="border-t border-slate-100 pt-4">
           <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{{ editingTypeId ? 'Editar Tipo' : 'Novo Tipo' }}</p>
           <div class="flex gap-3 mb-3">
-            <input v-model="typeForm.name" type="text" placeholder="Nome do tipo..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none text-sm font-bold">
+            <input v-model="typeForm.name" type="text" placeholder="Nome do tipo..." class="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
             <input v-model="typeForm.color" type="color" class="w-12 h-10 rounded-xl border border-slate-200 cursor-pointer p-1">
           </div>
           <label class="flex items-center gap-2 text-sm font-bold text-slate-600 mb-3 cursor-pointer">
             <input v-model="typeForm.hasStock" type="checkbox" class="w-4 h-4 rounded">
             Controla estoque físico
           </label>
-          <button @click="saveType" class="w-full py-2.5 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-500 transition-all text-sm">
+          <button @click="saveType" class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95 text-sm">
             {{ editingTypeId ? 'Atualizar Tipo' : 'Criar Tipo' }}
           </button>
         </div>
       </div>
     </div>
-
   </div>
 </template>

@@ -80,7 +80,7 @@ const sendViaWhatsApp = async (est: Estimate) => {
 
     const phone = est.customer.phone?.replace(/\D/g, '') || ''
     window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`, '_blank')
-    
+
     // Refresh to show status update if conversion happened
     fetchEstimates()
   } catch (e) {
@@ -93,49 +93,71 @@ onMounted(fetchEstimates)
 </script>
 
 <template>
-  <div class="h-full flex flex-col space-y-6">
-    <div class="flex justify-between items-center">
+  <div class="p-6 max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl shadow-slate-200/50">
       <div>
-        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Histórico de Orçamentos</h2>
-        <p class="text-slate-500 text-sm">Gerencie orçamentos salvos e acompanhe status de aprovação.</p>
+        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+          <div class="p-2 bg-blue-500 rounded-xl text-white shadow-lg shadow-blue-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          Histórico de Orçamentos
+        </h1>
+        <p class="text-slate-500 mt-1 font-medium italic">Gerencie orçamentos salvos e acompanhe status de aprovação</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button
+          @click="fetchEstimates"
+          class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-100 active:scale-95"
+          :disabled="loading"
+        >
+          <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <div v-else class="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          Atualizar
+        </button>
       </div>
     </div>
 
-    <!-- Stats Summary (Quick Peek) -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg p-5">
         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Salvos</div>
         <div class="text-2xl font-black text-slate-800">{{ estimates.length }}</div>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg p-5">
         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Aprovados</div>
         <div class="text-2xl font-black text-emerald-500">{{ estimates.filter(e => e.status === 'APPROVED').length }}</div>
       </div>
     </div>
 
     <!-- Table Card -->
-    <div class="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-      <div v-if="loading" class="flex-1 flex items-center justify-center">
+    <div class="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl shadow-slate-200/60 overflow-hidden">
+      <div v-if="loading" class="flex items-center justify-center p-20">
         <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
 
       <div v-else class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 border-b border-slate-100">
-              <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Ref / Cliente</th>
-              <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Produto</th>
-              <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Valor</th>
-              <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Ações</th>
+            <tr class="bg-slate-50/80 border-b border-slate-100">
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Ref / Cliente</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Produto</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Valor</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider text-right">Ações</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="est in estimates" :key="est.id" class="hover:bg-slate-50/50 transition-colors group">
+          <tbody class="divide-y divide-slate-50">
+            <tr v-for="est in estimates" :key="est.id" class="hover:bg-indigo-50/30 transition-colors group">
               <td class="px-6 py-4">
                 <div class="flex items-center gap-2 mb-0.5">
                   <div class="text-[10px] font-mono font-bold text-slate-400">#ORC-{{ est.id }}</div>
-                  <div v-if="est.salesperson" class="flex items-center gap-1 bg-blue-50 text-blue-600 px-1.5 py-[1px] rounded text-[8px] font-bold" title="Vendedor">
+                  <div v-if="est.salesperson" class="flex items-center gap-1 bg-blue-50 text-blue-600 px-1.5 py-px rounded text-[8px] font-bold" title="Vendedor">
                     <svg class="w-2.5 h-2.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                     {{ est.salesperson.name.split(' ')[0] }}
                   </div>
@@ -147,7 +169,7 @@ onMounted(fetchEstimates)
                 <div class="text-[10px] text-slate-400">{{ est.details.quantity }} unidades • {{ est.details.width }}x{{ est.details.height }}cm</div>
               </td>
               <td class="px-6 py-4">
-                <span :class="['px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider', 
+                <span :class="['px-3 py-1 text-xs font-black rounded-lg inline-flex',
                   est.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600']">
                   {{ est.status === 'APPROVED' ? 'Aprovado' : 'Pendente' }}
                 </span>
@@ -174,6 +196,11 @@ onMounted(fetchEstimates)
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                   </button>
                 </div>
+              </td>
+            </tr>
+            <tr v-if="estimates.length === 0 && !loading">
+              <td colspan="5" class="px-6 py-12 text-center text-slate-400 font-medium italic">
+                Nenhum orçamento encontrado.
               </td>
             </tr>
           </tbody>

@@ -115,8 +115,8 @@ const openModal = (expense: Expense | null = null) => {
 
 const saveExpense = async () => {
   const method = editingExpense.value ? 'PATCH' : 'POST'
-  const url = editingExpense.value 
-    ? `/api/expenses/${editingExpense.value.id}` 
+  const url = editingExpense.value
+    ? `/api/expenses/${editingExpense.value.id}`
     : '/api/expenses'
 
   try {
@@ -156,166 +156,178 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="space-y-8 animate-in fade-in duration-500">
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <div class="p-6 max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl shadow-slate-200/50">
       <div>
-        <h2 class="text-3xl font-black text-slate-900 tracking-tight">Gestão de Despesas</h2>
-        <p class="text-slate-500 font-medium">Controle seus custos fixos e variáveis.</p>
+        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+          <div class="p-2 bg-rose-500 rounded-xl text-white shadow-lg shadow-rose-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          Gestão de Despesas
+        </h1>
+        <p class="text-slate-500 mt-1 font-medium italic">Controle seus custos fixos e variáveis</p>
       </div>
-      
-      <div class="flex items-center gap-4">
-        <button 
+
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="bg-rose-50 px-5 py-2.5 rounded-xl border border-rose-100">
+          <span class="block text-[10px] font-black text-rose-400 uppercase tracking-widest leading-none mb-1">Total em Despesas</span>
+          <span class="text-lg font-black text-rose-600">R$ {{ totalExpenses.toFixed(2) }}</span>
+        </div>
+        <button
           @click="exportCsv"
-          class="px-6 py-3 bg-white border border-slate-200 text-indigo-600 font-black rounded-2xl hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2"
+          class="flex items-center gap-2 px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
           Exportar CSV
         </button>
-        <button 
+        <button
           @click="showCategoryModal = true"
-          class="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-black rounded-2xl hover:bg-slate-50 transition-all shadow-sm"
+          class="flex items-center gap-2 px-5 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
         >
           Categorias
         </button>
-        <div class="bg-red-50 px-6 py-3 rounded-2xl border border-red-100">
-          <span class="block text-[10px] font-black text-red-400 uppercase tracking-widest leading-none mb-1">Total em Despesas</span>
-          <span class="text-xl font-black text-red-600">R$ {{ totalExpenses.toFixed(2) }}</span>
-        </div>
-        <button 
+        <button
           @click="openModal()"
-          class="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-6 py-3 rounded-2xl shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+          class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-100 active:scale-95"
         >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
           Nova Despesa
         </button>
       </div>
-    </header>
-
-    <!-- Expenses Table -->
-    <div class="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
-      <table class="w-full text-left">
-        <thead>
-          <tr class="bg-slate-50/50 border-b border-slate-100">
-            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
-            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
-            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoria</th>
-            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
-            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50">
-          <tr v-if="loading">
-            <td colspan="5" class="px-8 py-12 text-center text-slate-400 font-medium italic">Carregando despesas...</td>
-          </tr>
-          <tr v-else-if="expenses.length === 0">
-            <td colspan="5" class="px-8 py-12 text-center text-slate-400 font-medium italic">Nenhuma despesa registrada.</td>
-          </tr>
-          <tr v-for="expense in expenses" :key="expense.id" class="hover:bg-slate-50/50 transition-colors group">
-            <td class="px-8 py-5">
-              <span class="text-xs font-bold text-slate-500">{{ new Date(expense.date).toLocaleDateString() }}</span>
-            </td>
-            <td class="px-8 py-5">
-              <span class="text-sm font-black text-slate-800">{{ expense.description }}</span>
-            </td>
-            <td class="px-8 py-5">
-              <span class="px-3 py-1 bg-slate-100 text-[10px] font-black text-slate-500 rounded-lg uppercase tracking-widest">
-                {{ expense.category }}
-              </span>
-            </td>
-            <td class="px-8 py-5">
-              <span class="text-sm font-black text-red-600">R$ {{ expense.amount.toFixed(2) }}</span>
-            </td>
-            <td class="px-8 py-5 text-right">
-              <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button @click="openModal(expense)" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </button>
-                <button @click="deleteExpense(expense.id)" class="p-2 text-slate-400 hover:text-red-600 transition-colors">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
     </div>
 
-    <!-- Modal -->
-    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showModal = false"></div>
-      <div class="bg-white w-full max-w-lg rounded-[40px] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-        <header class="p-8 border-b border-slate-100">
-          <h3 class="text-2xl font-black text-slate-900 leading-tight">
+    <!-- Expenses Table -->
+    <div class="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl shadow-slate-200/60 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50/80 border-b border-slate-100">
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Data</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Descrição</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Categoria</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider">Valor</th>
+              <th class="px-6 py-5 text-sm font-bold text-slate-400 uppercase tracking-wider text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            <tr v-if="loading">
+              <td colspan="5" class="px-6 py-12 text-center text-slate-400 font-medium italic">Carregando despesas...</td>
+            </tr>
+            <tr v-else-if="expenses.length === 0">
+              <td colspan="5" class="px-6 py-12 text-center text-slate-400 font-medium italic">Nenhuma despesa registrada.</td>
+            </tr>
+            <tr v-for="expense in expenses" :key="expense.id" class="hover:bg-indigo-50/30 transition-colors group">
+              <td class="px-6 py-4">
+                <span class="text-xs font-bold text-slate-500">{{ new Date(expense.date).toLocaleDateString() }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-sm font-black text-slate-800">{{ expense.description }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="px-3 py-1 text-xs font-black rounded-lg inline-flex bg-slate-100 text-slate-500 uppercase tracking-widest">
+                  {{ expense.category }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-sm font-black text-red-600">R$ {{ expense.amount.toFixed(2) }}</span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button @click="openModal(expense)" class="text-slate-400 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 rounded-md transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                  </button>
+                  <button @click="deleteExpense(expense.id)" class="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-md transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div v-if="showModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div class="bg-white rounded-3xl p-8 shadow-2xl max-w-lg w-full mx-4">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="font-extrabold text-xl text-slate-800">
             {{ editingExpense ? 'Editar Despesa' : 'Nova Despesa' }}
           </h3>
-          <p class="text-slate-500 text-sm font-medium">Preencha os dados da movimentação financeira.</p>
-        </header>
+          <button @click="showModal = false" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
 
-        <form @submit.prevent="saveExpense" class="p-8 space-y-6">
-          <div class="space-y-2">
-            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Descrição</label>
-            <input 
+        <form @submit.prevent="saveExpense" class="space-y-4">
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Descrição</label>
+            <input
               v-model="form.description"
-              type="text" 
+              type="text"
               required
               placeholder="Ex: Aluguel de Março"
-              class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
             />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Valor (R$)</label>
-              <input 
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Valor (R$)</label>
+              <input
                 v-model.number="form.amount"
-                type="number" 
+                type="number"
                 step="0.01"
                 required
-                class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
               />
             </div>
-            <div class="space-y-2">
-              <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Data</label>
-              <input 
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Data</label>
+              <input
                 v-model="form.date"
-                type="date" 
+                type="date"
                 required
-                class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
               />
             </div>
           </div>
 
-          <div class="space-y-2">
-            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Categoria</label>
-            <select 
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Categoria</label>
+            <select
               v-model="form.category"
-              class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+              class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm appearance-none cursor-pointer"
             >
               <option v-for="cat in categories" :key="cat.id" :value="cat.name">{{ cat.name }}</option>
             </select>
           </div>
 
-          <div class="space-y-2">
-            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Fornecedor (Opcional)</label>
-            <select 
+          <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5">Fornecedor (Opcional)</label>
+            <select
               v-model="form.supplierId"
-              class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+              class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm appearance-none cursor-pointer"
             >
               <option :value="null">Nenhum</option>
               <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name }}</option>
             </select>
           </div>
 
-          <div class="flex gap-4 pt-4">
-            <button 
+          <div class="flex gap-3 pt-2 border-t border-slate-100">
+            <button
               type="button"
               @click="showModal = false"
-              class="flex-1 px-6 py-4 border border-slate-100 text-slate-500 font-black rounded-2xl hover:bg-slate-50 transition-all"
+              class="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm"
             >
               Cancelar
             </button>
-            <button 
+            <button
               type="submit"
-              class="flex-1 px-6 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all active:scale-95"
+              class="flex-1 px-4 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95 text-sm"
             >
               Salvar Registro
             </button>
@@ -325,40 +337,39 @@ onMounted(async () => {
     </div>
 
     <!-- Category Management Modal -->
-    <div v-if="showCategoryModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showCategoryModal = false"></div>
-      <div class="bg-white w-full max-w-md rounded-[40px] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-        <header class="p-8 border-b border-slate-100">
-          <h3 class="text-2xl font-black text-slate-900 leading-tight">Configurar Categorias</h3>
-          <p class="text-slate-500 text-sm font-medium">Personalize seus centros de custo.</p>
-        </header>
-
-        <div class="p-8 space-y-6">
-          <div class="flex gap-2">
-            <input 
-              v-model="newCategoryName"
-              placeholder="Nova categoria..."
-              class="flex-1 px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold"
-            />
-            <button @click="addCategory" class="px-6 bg-indigo-600 text-white font-black rounded-2xl">Add</button>
-          </div>
-
-          <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-            <div v-for="cat in categories" :key="cat.id" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-              <span class="text-sm font-bold text-slate-700">{{ cat.name }}</span>
-              <button @click="deleteCategory(cat.id)" class="text-red-400 hover:text-red-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-              </button>
-            </div>
-          </div>
-
-          <button 
-            @click="showCategoryModal = false"
-            class="w-full py-4 border border-slate-100 text-slate-500 font-black rounded-2xl"
-          >
-            Fechar
+    <div v-if="showCategoryModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex items-center justify-center">
+      <div class="bg-white rounded-3xl p-8 shadow-2xl max-w-lg w-full mx-4">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="font-extrabold text-xl text-slate-800">Configurar Categorias</h3>
+          <button @click="showCategoryModal = false" class="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
+
+        <div class="flex gap-2 mb-4">
+          <input
+            v-model="newCategoryName"
+            placeholder="Nova categoria..."
+            class="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+          />
+          <button @click="addCategory" class="px-5 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95 text-sm">Add</button>
+        </div>
+
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-2">
+          <div v-for="cat in categories" :key="cat.id" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <span class="text-sm font-bold text-slate-700">{{ cat.name }}</span>
+            <button @click="deleteCategory(cat.id)" class="text-slate-400 hover:text-red-600 p-1 hover:bg-red-50 rounded-md transition-all">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <button
+          @click="showCategoryModal = false"
+          class="w-full mt-4 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm"
+        >
+          Fechar
+        </button>
       </div>
     </div>
   </div>
