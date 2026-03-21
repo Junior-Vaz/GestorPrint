@@ -60,10 +60,10 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         </div>
       </div>
       
-      <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto custom-scrollbar">
+      <nav class="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto custom-scrollbar">
         <button 
           @click="ui.setTab('home')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'home' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-3 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'home' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
           Dashboard
         </button>
@@ -71,7 +71,7 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button
           v-if="auth.isProduction"
           @click="plan.hasKanban ? ui.setTab('board') : plan.setLimitError('Fila de Produção (Kanban) não está disponível no seu plano atual. Faça upgrade para acessar esta funcionalidade.')"
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'board' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasKanban ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
+          :class="['w-full flex items-center gap-3 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'board' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasKanban ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
           Produção
           <svg v-if="!plan.hasKanban" class="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
@@ -80,14 +80,14 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button 
           v-if="auth.isSales"
           @click="ui.setTab('pdv')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'pdv' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'pdv' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
           PDV Balcão
         </button>
 
         <button 
           @click="ui.setTab('customers')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'customers' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'customers' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
           Clientes
         </button>
@@ -95,18 +95,18 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button 
           v-if="auth.isAdmin"
           @click="ui.setTab('products')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'products' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'products' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
           Insumos
         </button>
 
-        <div v-if="auth.isAdmin" class="pt-6 pb-2">
+        <div v-if="auth.isAdmin" class="pt-3 pb-1">
           <span class="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Financeiro</span>
         </div>
         <button 
           v-if="auth.isAdmin"
           @click="ui.setTab('financial')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'financial' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'financial' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M12 16v1m0-1V7m0 0a1 1 0 011-1h2a1 1 0 011 1v1m-6 0a1 1 0 00-1-1H7a1 1 0 00-1 1v1"></path></svg>
           Fluxo de Caixa
         </button>
@@ -114,7 +114,7 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button 
           v-if="auth.isAdmin"
           @click="ui.setTab('expenses')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'expenses' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'expenses' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2 17l10 5 10-5M2 12l10 5 10-5M12 2l10 5-10 5-10-5 10-5z"></path></svg>
           Despesas
         </button>
@@ -122,37 +122,37 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button 
           v-if="auth.isAdmin"
           @click="ui.setTab('suppliers')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'suppliers' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'suppliers' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
           Fornecedores
         </button>
 
-        <div v-if="auth.isSales" class="pt-6 pb-2">
+        <div v-if="auth.isSales" class="pt-3 pb-1">
           <span class="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Orçamentos</span>
         </div>
 
         <button 
           @click="ui.setTab('calculator')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'calculator' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'calculator' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           Novo Orçamento
         </button>
 
         <button 
           @click="ui.setTab('estimates')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'estimates' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'estimates' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           Histórico
         </button>
 
-        <div v-if="auth.isAdmin" class="pt-6 pb-2">
+        <div v-if="auth.isAdmin" class="pt-3 pb-1">
           <span class="px-3 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Sistema</span>
         </div>
 
         <button 
           v-if="auth.isAdmin"
           @click="ui.setTab('settings')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'settings' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'settings' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           Configurações
         </button>
@@ -160,7 +160,7 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button 
           v-if="auth.isAdmin"
           @click="ui.setTab('users')" 
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'users' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'users' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
           Gestão de Equipe
         </button>
@@ -168,7 +168,7 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button
           v-if="auth.isAdmin"
           @click="plan.hasReports ? ui.setTab('reports') : plan.setLimitError('Relatórios & BI não está disponível no seu plano atual. Faça upgrade para acessar esta funcionalidade.')"
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasReports ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'reports' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasReports ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
           Relatórios & BI
           <svg v-if="!plan.hasReports" class="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
@@ -176,7 +176,7 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button
           v-if="auth.isAdmin"
           @click="plan.hasAudit ? ui.setTab('audit') : plan.setLimitError('Auditoria de Ações não está disponível no seu plano atual. Faça upgrade para acessar esta funcionalidade.')"
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'audit' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasAudit ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'audit' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasAudit ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
           Auditoria
           <svg v-if="!plan.hasAudit" class="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
@@ -185,17 +185,17 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
         <button
           v-if="auth.isAdmin"
           @click="plan.hasWhatsapp ? ui.setTab('ai') : plan.setLimitError('Agente de IA (WhatsApp) não está disponível no seu plano atual. Faça upgrade para acessar esta funcionalidade.')"
-          :class="['w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasWhatsapp ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
+          :class="['w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold transition-all duration-200', ui.currentTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 scale-[1.02]' : plan.hasWhatsapp ? 'hover:bg-slate-50 text-slate-500 hover:text-slate-800' : 'text-slate-300 cursor-not-allowed']">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           Agente de IA
           <svg v-if="!plan.hasWhatsapp" class="w-3.5 h-3.5 ml-auto" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
         </button>
 
         <!-- Logout Button -->
-        <div class="pt-10">
+        <div class="pt-3">
           <button 
             @click="auth.logout()"
-            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-red-500 hover:bg-red-50 transition-all">
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-bold text-red-500 hover:bg-red-50 transition-all">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             Sair do Sistema
           </button>
@@ -203,35 +203,45 @@ onUnmounted(() => window.removeEventListener('plan:limit', onPlanLimit))
       </nav>
 
       <!-- Plan Usage Widget -->
-      <div v-if="plan.data" class="px-4 py-3 border-t border-slate-100">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-black text-slate-700 truncate">{{ plan.planName }}</span>
-          <span v-if="plan.isTrial" class="ml-1 shrink-0 text-[9px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">TRIAL</span>
-          <span v-else-if="plan.isSuspended" class="ml-1 shrink-0 text-[9px] font-black bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">SUSPENSO</span>
-        </div>
-        <div class="space-y-1.5">
-          <div>
-            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
-              <span>Usuários</span><span>{{ plan.data.usersCount }}/{{ plan.data.maxUsers }}</span>
+      <div v-if="plan.data" class="px-3 pb-2 border-t border-slate-100 pt-2">
+        <div class="bg-slate-50 rounded-xl px-3 py-2.5">
+          <!-- Plan name + badge -->
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <svg class="w-3 h-3 text-indigo-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span class="text-[11px] font-black text-slate-600 truncate">{{ plan.planName }}</span>
             </div>
-            <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
-              <div :class="['h-full rounded-full transition-all', plan.usersPct >= 90 ? 'bg-red-400' : plan.usersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.usersPct}%`"></div>
-            </div>
+            <span v-if="plan.isTrial" class="shrink-0 text-[9px] font-black bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full leading-none">TRIAL</span>
+            <span v-else-if="plan.isSuspended" class="shrink-0 text-[9px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full leading-none">SUSPENSO</span>
           </div>
-          <div>
-            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
-              <span>Pedidos/mês</span><span>{{ plan.data.ordersThisMonth }}/{{ plan.data.maxOrders }}</span>
+          <!-- Usage bars -->
+          <div class="space-y-1.5">
+            <div>
+              <div class="flex justify-between text-[10px] mb-0.5">
+                <span class="text-slate-400">Usuários</span>
+                <span :class="plan.usersPct >= 90 ? 'text-red-500 font-bold' : plan.usersPct >= 70 ? 'text-amber-500 font-bold' : 'text-slate-400'">{{ plan.data.usersCount }}/{{ plan.data.maxUsers }}</span>
+              </div>
+              <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
+                <div :class="['h-full rounded-full transition-all duration-500', plan.usersPct >= 90 ? 'bg-red-400' : plan.usersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.usersPct}%`"></div>
+              </div>
             </div>
-            <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
-              <div :class="['h-full rounded-full transition-all', plan.ordersPct >= 90 ? 'bg-red-400' : plan.ordersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.ordersPct}%`"></div>
+            <div>
+              <div class="flex justify-between text-[10px] mb-0.5">
+                <span class="text-slate-400">Pedidos/mês</span>
+                <span :class="plan.ordersPct >= 90 ? 'text-red-500 font-bold' : plan.ordersPct >= 70 ? 'text-amber-500 font-bold' : 'text-slate-400'">{{ plan.data.ordersThisMonth }}/{{ plan.data.maxOrders }}</span>
+              </div>
+              <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
+                <div :class="['h-full rounded-full transition-all duration-500', plan.ordersPct >= 90 ? 'bg-red-400' : plan.ordersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.ordersPct}%`"></div>
+              </div>
             </div>
-          </div>
-          <div>
-            <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
-              <span>Clientes</span><span>{{ plan.data.customersCount }}/{{ plan.data.maxCustomers }}</span>
-            </div>
-            <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
-              <div :class="['h-full rounded-full transition-all', plan.customersPct >= 90 ? 'bg-red-400' : plan.customersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.customersPct}%`"></div>
+            <div>
+              <div class="flex justify-between text-[10px] mb-0.5">
+                <span class="text-slate-400">Clientes</span>
+                <span :class="plan.customersPct >= 90 ? 'text-red-500 font-bold' : plan.customersPct >= 70 ? 'text-amber-500 font-bold' : 'text-slate-400'">{{ plan.data.customersCount }}/{{ plan.data.maxCustomers }}</span>
+              </div>
+              <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
+                <div :class="['h-full rounded-full transition-all duration-500', plan.customersPct >= 90 ? 'bg-red-400' : plan.customersPct >= 70 ? 'bg-amber-400' : 'bg-indigo-400']" :style="`width:${plan.customersPct}%`"></div>
+              </div>
             </div>
           </div>
         </div>
