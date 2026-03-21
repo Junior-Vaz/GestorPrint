@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
@@ -29,6 +29,21 @@ export class UsersService {
   }
 
   async create(data: any, tenantId: number) {
+    // ── Enforce plan limits ────────────────────────────────────────────────
+    const tenant = await (this.prisma as any).tenant.findUnique({
+      where: { id: tenantId },
+      select: { maxUsers: true, isActive: true, planStatus: true },
+    });
+    if (!tenant?.isActive || ['SUSPENDED', 'CANCELLED'].includes(tenant.planStatus)) {
+      throw new ForbiddenException('Conta suspensa ou cancelada. Entre em contato com o suporte.');
+    }
+    const userCount = await (this.prisma as any).user.count({ where: { tenantId } });
+    if (userCount >= tenant.maxUsers) {
+      throw new ForbiddenException(
+        `Limite de ${tenant.maxUsers} usuário(s) atingido. Faça upgrade do seu plano.`,
+      );
+    }
+    // ──────────────────────────────────────────────────────────────────────
     const hashedPassword = await bcrypt.hash(data.password || 'mudar123', 10);
     return (this.prisma as any).user.create({
       data: {

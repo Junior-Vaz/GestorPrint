@@ -19,6 +19,7 @@ model Tenant {
   planExpiresAt   DateTime?
   maxUsers        Int       @default(3)             // limite de usuários por plano
   maxOrders       Int       @default(100)           // limite de pedidos/mês por plano
+  maxCustomers    Int       @default(50)            // limite de clientes cadastrados
   // Contato do responsável
   ownerName       String?
   ownerEmail      String?
@@ -295,6 +296,41 @@ model AiConfig {
   allowedProductTypes Int[]    @default([])
   allowFileUploads    Boolean  @default(true)
   updatedAt           DateTime @updatedAt
+}
+
+// ─── PLAN CONFIG (SaaS Plan Management) ─────────────────────────────────────
+model PlanConfig {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique   // "FREE", "BASIC", "PRO", "ENTERPRISE" ou custom
+  displayName String             // "Gratuito", "Básico", etc.
+  description String?
+
+  // ── Limites numéricos ──────────────────────────────────────────────────────
+  price        Float   @default(0)     // R$/mês cobrado no Asaas
+  maxUsers     Int     @default(1)     // usuários simultâneos
+  maxOrders    Int     @default(30)    // pedidos por mês
+  maxCustomers Int     @default(50)    // clientes cadastrados
+
+  // ── Módulos Operacionais ──────────────────────────────────────────────────
+  hasPdf        Boolean @default(false) // PDF de orçamentos e pedidos
+  hasReports    Boolean @default(false) // Relatórios financeiros + exportar CSV
+  hasKanban     Boolean @default(false) // Fila de produção (board Kanban)
+  hasFileUpload Boolean @default(false) // Upload arquivos gráficos (.cdr, .psd, .svg...)
+
+  // ── Integrações ───────────────────────────────────────────────────────────
+  hasWhatsapp Boolean @default(false)  // WhatsApp AI (Gemini + Evolution API)
+  hasPix      Boolean @default(false)  // PIX via Mercado Pago
+
+  // ── Gestão Avançada ───────────────────────────────────────────────────────
+  hasAudit       Boolean @default(false) // Auditoria completa de ações
+  hasCommissions Boolean @default(false) // Comissões por vendedor
+  hasApiAccess   Boolean @default(false) // Webhooks / acesso externo
+
+  // ── Meta ─────────────────────────────────────────────────────────────────
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AuditLog {

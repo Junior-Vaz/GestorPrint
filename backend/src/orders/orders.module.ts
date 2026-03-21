@@ -7,9 +7,10 @@ import { ProductsModule } from '../products/products.module';
 import { SettingsModule } from '../settings/settings.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuditModule } from '../audit/audit.module';
+import { PlansModule } from '../plans/plans.module';
 
 @Module({
-  imports: [ProductsModule, SettingsModule, NotificationsModule, AuditModule],
+  imports: [ProductsModule, SettingsModule, NotificationsModule, AuditModule, PlansModule],
   controllers: [OrdersController],
   providers: [OrdersService, OrdersGateway, PrismaService],
   exports: [OrdersService, OrdersGateway],

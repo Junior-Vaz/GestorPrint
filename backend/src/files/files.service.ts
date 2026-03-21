@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PlansService } from '../plans/plans.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -7,13 +8,17 @@ import * as path from 'path';
 export class FilesService {
   private readonly uploadPath = path.join(process.cwd(), 'uploads');
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private readonly plansService: PlansService,
+  ) {
     if (!fs.existsSync(this.uploadPath)) {
       fs.mkdirSync(this.uploadPath, { recursive: true });
     }
   }
 
   async saveFile(orderId: number, file: Express.Multer.File, tenantId: number) {
+    await this.plansService.requireFeature(tenantId, 'hasFileUpload');
     const tenantDir = path.join(this.uploadPath, String(tenantId));
     if (!fs.existsSync(tenantDir)) {
       fs.mkdirSync(tenantDir, { recursive: true });

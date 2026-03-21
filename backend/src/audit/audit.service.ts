@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PlansService } from '../plans/plans.service';
 
 @Injectable()
 export class AuditService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly plansService: PlansService,
+  ) {}
 
   async logAction(
     userId: number,
@@ -30,6 +34,7 @@ export class AuditService {
   }
 
   async findAll(tenantId: number, query?: any) {
+    await this.plansService.requireFeature(tenantId, 'hasAudit');
     const where: any = { tenantId };
     if (query?.entity) where.entity = query.entity;
     if (query?.action) where.action = query.action;

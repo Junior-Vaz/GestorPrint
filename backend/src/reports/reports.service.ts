@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PlansService } from '../plans/plans.service';
 
 @Injectable()
 export class ReportsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly plansService: PlansService,
+  ) {}
 
   async getSummary(period = '30d', tenantId = 1) {
+    await this.plansService.requireFeature(tenantId, 'hasReports');
     try {
       const dateFilter = this.getDateFilter(period);
 
@@ -69,6 +74,7 @@ export class ReportsService {
   }
 
   async getStats(period = '30d', tenantId = 1) {
+    await this.plansService.requireFeature(tenantId, 'hasReports');
     const dateFilter = this.getDateFilter(period);
 
     const daysCount = period === '7d' ? 7 : 30;

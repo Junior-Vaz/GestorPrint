@@ -2,13 +2,6 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import axios, { AxiosError } from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 
-const PLAN_VALUES: Record<string, number> = {
-  FREE: 0,
-  BASIC: 49,
-  PRO: 149,
-  ENTERPRISE: 299,
-};
-
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
@@ -118,8 +111,9 @@ export class BillingService {
       throw new BadRequestException('Crie o cliente no Asaas antes de gerar a assinatura');
     }
 
-    const value = PLAN_VALUES[tenant.plan];
-    if (!value) throw new BadRequestException(`Plano ${tenant.plan} não tem cobrança (FREE)`);
+    const planConfig = await (this.prisma as any).planConfig.findUnique({ where: { name: tenant.plan } });
+    const value = planConfig?.price ?? 0;
+    if (!value) throw new BadRequestException(`Plano ${tenant.plan} é gratuito e não possui cobrança`);
 
     // nextDueDate = amanhã (primeiro vencimento)
     const nextDueDate = new Date();

@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsIn, IsBoolean, IsInt, IsISO8601, Min, Max, MaxLength, ValidateIf, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsBoolean, IsInt, IsIn, IsISO8601, Min, Max, MaxLength, ValidateIf, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateTenantDto {
@@ -8,7 +8,7 @@ export class CreateTenantDto {
   @IsString() @IsNotEmpty() @MaxLength(60)
   slug: string;
 
-  @IsOptional() @IsIn(['FREE', 'BASIC', 'PRO', 'ENTERPRISE'])
+  @IsOptional() @IsString() @MaxLength(30)
   plan?: string;
 
   @IsOptional() @IsIn(['TRIAL', 'ACTIVE', 'SUSPENDED', 'CANCELLED'])
@@ -20,11 +20,14 @@ export class CreateTenantDto {
   @IsOptional() @IsISO8601()
   planExpiresAt?: string;
 
-  @IsOptional() @IsInt() @Min(1) @Max(1000) @Type(() => Number)
+  @IsOptional() @IsInt() @Min(1) @Max(99999) @Type(() => Number)
   maxUsers?: number;
 
   @IsOptional() @IsInt() @Min(1) @Type(() => Number)
   maxOrders?: number;
+
+  @IsOptional() @IsInt() @Min(1) @Type(() => Number)
+  maxCustomers?: number;
 
   @IsOptional() @IsString() @MaxLength(120)
   ownerName?: string;

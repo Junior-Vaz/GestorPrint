@@ -91,7 +91,7 @@
                   <p class="text-xs text-slate-400">{{ t.ownerEmail || '' }}</p>
                 </td>
                 <td class="px-6 py-4">
-                  <span :class="['px-3 py-1 rounded-lg text-xs font-black inline-flex', PLAN_BADGE[t.plan] || 'bg-slate-100 text-slate-600']">{{ t.plan }}</span>
+                  <span :class="['px-3 py-1 rounded-lg text-xs font-black inline-flex', planBadgeClass(t.plan)]">{{ t.plan }}</span>
                 </td>
                 <td class="px-6 py-4">
                   <span :class="['px-3 py-1 rounded-full text-xs font-black inline-flex', STATUS_COLORS[t.planStatus] || 'bg-slate-100 text-slate-500']">{{ t.planStatus }}</span>
@@ -170,11 +170,11 @@
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Plano</label>
             <div class="grid grid-cols-4 gap-2">
-              <button v-for="p in PLANS" :key="p.value" @click="form.plan = p.value" type="button"
-                :class="['border-2 rounded-2xl p-3 text-center transition-all', form.plan === p.value ? 'border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100' : 'border-slate-200 hover:border-indigo-300']">
-                <span :class="[p.color, 'inline-block w-3 h-3 rounded-full mb-1.5']"></span>
-                <p class="text-xs font-extrabold text-slate-800">{{ p.label }}</p>
-                <p class="text-xs text-slate-400 mt-0.5">R$ {{ p.price }}/mês</p>
+              <button v-for="p in plansList.filter(pl => pl.isActive)" :key="p.name" @click="form.plan = p.name" type="button"
+                :class="['border-2 rounded-2xl p-3 text-center transition-all', form.plan === p.name ? 'border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100' : 'border-slate-200 hover:border-indigo-300']">
+                <span :class="[PLAN_COLORS[p.name] || 'bg-slate-400', 'inline-block w-3 h-3 rounded-full mb-1.5']"></span>
+                <p class="text-xs font-extrabold text-slate-800">{{ p.displayName }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">{{ p.price === 0 ? 'Grátis' : `R$ ${p.price}/mês` }}</p>
               </button>
             </div>
           </div>
@@ -283,15 +283,25 @@ interface Tenant {
   _count?: { users: number; orders: number; customers: number };
 }
 
-const PLANS = [
-  { value: 'FREE',       label: 'Free',       price: 0,   color: 'bg-slate-400' },
-  { value: 'BASIC',      label: 'Basic',      price: 49,  color: 'bg-blue-500'  },
-  { value: 'PRO',        label: 'Pro',        price: 149, color: 'bg-indigo-600' },
-  { value: 'ENTERPRISE', label: 'Enterprise', price: 299, color: 'bg-purple-700' },
-]
-const PLAN_BADGE: Record<string, string> = {
-  FREE: 'bg-slate-100 text-slate-600', BASIC: 'bg-blue-100 text-blue-700',
-  PRO: 'bg-indigo-100 text-indigo-700', ENTERPRISE: 'bg-purple-100 text-purple-700',
+// Plans loaded dynamically from /api/plans
+interface PlanConfig { id: number; name: string; displayName: string; price: number; isActive: boolean; sortOrder: number }
+const plansList = ref<PlanConfig[]>([])
+const loadPlans = async () => {
+  try {
+    const res = await apiFetch('/api/plans')
+    if (res.ok) plansList.value = await res.json()
+  } catch { /* ignore — will use empty list */ }
+}
+
+const PLAN_COLORS: Record<string, string> = {
+  FREE: 'bg-slate-400', BASIC: 'bg-blue-500', PRO: 'bg-indigo-600', ENTERPRISE: 'bg-purple-700',
+}
+const planBadgeClass = (name: string) => {
+  const map: Record<string, string> = {
+    FREE: 'bg-slate-100 text-slate-600', BASIC: 'bg-blue-100 text-blue-700',
+    PRO: 'bg-indigo-100 text-indigo-700', ENTERPRISE: 'bg-purple-100 text-purple-700',
+  }
+  return map[name] ?? 'bg-slate-100 text-slate-600'
 }
 const STATUS_COLORS: Record<string, string> = {
   TRIAL: 'bg-amber-100 text-amber-700', ACTIVE: 'bg-emerald-100 text-emerald-700',
@@ -428,5 +438,7 @@ const activate = async (id: number) => {
   } catch { showAlert('error', 'Erro de Conexão', 'Não foi possível ativar o tenant.') }
 }
 
-onMounted(fetchTenants)
+onMounted(async () => {
+  await Promise.all([fetchTenants(), loadPlans()])
+})
 </script>

@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrdersGateway } from './orders.gateway';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
+import { PlansService } from '../plans/plans.service';
 
 import { MessagingService } from '../messaging/messaging.service';
 import { SettingsService } from '../settings/settings.service';
@@ -23,9 +24,28 @@ export class OrdersService {
     private readonly settingsService: SettingsService,
     private readonly notificationsService: NotificationsService,
     private readonly auditService: AuditService,
+    private readonly plansService: PlansService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, tenantId: number) {
+    // ── Enforce plan limits ────────────────────────────────────────────────
+    const tenant = await (this.prisma as any).tenant.findUnique({
+      where: { id: tenantId },
+      select: { maxOrders: true, isActive: true, planStatus: true },
+    });
+    if (!tenant?.isActive || ['SUSPENDED', 'CANCELLED'].includes(tenant.planStatus)) {
+      throw new ForbiddenException('Conta suspensa ou cancelada. Entre em contato com o suporte.');
+    }
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const orderCount = await (this.prisma as any).order.count({
+      where: { tenantId, createdAt: { gte: startOfMonth } },
+    });
+    if (orderCount >= tenant.maxOrders) {
+      throw new ForbiddenException(
+        `Limite de ${tenant.maxOrders} pedido(s)/mês atingido. Faça upgrade do seu plano.`,
+      );
+    }
+    // ──────────────────────────────────────────────────────────────────────
     let customer = await this.prisma.customer.findFirst({
       where: { name: createOrderDto.customerName, tenantId } as any
     });
@@ -350,6 +370,7 @@ export class OrdersService {
   }
 
   async generateReceipt(id: number, res: any, tenantId: number) {
+    await this.plansService.requireFeature(tenantId, 'hasPdf');
     const order = await (this.prisma as any).order.findFirst({
       where: { id, tenantId },
       include: { customer: true }

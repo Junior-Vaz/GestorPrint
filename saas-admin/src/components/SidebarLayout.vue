@@ -118,6 +118,11 @@ const navItems = [
     icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>',
   },
   {
+    to: '/plans',
+    label: 'Planos',
+    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>',
+  },
+  {
     to: '/billing',
     label: 'Cobrança (Asaas)',
     icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>',
@@ -125,9 +130,10 @@ const navItems = [
 ]
 
 const pageMeta: Record<string, { title: string; color: string }> = {
-  '/dashboard': { title: 'Dashboard da Plataforma', color: '#6366f1' },
-  '/tenants':   { title: 'Gestão de Tenants',        color: '#a855f7' },
-  '/billing':   { title: 'Cobrança — Asaas',         color: '#10b981' },
+  '/dashboard': { title: 'Dashboard da Plataforma',    color: '#6366f1' },
+  '/tenants':   { title: 'Gestão de Tenants',           color: '#a855f7' },
+  '/plans':     { title: 'Gestão de Planos',            color: '#3b82f6' },
+  '/billing':   { title: 'Cobrança — Asaas',            color: '#10b981' },
   '/settings':  { title: 'Configurações da Plataforma', color: '#f59e0b' },
 }
 

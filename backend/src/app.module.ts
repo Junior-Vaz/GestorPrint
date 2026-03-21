@@ -22,10 +22,12 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { McpModule } from './mcp/mcp.module';
 import { AuditModule } from './audit/audit.module';
 import { BillingModule } from './billing/billing.module';
+import { PlansModule } from './plans/plans.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    PlansModule,
     TenantsModule,
     OrdersModule,
     ProductsModule,

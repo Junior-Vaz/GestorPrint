@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import { SettingsService } from '../settings/settings.service';
 import { PaymentsService } from '../payments/payments.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PlansService } from '../plans/plans.service';
 
 @Injectable()
 export class EstimatesService {
@@ -20,6 +21,7 @@ export class EstimatesService {
     private readonly settingsService: SettingsService,
     private readonly paymentsService: PaymentsService,
     private readonly notificationsService: NotificationsService,
+    private readonly plansService: PlansService,
   ) {}
 
   create(createEstimateDto: CreateEstimateDto, tenantId: number) {
@@ -106,6 +108,7 @@ export class EstimatesService {
   }
 
   async generatePdf(id: number, res: any, tenantId: number) {
+    await this.plansService.requireFeature(tenantId, 'hasPdf');
     const estimate = await this.findOne(id, tenantId);
     if (!estimate) throw new Error('Orçamento não encontrado');
 
