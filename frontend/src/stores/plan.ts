@@ -35,15 +35,17 @@ export const usePlanStore = defineStore('plan', () => {
   const loading = ref(false)
   const limitError = ref('')   // Set when a 403 plan limit is hit
 
-  // ── Feature accessors (default true when plan not loaded — fail open) ──────
-  const hasPdf        = computed(() => data.value?.hasPdf        ?? true)
-  const hasReports    = computed(() => data.value?.hasReports    ?? true)
-  const hasKanban     = computed(() => data.value?.hasKanban     ?? true)
-  const hasFileUpload = computed(() => data.value?.hasFileUpload ?? true)
-  const hasWhatsapp   = computed(() => data.value?.hasWhatsapp   ?? true)
-  const hasPix        = computed(() => data.value?.hasPix        ?? true)
-  const hasAudit      = computed(() => data.value?.hasAudit      ?? true)
-  const hasCommissions = computed(() => data.value?.hasCommissions ?? true)
+  // ── Feature accessors ────────────────────────────────────────────────────────
+  // While loading → false (fail-closed, avoid brief flash of locked features)
+  // After load → use plan value; if plan data never arrived → false (fail-closed)
+  const hasPdf        = computed(() => loading.value ? false : (data.value?.hasPdf        ?? false))
+  const hasReports    = computed(() => loading.value ? false : (data.value?.hasReports    ?? false))
+  const hasKanban     = computed(() => loading.value ? false : (data.value?.hasKanban     ?? false))
+  const hasFileUpload = computed(() => loading.value ? false : (data.value?.hasFileUpload ?? false))
+  const hasWhatsapp   = computed(() => loading.value ? false : (data.value?.hasWhatsapp   ?? false))
+  const hasPix        = computed(() => loading.value ? false : (data.value?.hasPix        ?? false))
+  const hasAudit      = computed(() => loading.value ? false : (data.value?.hasAudit      ?? false))
+  const hasCommissions = computed(() => loading.value ? false : (data.value?.hasCommissions ?? false))
 
   // ── Plan status ────────────────────────────────────────────────────────────
   const isSuspended = computed(() =>
@@ -52,17 +54,17 @@ export const usePlanStore = defineStore('plan', () => {
   const isTrial = computed(() => data.value?.planStatus === 'TRIAL')
   const planName = computed(() => data.value?.displayName || data.value?.plan || '')
 
-  // ── Usage percentages (capped at 100) ─────────────────────────────────────
+  // ── Usage percentages (capped at 100, guarded against division by zero) ────
   const usersPct = computed(() => {
-    if (!data.value) return 0
+    if (!data.value || !data.value.maxUsers) return 0
     return Math.min(100, Math.round((data.value.usersCount / data.value.maxUsers) * 100))
   })
   const ordersPct = computed(() => {
-    if (!data.value) return 0
+    if (!data.value || !data.value.maxOrders) return 0
     return Math.min(100, Math.round((data.value.ordersThisMonth / data.value.maxOrders) * 100))
   })
   const customersPct = computed(() => {
-    if (!data.value) return 0
+    if (!data.value || !data.value.maxCustomers) return 0
     return Math.min(100, Math.round((data.value.customersCount / data.value.maxCustomers) * 100))
   })
 

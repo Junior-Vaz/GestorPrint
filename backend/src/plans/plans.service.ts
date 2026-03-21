@@ -121,11 +121,12 @@ export class PlansService {
         hasCommissions: planConfig.hasCommissions,
         hasApiAccess: planConfig.hasApiAccess,
       } : {
-        // Fallback: all features enabled if planConfig not found (safety net)
+        // Fallback: plan not found in PlanConfig — fail-closed (no features)
+        // This prevents tenants with invalid/deleted plans from getting free access
         displayName: tenant.plan,
         price: 0,
-        hasPdf: true, hasReports: true, hasKanban: true, hasFileUpload: true,
-        hasWhatsapp: true, hasPix: true, hasAudit: true, hasCommissions: true, hasApiAccess: true,
+        hasPdf: false, hasReports: false, hasKanban: false, hasFileUpload: false,
+        hasWhatsapp: false, hasPix: false, hasAudit: false, hasCommissions: false, hasApiAccess: false,
       }),
     };
   }
