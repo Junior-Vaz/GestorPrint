@@ -61,14 +61,14 @@ const loadEditingData = () => {
     width.value = e.details.width
     height.value = e.details.height
     colors.value = e.details.colors
-    
+
     // Attempt to match paper by name or just use the first one if not found
     const paper = papers.value.find(p => p.name === e.details.paperName)
     if (paper) selectedPaperId.value = paper.id
-    
+
     const fin = finishings.value.find(p => p.name === e.details.finishingName)
     if (fin) selectedFinishingId.value = fin.id
-    
+
     lastEstimateId.value = e.id
   }
 }
@@ -80,7 +80,7 @@ const fetchInitialData = async () => {
       apiFetch('/api/products'),
       apiFetch('/api/customers')
     ])
-    
+
     if (pRes.ok) {
       const allProducts: Product[] = await pRes.json()
       // Products with stock = raw materials (paper, ink) → 'media' selector
@@ -101,7 +101,7 @@ const fetchInitialData = async () => {
 
     // Load data if editing
     if (isEditing.value) loadEditingData()
-    
+
   } catch (e) {
     console.error('Error fetching data', e)
   } finally {
@@ -186,7 +186,7 @@ const handleSaveEstimate = async (convertToOrder = false) => {
     }
 
     const method = isEditing.value ? 'PATCH' : 'POST'
-    const url = isEditing.value 
+    const url = isEditing.value
       ? `/api/estimates/${ui.editingEstimate.id}`
       : '/api/estimates'
 
@@ -199,7 +199,7 @@ const handleSaveEstimate = async (convertToOrder = false) => {
     if (res.ok) {
       const savedEstimate = await res.json()
       lastEstimateId.value = savedEstimate.id
-      
+
       if (convertToOrder) {
         await handleConvertToOrder(savedEstimate.id)
       } else {
@@ -240,92 +240,119 @@ onMounted(fetchInitialData)
 </script>
 
 <template>
-  <div class="h-full flex flex-col space-y-6">
-    <div class="flex justify-between items-center">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">
-          {{ isEditing ? 'Editar Orçamento' : 'Simulador de Orçamento' }}
-        </h2>
-        <p class="text-slate-500 text-sm">
-          {{ isEditing ? `Editando ref #ORC-${ui.editingEstimate.id}` : 'Calcule custos de impressão em tempo real.' }}
-        </p>
+  <div class="p-6 max-w-7xl mx-auto space-y-6">
+
+    <!-- Header Card -->
+    <div class="bg-white/50 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl shadow-slate-200/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="p-2 bg-indigo-500 rounded-xl text-white shadow-lg shadow-indigo-100">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+            {{ isEditing ? 'Editar Orçamento' : 'Calculadora de Orçamento' }}
+          </h1>
+          <p class="text-slate-500 mt-1 font-medium italic">
+            {{ isEditing ? `Editando ref #ORC-${ui.editingEstimate.id}` : 'Calcule preços e gere orçamentos para clientes' }}
+          </p>
+        </div>
       </div>
-      <div class="flex gap-2">
-        <button @click="generatePDF" class="p-2.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-white transition-all">
+      <div class="flex gap-3">
+        <button
+          @click="generatePDF"
+          class="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl transition-all shadow-lg shadow-slate-100 border border-slate-200 active:scale-95 flex items-center gap-2"
+        >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          Gerar PDF
         </button>
       </div>
     </div>
 
-    <div v-if="loading" class="flex-1 flex items-center justify-center">
+    <!-- Loading State -->
+    <div v-if="loading" class="flex items-center justify-center py-24">
       <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
+    <!-- Content Grid -->
+    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-10">
+
       <!-- Form Section -->
       <div class="lg:col-span-2 space-y-6">
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-          
+        <div class="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl shadow-slate-200/60 p-8 space-y-8">
+
           <!-- Basic Info -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="relative">
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cliente</label>
-              <input
-                v-model="customerSearch"
-                @focus="showCustomerDropdown = true"
-                @input="showCustomerDropdown = true"
-                @click="showCustomerDropdown = true"
-                @blur="handleCustomerBlur"
-                type="text"
-                placeholder="Buscar cliente..."
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50 text-sm"
-              />
-              <div v-if="showCustomerDropdown && filteredCustomers.length > 0" class="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
-                <button
-                  v-for="c in filteredCustomers"
-                  :key="c.id"
-                  @mousedown.prevent="selectCustomer(c)"
-                  class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors first:rounded-t-xl last:rounded-b-xl"
-                >{{ c.name }}</button>
+          <div>
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Informações do Pedido</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="relative">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-1.5">Cliente</label>
+                <input
+                  v-model="customerSearch"
+                  @focus="showCustomerDropdown = true"
+                  @input="showCustomerDropdown = true"
+                  @click="showCustomerDropdown = true"
+                  @blur="handleCustomerBlur"
+                  type="text"
+                  placeholder="Buscar cliente..."
+                  class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                />
+                <div v-if="showCustomerDropdown && filteredCustomers.length > 0" class="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
+                  <button
+                    v-for="c in filteredCustomers"
+                    :key="c.id"
+                    @mousedown.prevent="selectCustomer(c)"
+                    class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                  >{{ c.name }}</button>
+                </div>
               </div>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nome do Produto</label>
-              <input v-model="productName" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50" placeholder="Ex: Panfleto Promocional">
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-1.5">Nome do Produto</label>
+                <input
+                  v-model="productName"
+                  type="text"
+                  class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                  placeholder="Ex: Panfleto Promocional"
+                >
+              </div>
             </div>
           </div>
 
           <!-- Specs -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Qtd</label>
-              <input v-model.number="quantity" type="number" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">L (cm)</label>
-              <input v-model.number="width" type="number" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">A (cm)</label>
-              <input v-model.number="height" type="number" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cores</label>
-              <select v-model="colors" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none bg-slate-50/50">
-                <option value="4x0">4x0 (Frente)</option>
-                <option value="4x4">4x4 (Frente/Verso)</option>
-                <option value="1x0">1x0 (Preto)</option>
-              </select>
+          <div>
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Especificações Técnicas</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-1.5">Qtd</label>
+                <input v-model.number="quantity" type="number" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+              </div>
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-1.5">L (cm)</label>
+                <input v-model.number="width" type="number" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+              </div>
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-1.5">A (cm)</label>
+                <input v-model.number="height" type="number" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+              </div>
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-1.5">Cores</label>
+                <select v-model="colors" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                  <option value="4x0">4x0 (Frente)</option>
+                  <option value="4x4">4x4 (Frente/Verso)</option>
+                  <option value="1x0">1x0 (Preto)</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <!-- Materials -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Mídia / Material</label>
+              <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Mídia / Material</h3>
               <div class="space-y-2">
-                <label v-for="paper in papers" :key="paper.id" 
-                  :class="['flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all', 
+                <label v-for="paper in papers" :key="paper.id"
+                  :class="['flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all',
                     selectedPaperId === paper.id ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-100 hover:border-slate-300 bg-slate-50/30']">
                   <div class="flex items-center gap-3">
                     <input type="radio" :value="paper.id" v-model="selectedPaperId" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-slate-300">
@@ -340,18 +367,18 @@ onMounted(fetchInitialData)
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Serviços / Acabamento</label>
+              <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Serviços / Acabamento</h3>
               <div class="space-y-2">
-                <label 
-                  :class="['flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all', 
+                <label
+                  :class="['flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all',
                     selectedFinishingId === null ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-100 hover:border-slate-300 bg-slate-50/30']">
                   <div class="flex items-center gap-3">
                     <input type="radio" :value="null" v-model="selectedFinishingId" class="w-4 h-4 text-indigo-600">
                     <span class="text-sm font-semibold text-slate-700">Sem Acabamento</span>
                   </div>
                 </label>
-                <label v-for="fin in finishings" :key="fin.id" 
-                  :class="['flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all', 
+                <label v-for="fin in finishings" :key="fin.id"
+                  :class="['flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all',
                     selectedFinishingId === fin.id ? 'border-indigo-500 bg-indigo-50/50 ring-1 ring-indigo-500' : 'border-slate-100 hover:border-slate-300 bg-slate-50/30']">
                   <div class="flex items-center gap-3">
                     <input type="radio" :value="fin.id" v-model="selectedFinishingId" class="w-4 h-4 text-indigo-600">
@@ -367,30 +394,35 @@ onMounted(fetchInitialData)
 
       <!-- Result Card -->
       <div class="lg:col-span-1">
-        <div class="bg-slate-900 rounded-3xl p-8 text-white sticky top-8 shadow-xl shadow-indigo-900/20">
-          <h3 class="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6">Resumo do Orçamento</h3>
-          
-          <div class="space-y-4 mb-8">
-            <div class="flex justify-between items-end border-b border-slate-800 pb-4">
-              <span class="text-slate-400 text-sm">Custo de Materiais</span>
-              <span class="font-mono text-lg font-bold">R$ {{ calculation.paperCost.toFixed(2) }}</span>
-            </div>
-            <div v-if="calculation.finishingCost > 0" class="flex justify-between items-end border-b border-slate-800 pb-4">
-              <span class="text-slate-400 text-sm">Custo de Serviços</span>
-              <span class="font-mono text-lg font-bold">R$ {{ calculation.finishingCost.toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between items-end border-b border-slate-800 pb-4">
-              <span class="text-slate-400 text-sm">Margem de Lucro Ativa</span>
-              <span class="font-mono text-lg font-bold text-emerald-400">+{{ calculation.totalMargin }}%</span>
-            </div>
-            <div class="flex justify-between items-end pt-2">
-              <span class="text-white font-bold">Total Sugerido</span>
-              <span class="text-3xl font-black text-indigo-400 font-mono">R$ {{ calculation.total.toFixed(2) }}</span>
+        <div class="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/40 shadow-2xl shadow-slate-200/60 overflow-hidden sticky top-8">
+
+          <!-- Result Header -->
+          <div class="bg-slate-900 p-8">
+            <h3 class="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-6">Resumo do Orçamento</h3>
+
+            <div class="space-y-4 mb-8">
+              <div class="flex justify-between items-end border-b border-slate-800 pb-4">
+                <span class="text-slate-400 text-sm">Custo de Materiais</span>
+                <span class="font-mono text-lg font-bold text-white">R$ {{ calculation.paperCost.toFixed(2) }}</span>
+              </div>
+              <div v-if="calculation.finishingCost > 0" class="flex justify-between items-end border-b border-slate-800 pb-4">
+                <span class="text-slate-400 text-sm">Custo de Serviços</span>
+                <span class="font-mono text-lg font-bold text-white">R$ {{ calculation.finishingCost.toFixed(2) }}</span>
+              </div>
+              <div class="flex justify-between items-end border-b border-slate-800 pb-4">
+                <span class="text-slate-400 text-sm">Margem de Lucro Ativa</span>
+                <span class="font-mono text-lg font-bold text-emerald-400">+{{ calculation.totalMargin }}%</span>
+              </div>
+              <div class="flex justify-between items-end pt-2">
+                <span class="text-white font-bold">Total Sugerido</span>
+                <span class="text-3xl font-black text-indigo-400 font-mono">R$ {{ calculation.total.toFixed(2) }}</span>
+              </div>
             </div>
           </div>
 
-          <div class="space-y-3">
-            <button 
+          <!-- Actions -->
+          <div class="p-6 space-y-3 bg-white/60">
+            <button
               @click="handleSaveEstimate(false)"
               :disabled="saving"
               class="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 border border-slate-700 active:scale-95 disabled:opacity-50"
@@ -399,35 +431,35 @@ onMounted(fetchInitialData)
               <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
               {{ isEditing ? 'Atualizar Orçamento' : 'Salvar Orçamento' }}
             </button>
-            <button 
+            <button
               @click="handleSaveEstimate(true)"
               :disabled="saving"
-              class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+              class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
             >
               <span v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               Aprovar e Gerar Pedido
             </button>
+
+            <!-- Toast feedback -->
+            <Transition
+              enter-active-class="transform transition ease-out duration-300"
+              enter-from-class="translate-y-2 opacity-0"
+              enter-to-class="translate-y-0 opacity-100"
+              leave-active-class="transition ease-in duration-200"
+              leave-from-class="opacity-100"
+              leave-to-class="opacity-0"
+            >
+              <div v-if="showSuccessToast" class="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-emerald-600 text-xs font-bold">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                {{ toastMessage }}
+              </div>
+            </Transition>
+
+            <p class="text-[10px] text-slate-400 mt-4 text-center leading-relaxed">
+              * O Total Sugerido já inclui a "Margem de Lucro (%)" configurada individualmente para cada material ou serviço utilizado.
+            </p>
           </div>
-
-          <!-- Toast feedback -->
-          <Transition
-            enter-active-class="transform transition ease-out duration-300"
-            enter-from-class="translate-y-2 opacity-0"
-            enter-to-class="translate-y-0 opacity-100"
-            leave-active-class="transition ease-in duration-200"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-          >
-            <div v-if="showSuccessToast" class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2 text-emerald-400 text-xs font-bold">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-              {{ toastMessage }}
-            </div>
-          </Transition>
-
-          <p class="text-[10px] text-slate-500 mt-6 text-center leading-relaxed">
-            * O Total Sugerido já inclui a "Margem de Lucro (%)" configurada individualmente para cada material ou serviço utilizado.
-          </p>
         </div>
       </div>
     </div>
