@@ -4,6 +4,7 @@ import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { MessagingService } from '../messaging/messaging.service';
 import { OrdersGateway } from '../orders/orders.gateway';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PlansService } from '../plans/plans.service';
 
 @Injectable()
 export class PaymentsService {
@@ -14,6 +15,7 @@ export class PaymentsService {
     private messagingService: MessagingService,
     private ordersGateway: OrdersGateway,
     private notificationsService: NotificationsService,
+    private plansService: PlansService,
   ) {}
 
   private async getClient() {
@@ -41,6 +43,10 @@ export class PaymentsService {
       where: { id: orderId },
       include: { customer: true }
     });
+
+    if (order?.tenantId) {
+      await this.plansService.requireFeature(order.tenantId, 'hasPix');
+    }
 
     const client = await this.getClient();
     if (!client) throw new InternalServerErrorException('Mercado Pago não configurado. Vá em Configurações.');

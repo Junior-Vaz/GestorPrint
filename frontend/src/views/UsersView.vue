@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
+import { usePlanStore } from '../stores/plan'
+
+const plan = usePlanStore()
 
 interface User {
   id: number;
@@ -262,7 +265,7 @@ onMounted(fetchUsers)
                   <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Salário Base (R$)</label>
                   <input v-model.number="newUser.salary" type="number" step="0.01" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
                 </div>
-                <div class="space-y-1.5">
+                <div v-if="plan.hasCommissions" class="space-y-1.5">
                   <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Comissão (%)</label>
                   <input v-model.number="newUser.commissionRate" type="number" step="0.1" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
                 </div>

@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 // "2026-03-20" → "2026-03-20T00:00:00.000Z" (Prisma DateTime exige ISO completo)
@@ -36,7 +37,25 @@ const DEFAULT_PLANS = [
 
 @Injectable()
 export class TenantsService implements OnModuleInit {
+  private readonly logger = new Logger(TenantsService.name);
+
   constructor(private prisma: PrismaService) {}
+
+  // ── Daily cron: suspend tenants whose trial has expired ────────────────────
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async suspendExpiredTrials() {
+    const result = await (this.prisma as any).tenant.updateMany({
+      where: {
+        planStatus: 'TRIAL',
+        trialEndsAt: { lt: new Date() },
+        isActive: true,
+      },
+      data: { planStatus: 'SUSPENDED' },
+    });
+    if (result.count > 0) {
+      this.logger.log(`Trial expiry cron: ${result.count} tenant(s) suspended.`);
+    }
+  }
 
   async onModuleInit() {
     // Seed default plans (idempotent — update: {} means never overwrite admin edits)
