@@ -4,6 +4,7 @@ services:
   # ─────────────────────────────────────────────
   db:
     image: postgres:15-alpine
+    pull_policy: always
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-gestorprint_admin}
@@ -21,7 +22,8 @@ services:
   # 2. Backend (API)
   # ─────────────────────────────────────────────
   backend:
-    image: ghcr.io/junior-vaz/gestorprint-backend:275a71e64f98dda930f6f9661d7bb7b817370f08
+    image: ghcr.io/junior-vaz/gestorprint-backend:latest
+    pull_policy: always
     restart: unless-stopped
     command: >
       sh -c "until npx prisma migrate deploy; do
@@ -55,7 +57,8 @@ services:
   # 3. WhatsApp AI Agent
   # ─────────────────────────────────────────────
   whatsapp-ai:
-    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:275a71e64f98dda930f6f9661d7bb7b817370f08
+    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       backend:
@@ -71,7 +74,8 @@ services:
   # 4. Frontend (Web)
   # ─────────────────────────────────────────────
   frontend:
-    image: ghcr.io/junior-vaz/gestorprint-frontend:275a71e64f98dda930f6f9661d7bb7b817370f08
+    image: ghcr.io/junior-vaz/gestorprint-frontend:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       - backend
@@ -81,11 +85,12 @@ services:
   # 5. SaaS Admin Panel
   # ─────────────────────────────────────────────
   saas-admin:
-    image: ghcr.io/junior-vaz/gestorprint-saas-admin:275a71e64f98dda930f6f9661d7bb7b817370f08
+    image: ghcr.io/junior-vaz/gestorprint-saas-admin:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       - backend
-    # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 80
+    # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 8080
     # Sugestão de domínio: admin.gestorprint.com.br
 
 volumes:
