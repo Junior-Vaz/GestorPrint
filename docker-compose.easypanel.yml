@@ -6,13 +6,13 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:-gestorprint_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_easypanel}
+      POSTGRES_DB: ${POSTGRES_DB:-gestorprint_db}
     volumes:
       - gestorprint_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U gestorprint_admin -d gestorprint_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gestorprint_admin} -d ${POSTGRES_DB:-gestorprint_db}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,21 +21,21 @@ services:
   # 2. Backend (API)
   # ─────────────────────────────────────────────
   backend:
-    image: ghcr.io/junior-vaz/gestorprint-backend:d8b7956acab83f798a2e64bf77a343036a09d22d
+    image: ghcr.io/junior-vaz/gestorprint-backend:3114e0e581456f7af5d75360e1ed882a3b4fac24
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=public
-      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:?MP_ACCESS_TOKEN is required}
-      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY:?MP_PUBLIC_KEY is required}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gestorprint_admin}:${POSTGRES_PASSWORD:-change_me_in_easypanel}@db:5432/${POSTGRES_DB:-gestorprint_db}?schema=public
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-change_me_in_easypanel}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY:-change_me_in_easypanel}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_easypanel}
       PORT: 3000
-      ASAAS_API_KEY: ${ASAAS_API_KEY:?ASAAS_API_KEY is required}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-change_me_in_easypanel}
       ASAAS_ENV: ${ASAAS_ENV:-production}
-      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:?ASAAS_WEBHOOK_TOKEN is required}
-      API_URL: ${API_URL:?API_URL is required}
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-change_me_in_easypanel}
+      API_URL: ${API_URL:-https://api.gestorprint.com.br}
     volumes:
       - gestorprint_uploads:/app/uploads
     healthcheck:
@@ -49,7 +49,7 @@ services:
   # 3. WhatsApp AI Agent
   # ─────────────────────────────────────────────
   whatsapp-ai:
-    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:d8b7956acab83f798a2e64bf77a343036a09d22d
+    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:3114e0e581456f7af5d75360e1ed882a3b4fac24
     restart: unless-stopped
     depends_on:
       backend:
@@ -57,7 +57,7 @@ services:
     environment:
       PORT: 3005
       ERP_API_URL: ${ERP_API_URL:-http://backend:3000/api}
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-change_me_in_easypanel}
       TENANT_ID: ${TENANT_ID:-1}
     # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 3005
 
@@ -65,7 +65,7 @@ services:
   # 4. Frontend (Web)
   # ─────────────────────────────────────────────
   frontend:
-    image: ghcr.io/junior-vaz/gestorprint-frontend:d8b7956acab83f798a2e64bf77a343036a09d22d
+    image: ghcr.io/junior-vaz/gestorprint-frontend:3114e0e581456f7af5d75360e1ed882a3b4fac24
     restart: unless-stopped
     depends_on:
       - backend
@@ -75,7 +75,7 @@ services:
   # 5. SaaS Admin Panel
   # ─────────────────────────────────────────────
   saas-admin:
-    image: ghcr.io/junior-vaz/gestorprint-saas-admin:d8b7956acab83f798a2e64bf77a343036a09d22d
+    image: ghcr.io/junior-vaz/gestorprint-saas-admin:3114e0e581456f7af5d75360e1ed882a3b4fac24
     restart: unless-stopped
     depends_on:
       - backend
