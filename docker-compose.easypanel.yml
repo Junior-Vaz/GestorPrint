@@ -6,9 +6,9 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: gestorprint_admin
-      POSTGRES_PASSWORD: gestorprint_password
-      POSTGRES_DB: gestorprint_db
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
     volumes:
       - gestorprint_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,15 +27,15 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://gestorprint_admin:gestorprint_password@db:5432/gestorprint_db?schema=public
-      MP_ACCESS_TOKEN: APP_USR-8902396773483884-031523-0311d237a5192b9a709be9b382319523-3267435502
-      MP_PUBLIC_KEY: APP_USR-7a191a24-fe97-41c8-9390-b4b4763b9d0e
-      JWT_SECRET: gestorprint_secret_key_2024
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=public
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:?MP_ACCESS_TOKEN is required}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY:?MP_PUBLIC_KEY is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       PORT: 3000
-      ASAAS_API_KEY: ${ASAAS_API_KEY}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:?ASAAS_API_KEY is required}
       ASAAS_ENV: ${ASAAS_ENV:-production}
-      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN}
-      API_URL: https://api.gestorprint.com.br
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:?ASAAS_WEBHOOK_TOKEN is required}
+      API_URL: ${API_URL:?API_URL is required}
     volumes:
       - gestorprint_uploads:/app/uploads
     healthcheck:
@@ -56,7 +56,9 @@ services:
         condition: service_healthy
     environment:
       PORT: 3005
-      ERP_API_URL: http://backend:3000/api
+      ERP_API_URL: ${ERP_API_URL:-http://backend:3000/api}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      TENANT_ID: ${TENANT_ID:-1}
     # No EasyPanel, o mapeamento de domínio é feito via UI apontando para a porta 3005
 
   # ─────────────────────────────────────────────

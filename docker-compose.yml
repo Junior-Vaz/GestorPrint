@@ -7,11 +7,11 @@ services:
     container_name: gestorprint_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-gestorprint_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gestorprint_password}
-      POSTGRES_DB: ${POSTGRES_DB:-gestorprint_db}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_BIND_IP:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - gestorprint_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,21 +33,21 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-gestorprint_admin}:${POSTGRES_PASSWORD:-gestorprint_password}@db:5432/${POSTGRES_DB:-gestorprint_db}?schema=public
-      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
-      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
-      JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=public
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:?MP_ACCESS_TOKEN is required}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY:?MP_PUBLIC_KEY is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       PORT: 3000
-      ASAAS_API_KEY: ${ASAAS_API_KEY}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:?ASAAS_API_KEY is required}
       ASAAS_ENV: ${ASAAS_ENV:-sandbox}
-      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN}
-      API_URL: ${API_URL:-http://localhost:3000}
+      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:?ASAAS_WEBHOOK_TOKEN is required}
+      API_URL: ${API_URL:?API_URL is required}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     volumes:
       - gestorprint_uploads:/app/uploads
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -66,7 +66,9 @@ services:
         condition: service_healthy
     environment:
       PORT: 3005
-      ERP_API_URL: http://backend:3000/api
+      ERP_API_URL: ${ERP_API_URL:-http://backend:3000/api}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      TENANT_ID: ${TENANT_ID:-1}
     ports:
       - "${WHATSAPP_AI_PORT:-3005}:3005"
 
