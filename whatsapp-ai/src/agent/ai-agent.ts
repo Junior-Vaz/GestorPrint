@@ -11,6 +11,10 @@ interface SessionData {
   toolsFetchedAt: number;
 }
 
+interface ToolsListResponse {
+  tools?: any[];
+}
+
 export class AiAgent {
   private genAI: GoogleGenerativeAI;
   private erpBaseUrl: string;
@@ -166,7 +170,7 @@ REGRAS CRÍTICAS DE COMPORTAMENTO:
       return session.tools;
     }
 
-    const toolsResponse = await axios.post(`${this.erpBaseUrl}/mcp/rpc`, {
+    const toolsResponse = await axios.post<ToolsListResponse>(`${this.erpBaseUrl}/mcp/rpc`, {
       method: "tools/list",
       params: {},
     });

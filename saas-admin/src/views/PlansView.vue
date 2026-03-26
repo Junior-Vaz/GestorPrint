@@ -1,6 +1,6 @@
 <template>
   <SidebarLayout>
-    <div class="space-y-6">
+    <div class="p-6 max-w-7xl mx-auto space-y-6">
 
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -258,8 +258,8 @@
                 <div class="grid grid-cols-2 gap-3">
                   <label v-for="feat in FEATURES" :key="feat.key"
                     class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all hover:bg-slate-50"
-                    :class="form[feat.key] ? 'border-blue-300 bg-blue-50/50' : 'border-slate-200'">
-                    <input type="checkbox" v-model="form[feat.key]" class="w-4 h-4 rounded accent-blue-500 shrink-0"/>
+                    :class="(form as Record<string, unknown>)[feat.key] ? 'border-blue-300 bg-blue-50/50' : 'border-slate-200'">
+                    <input type="checkbox" v-model="(form as Record<string, unknown>)[feat.key]" class="w-4 h-4 rounded accent-blue-500 shrink-0"/>
                     <div>
                       <p class="text-sm font-semibold text-slate-700">{{ feat.label }}</p>
                       <p class="text-xs text-slate-400">{{ feat.desc }}</p>
@@ -321,6 +321,9 @@ interface PlanConfig {
   hasAudit: boolean
   hasCommissions: boolean
   hasApiAccess: boolean
+  hasPlotterEstimate: boolean
+  hasCuttingEstimate: boolean
+  hasEmbroideryEstimate: boolean
   isActive: boolean
   sortOrder: number
 }
@@ -333,8 +336,11 @@ const FEATURES = [
   { key: 'hasKanban',      label: 'Fila de Produção (Kanban)',  desc: 'Board de status de pedidos' },
   { key: 'hasAudit',       label: 'Auditoria de Ações',         desc: 'Log de todas as ações dos usuários' },
   { key: 'hasFileUpload',  label: 'Upload Arquivos Gráficos',   desc: 'Anexar .cdr, .psd, .svg, etc.' },
-  { key: 'hasCommissions', label: 'Comissões por Vendedor',     desc: 'Controle de comissões de vendedores' },
-  { key: 'hasApiAccess',   label: 'Acesso à API / Webhooks',    desc: 'Integração externa via API' },
+  { key: 'hasCommissions',        label: 'Comissões por Vendedor',      desc: 'Controle de comissões de vendedores' },
+  { key: 'hasApiAccess',          label: 'Acesso à API / Webhooks',     desc: 'Integração externa via API' },
+  { key: 'hasPlotterEstimate',    label: 'Orçamento Impressão Plotter', desc: 'Orçamentos por área m² com materiais' },
+  { key: 'hasCuttingEstimate',    label: 'Orçamento Recorte',           desc: 'Orçamentos de máquinas de recorte' },
+  { key: 'hasEmbroideryEstimate', label: 'Orçamento Estamparia',        desc: 'Orçamentos de bordado e estamparia' },
 ]
 
 const plans = ref<PlanConfig[]>([])
@@ -354,6 +360,7 @@ const emptyForm = () => ({
   price: 0, maxUsers: 1, maxOrders: 30, maxCustomers: 50,
   hasPdf: false, hasReports: false, hasKanban: false, hasFileUpload: false,
   hasWhatsapp: false, hasPix: false, hasAudit: false, hasCommissions: false, hasApiAccess: false,
+  hasPlotterEstimate: false, hasCuttingEstimate: false, hasEmbroideryEstimate: false,
   isActive: true, sortOrder: 0,
 })
 
@@ -441,6 +448,8 @@ async function save() {
       hasPdf: form.hasPdf, hasReports: form.hasReports, hasKanban: form.hasKanban,
       hasFileUpload: form.hasFileUpload, hasWhatsapp: form.hasWhatsapp, hasPix: form.hasPix,
       hasAudit: form.hasAudit, hasCommissions: form.hasCommissions, hasApiAccess: form.hasApiAccess,
+      hasPlotterEstimate: form.hasPlotterEstimate, hasCuttingEstimate: form.hasCuttingEstimate,
+      hasEmbroideryEstimate: form.hasEmbroideryEstimate,
       isActive: form.isActive, sortOrder: form.sortOrder,
     }
     if (!editingId.value) payload.name = form.name.toUpperCase().trim()
