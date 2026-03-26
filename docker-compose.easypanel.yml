@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_easypanel}
       POSTGRES_DB: ${POSTGRES_DB:-gestorprint_db}
     volumes:
-      - gestorprint_postgres_data:/var/lib/postgresql/data
+      - gestorprint_postgres_data_v2:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gestorprint_admin} -d ${POSTGRES_DB:-gestorprint_db}" ]
       interval: 10s
@@ -83,5 +83,5 @@ services:
     # Sugestão de domínio: admin.gestorprint.com.br
 
 volumes:
-  gestorprint_postgres_data:
+  gestorprint_postgres_data_v2:
   gestorprint_uploads:
