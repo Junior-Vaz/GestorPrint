@@ -28,6 +28,9 @@ export interface MyPlan {
   hasAudit: boolean
   hasCommissions: boolean
   hasApiAccess: boolean
+  hasPlotterEstimate: boolean
+  hasCuttingEstimate: boolean
+  hasEmbroideryEstimate: boolean
 }
 
 export const usePlanStore = defineStore('plan', () => {
@@ -45,7 +48,10 @@ export const usePlanStore = defineStore('plan', () => {
   const hasWhatsapp   = computed(() => loading.value ? false : (data.value?.hasWhatsapp   ?? false))
   const hasPix        = computed(() => loading.value ? false : (data.value?.hasPix        ?? false))
   const hasAudit      = computed(() => loading.value ? false : (data.value?.hasAudit      ?? false))
-  const hasCommissions = computed(() => loading.value ? false : (data.value?.hasCommissions ?? false))
+  const hasCommissions      = computed(() => loading.value ? false : (data.value?.hasCommissions      ?? false))
+  const hasPlotterEstimate  = computed(() => loading.value ? false : (data.value?.hasPlotterEstimate  ?? false))
+  const hasCuttingEstimate  = computed(() => loading.value ? false : (data.value?.hasCuttingEstimate  ?? false))
+  const hasEmbroideryEstimate = computed(() => loading.value ? false : (data.value?.hasEmbroideryEstimate ?? false))
 
   // ── Plan status ────────────────────────────────────────────────────────────
   const isSuspended = computed(() =>
@@ -92,6 +98,7 @@ export const usePlanStore = defineStore('plan', () => {
   return {
     data, loading, limitError,
     hasPdf, hasReports, hasKanban, hasFileUpload, hasWhatsapp, hasPix, hasAudit, hasCommissions,
+    hasPlotterEstimate, hasCuttingEstimate, hasEmbroideryEstimate,
     isSuspended, isTrial, planName,
     usersPct, ordersPct, customersPct,
     load, setLimitError, clearLimitError,

@@ -14,6 +14,11 @@ export class CreateEstimateDto {
   @IsString()
   status?: string;
 
+  @ApiProperty({ example: 'service', description: 'Tipo: service | plotter | cutting | embroidery', required: false })
+  @IsOptional()
+  @IsString()
+  estimateType?: string;
+
   @ApiProperty({ description: 'Dados JSON da calculadora (largura, altura, qtd, etc)' })
   @IsObject()
   details: any;

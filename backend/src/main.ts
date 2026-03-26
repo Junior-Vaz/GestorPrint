@@ -3,12 +3,20 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
+import { LogsService } from './logs/logs.service';
+import { LogsGateway } from './logs/logs.gateway';
 
 dotenv.config();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  // Wire custom logger
+  const logsService = app.get(LogsService);
+  const logsGateway = app.get(LogsGateway);
+  logsService.setGateway(logsGateway);
+  app.useLogger(logsService);
+
   app.setGlobalPrefix('api');
   app.enableCors();
   app.useGlobalPipes(
@@ -24,7 +32,7 @@ async function bootstrap() {
     .setDescription('The GestorPrint (Gráfica ERP) API for Managing Orders and Customers')
     .setVersion('1.0')
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 

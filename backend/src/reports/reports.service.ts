@@ -10,7 +10,7 @@ export class ReportsService {
   ) {}
 
   async getSummary(period = '30d', tenantId = 1) {
-    await this.plansService.requireFeature(tenantId, 'hasReports');
+    // No feature gate here — summary is used by the dashboard (available to all plans)
     try {
       const dateFilter = this.getDateFilter(period);
 

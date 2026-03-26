@@ -22,6 +22,9 @@ export class CreatePlanDto {
   @IsOptional() @IsBoolean() hasAudit?: boolean;
   @IsOptional() @IsBoolean() hasCommissions?: boolean;
   @IsOptional() @IsBoolean() hasApiAccess?: boolean;
+  @IsOptional() @IsBoolean() hasPlotterEstimate?: boolean;
+  @IsOptional() @IsBoolean() hasCuttingEstimate?: boolean;
+  @IsOptional() @IsBoolean() hasEmbroideryEstimate?: boolean;
 
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsInt() sortOrder?: number;

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
+import { useToast } from '../composables/useToast'
+
+const { showToast } = useToast()
 
 const settings = ref({
   companyName: '',
@@ -75,7 +78,7 @@ const handleLogoUpload = async (event: Event) => {
       const data = await res.json()
       settings.value.logoUrl = data.logoUrl
     } else {
-      alert('Erro ao enviar a logo.')
+      showToast('Erro ao enviar a logo.', 'error')
     }
   } catch (e) {
     console.error('Logo upload error:', e)

@@ -31,8 +31,27 @@ const router = createRouter({
     },
     {
       path: '/estimates',
-      name: 'estimates',
-      component: () => import('../views/EstimatesListView.vue')
+      redirect: '/estimates/service'
+    },
+    {
+      path: '/estimates/service',
+      name: 'estimates-service',
+      component: () => import('../views/estimates/EstimatesServiceView.vue'),
+    },
+    {
+      path: '/estimates/plotter',
+      name: 'estimates-plotter',
+      component: () => import('../views/estimates/EstimatesPlotterView.vue'),
+    },
+    {
+      path: '/estimates/cutting',
+      name: 'estimates-cutting',
+      component: () => import('../views/estimates/EstimatesCuttingView.vue'),
+    },
+    {
+      path: '/estimates/embroidery',
+      name: 'estimates-embroidery',
+      component: () => import('../views/estimates/EstimatesEmbroideryView.vue'),
     },
     {
       path: '/estimates/new',

@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit, Logger, ConflictException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 // "2026-03-20" → "2026-03-20T00:00:00.000Z" (Prisma DateTime exige ISO completo)
 function toDateTime(s?: string | null): string | null | undefined {
@@ -185,5 +186,38 @@ export class TenantsService implements OnModuleInit {
       where: { id },
       data: { planStatus: 'ACTIVE', isActive: true }
     });
+  }
+
+  async createAdminUser(tenantId: number, dto: { name: string; email: string; password: string }) {
+    const tenant = await (this.prisma as any).tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Tenant não encontrado');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // Upsert: update password if user already exists, else create
+    const existing = await (this.prisma as any).user.findFirst({
+      where: { email: dto.email, tenantId },
+    });
+
+    let user: any;
+    if (existing) {
+      user = await (this.prisma as any).user.update({
+        where: { id: existing.id },
+        data: { name: dto.name, password: hashedPassword, role: 'ADMIN' },
+      });
+    } else {
+      user = await (this.prisma as any).user.create({
+        data: {
+          name: dto.name,
+          email: dto.email,
+          password: hashedPassword,
+          role: 'ADMIN',
+          tenantId,
+        },
+      });
+    }
+
+    const { password: _, ...result } = user;
+    return result;
   }
 }

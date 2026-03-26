@@ -1,126 +1,165 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import { AiAgent } from './agent/ai-agent.js';
 import axios from 'axios';
+import { FlowEngine } from './engine/flow-engine.js';
+import { AiConfig } from './types/flow.js';
 
 dotenv.config();
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 const PORT = process.env.PORT || 3005;
 const ERP_API_URL = process.env.ERP_API_URL || 'http://localhost:3000/api';
+const INTERNAL_KEY = process.env.INTERNAL_API_KEY || 'gestorprint-internal-2026';
 
-// Singleton agent cache — keyed by apiKey+model+tokens+erpUrl so config changes take effect immediately
-const agentCache = new Map<string, AiAgent>();
-function getAgent(apiKey: string, geminiModel: string, maxTokens: number): AiAgent {
-  const cacheKey = `${apiKey}|${geminiModel}|${maxTokens}|${ERP_API_URL}`;
-  if (!agentCache.has(cacheKey)) {
-    agentCache.set(cacheKey, new AiAgent(apiKey, geminiModel, maxTokens, ERP_API_URL));
+// Cache AI config per tenant to avoid fetching on every message
+const configCache = new Map<number, { config: AiConfig; fetchedAt: number }>();
+const CONFIG_TTL_MS = 10 * 1000; // 10 seconds (fast pickup of config changes)
+
+async function getAiConfig(tenantId: number): Promise<AiConfig | null> {
+  const cached = configCache.get(tenantId);
+  if (cached && Date.now() - cached.fetchedAt < CONFIG_TTL_MS) {
+    return cached.config;
   }
-  return agentCache.get(cacheKey)!;
+  try {
+    const res = await axios.get(`${ERP_API_URL}/mcp/config-internal`, {
+      headers: { 'x-internal-key': INTERNAL_KEY, 'x-tenant-id': String(tenantId) },
+    });
+    const cfg = res.data as AiConfig;
+    cfg.tenantId = tenantId;
+    configCache.set(tenantId, { config: cfg, fetchedAt: Date.now() });
+    return cfg;
+  } catch (e: any) {
+    console.error('[CONFIG] Failed to load AI config:', e.message);
+    return null;
+  }
 }
 
-app.get('/', (req, res) => res.send('GestorPrint WhatsApp AI Agent is running! 🤖'));
+app.get('/', (_req, res) => {
+  res.send('GestorPrint WhatsApp Flow Engine is running! 🤖');
+});
+
+// Preview endpoint — runs the real flow engine with a virtual phone session
+app.post('/preview', async (req, res) => {
+  const { tenantId = 1, sessionId, message = '', nodes, edges, reset } = req.body as any;
+  const previewPhone = `preview-${sessionId || 'default'}`;
+
+  if (reset) {
+    const { deleteCachedSession } = await import('./engine/session-store.js');
+    deleteCachedSession(tenantId, previewPhone);
+    return res.json({ response: null });
+  }
+
+  const cfg = await getAiConfig(tenantId);
+  if (!cfg || !cfg.geminiKey) {
+    return res.json({ response: '⚠️ Configure a chave Gemini nas configurações da IA para usar o preview real.' });
+  }
+
+  try {
+    const inlineConfig = nodes && edges ? { nodes, edges } : undefined;
+    const engine = new FlowEngine(ERP_API_URL, cfg, inlineConfig);
+    const response = await engine.processMessage(previewPhone, message);
+    res.json({ response: response || null });
+  } catch (e: any) {
+    console.error('[PREVIEW]', e.message);
+    res.json({ response: `Erro: ${e.message}` });
+  }
+});
 
 // Webhook for Evolution API
 app.post('/webhook/whatsapp', async (req, res) => {
   const { event, data } = req.body;
-  
-  if (event === 'messages.upsert' && !data.key.fromMe) {
-    const contact = data.key.remoteJid;
-    const message = data.message;
-    
-    let text = message?.conversation || message?.extendedTextMessage?.text;
-    console.log(`\n[📩 MSG RECEBIDA] De: ${contact}`);
-    if (text) console.log(`   Conteúdo: "${text}"`);
-    
-    let mediaData: any = null;
 
-    // Detect Media (Image or Document)
-    const mediaType = message?.imageMessage ? 'image' : (message?.documentMessage ? 'document' : null);
-    
-    if (mediaType) {
-      console.log(`Media received from ${contact}: ${mediaType}`);
+  if (event !== 'messages.upsert' || data?.key?.fromMe) {
+    return res.sendStatus(200);
+  }
+
+  const contact: string = data.key?.remoteJid;
+  const message = data.message;
+  if (!contact || !message) return res.sendStatus(200);
+
+  let text: string | undefined =
+    message?.conversation || message?.extendedTextMessage?.text;
+
+  const mediaType: 'image' | 'document' | null =
+    message?.imageMessage ? 'image' : message?.documentMessage ? 'document' : null;
+
+  console.log(`\n[📩 MSG] ${contact} | type=${mediaType || 'text'} | "${text?.substring(0, 60) || ''}"`);
+
+  if (!text && !mediaType) return res.sendStatus(200);
+
+  // Determine tenantId — for single-tenant setup use 1; multi-tenant would route by instance name
+  // Evolution API sends the instance name in the webhook; we map it to a tenantId
+  const tenantId: number = +(process.env.TENANT_ID || 1);
+
+  try {
+    // 1. Load AI config
+    const cfg = await getAiConfig(tenantId);
+    if (!cfg || !cfg.enabled || !cfg.geminiKey) {
+      console.log('[CONFIG] AI disabled or missing key — skipping');
+      return res.sendStatus(200);
     }
 
-    if (!text && !mediaType) return res.sendStatus(200);
+    // 2. Download media if present
+    let mediaBase64: string | undefined;
+    let mediaMime: string | undefined;
 
-    try {
-      // 1. Fetch AI Config from ERP
-      const configRes = await axios.get(`${ERP_API_URL}/mcp/config`);
-      const config: any = configRes.data;
-
-      if (!config || !config.enabled || !config.geminiKey) {
-        console.log(`   ⚠️ IA ignorada: ${!config ? 'Config nula' : (!config.enabled ? 'Agente Inativo' : 'Falta Gemini Key')}`);
-        return res.sendStatus(200);
-      }
-      console.log(`   ✅ Configuração carregada (Agente: ${config.enabled ? 'ON' : 'OFF'})`);
-
-      // 2. Handle Media Download if allowed
-      const aiConfig = config as any;
-      if (mediaType && aiConfig.allowFileUploads) {
-        try {
-          let downloadData: any = null;
-          
-          // Evolution API Media Download
-          try {
-            // Need to pass the full data object (key + message) for Evolution to find the media
-            const downloadRes = await axios.post(`${aiConfig.evolutionUrl}/chat/getBase64FromMediaMessage/${aiConfig.evolutionInstance}`, {
-              message: data
-            }, {
-              headers: { 'apikey': aiConfig.evolutionKey }
-            });
-            downloadData = downloadRes.data;
-          } catch(e) {
-            console.log("getBase64 request failed:", e);
-          }
-
-          if (downloadData && downloadData.base64) {
-             let base64String = downloadData.base64;
-
-             if (base64String) {
-               mediaData = {
-                 base64: base64String.includes(';') ? base64String.split(',')[1] : base64String,
-                 filename: message[`${mediaType}Message`]?.fileName || `upload-${Date.now()}.${mediaType === 'image' ? 'jpg' : 'pdf'}`,
-                 mimetype: message[`${mediaType}Message`]?.mimetype || (mediaType === 'image' ? 'image/jpeg' : 'application/pdf')
-               };
-               
-               const mediaPrompt = `\n[SISTEMA: O usuário enviou um arquivo ${mediaType} chamado "${mediaData.filename}". Informe ao usuário que você recebeu a arte ou documento, e que se houver um pedido/orçamento em andamento você pode usar a ferramenta upload_artwork para anexá-lo.]`;
-               text = (text || "") + mediaPrompt;
-               console.log(`   📎 Mídia processada: ${mediaData.filename} (${mediaData.mimetype})`);
-             }
-          }
-        } catch (err: any) {
-          console.error("Error downloading media:", err.message);
+    if (mediaType && cfg.allowFileUploads) {
+      try {
+        const dlRes = await axios.post(
+          `${cfg.evolutionUrl}/chat/getBase64FromMediaMessage/${cfg.evolutionInstance}`,
+          { message: data },
+          { headers: { apikey: cfg.evolutionKey } },
+        );
+        const dlData = dlRes.data as any;
+        if (dlData?.base64) {
+          let b64 = dlData.base64 as string;
+          // Strip data URI prefix if present
+          if (b64.includes(',')) b64 = b64.split(',')[1];
+          mediaBase64 = b64;
+          mediaMime = message[`${mediaType}Message`]?.mimetype ||
+            (mediaType === 'image' ? 'image/jpeg' : 'application/pdf');
+          console.log(`   📎 Media downloaded (${mediaMime})`);
         }
+      } catch (e: any) {
+        console.error('[MEDIA] Download failed:', e.message);
       }
+    }
 
-      if (!text) return res.sendStatus(200);
+    if (!text && !mediaBase64) return res.sendStatus(200);
 
-      // 3. Get or create singleton agent (preserves chat history across messages)
-      const agent = getAgent(config.geminiKey, config.geminiModel || 'gemini-2.0-flash', config.maxTokens || 1000);
-      
-      // 4. Process with AI
-      const response = await agent.processMessage(contact, text, config.agentPrompt, mediaData);
-      console.log(`   🤖 IA Respondeu: "${response.substring(0, 50)}${response.length > 50 ? '...' : ''}"`);
+    // 3. Run flow engine
+    const engine = new FlowEngine(ERP_API_URL, cfg);
+    const responseText = await engine.processMessage(
+      contact,
+      text || '',
+      mediaBase64,
+      mediaMime,
+    );
 
-      // 4. Respond via Evolution API
-      await axios.post(`${config.evolutionUrl}/message/sendText/${config.evolutionInstance}`, {
+    if (!responseText) {
+      console.log('   ⏭  Silent advance — no message to send');
+      return res.sendStatus(200);
+    }
+
+    // 4. Send response via Evolution API
+    await axios.post(
+      `${cfg.evolutionUrl}/message/sendText/${cfg.evolutionInstance}`,
+      {
         number: contact.split('@')[0],
-        text: response,
+        text: responseText,
         delay: 1200,
-        linkPreview: true
-      }, {
-        headers: { 'apikey': config.evolutionKey }
-      });
-      console.log(`   📤 Resposta enviada para o WhatsApp com sucesso!\n`);
+        linkPreview: false,
+      },
+      { headers: { apikey: cfg.evolutionKey } },
+    );
 
-    } catch (error: any) {
-      console.error('Webhook processing error:', error.message);
-      if (error.response?.data) {
-        console.error('Evolution API Details:', JSON.stringify(error.response.data, null, 2));
-      }
+    console.log(`   📤 Sent: "${responseText.substring(0, 80)}${responseText.length > 80 ? '...' : ''}"`);
+  } catch (err: any) {
+    console.error('[WEBHOOK] Error:', err.message);
+    if (err.response?.data) {
+      console.error('   Details:', JSON.stringify(err.response.data).substring(0, 200));
     }
   }
 
@@ -128,5 +167,6 @@ app.post('/webhook/whatsapp', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 AI Agent server listening on port ${PORT}`);
+  console.log(`🚀 WhatsApp Flow Engine listening on port ${PORT}`);
+  console.log(`   ERP API: ${ERP_API_URL}`);
 });

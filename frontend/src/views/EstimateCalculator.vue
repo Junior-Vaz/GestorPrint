@@ -3,9 +3,11 @@ import { apiFetch } from '../utils/api'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
 import { useAuthStore } from '../stores/auth'
+import { useToast } from '../composables/useToast'
 
 const ui = useUiStore()
 const authStore = useAuthStore()
+const { showToast } = useToast()
 
 interface Product {
   id: number;
@@ -164,7 +166,7 @@ const calculation = computed(() => {
 
 const handleSaveEstimate = async (convertToOrder = false) => {
   if (!selectedCustomerId.value) {
-    alert('Selecione um cliente primeiro')
+    showToast('Selecione um cliente primeiro.', 'warning')
     return
   }
 
@@ -229,7 +231,7 @@ const handleConvertToOrder = async (estimateId: number) => {
 
 const generatePDF = () => {
   if (!lastEstimateId.value) {
-    alert('Por favor, salve o orçamento primeiro para gerar o documento PDF oficial.')
+    showToast('Salve o orçamento primeiro para gerar o PDF.', 'warning')
     return
   }
   const token = localStorage.getItem('gp_token') || ''

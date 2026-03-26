@@ -2,8 +2,10 @@
 import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useConfirm } from '../composables/useConfirm'
 
 const auth = useAuthStore()
+const { confirm: confirmDialog } = useConfirm()
 
 interface Customer {
   id: number;
@@ -103,7 +105,7 @@ const handleSave = async () => {
 }
 
 const deleteCustomer = async (id: number) => {
-  if (!confirm('Tem certeza que deseja excluir este cliente? Isso pode afetar orçamentos e pedidos vinculados.')) return
+  if (!await confirmDialog('Tem certeza que deseja excluir este cliente? Isso pode afetar orçamentos e pedidos vinculados.', { title: 'Excluir cliente' })) return
   try {
     const res = await apiFetch(`/api/customers/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchCustomers()
@@ -134,7 +136,7 @@ onMounted(fetchCustomers)
       <div class="flex items-center gap-3">
         <button
           @click="openModal()"
-          class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-100 active:scale-95"
+          class="flex cursor-pointer items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-100 active:scale-95"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
           Adicionar Cliente

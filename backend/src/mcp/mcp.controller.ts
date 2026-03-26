@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Delete, UseGuards, Param, Headers, UnauthorizedException } from '@nestjs/common';
 import { McpService } from './mcp.service';
 import { PlansService } from '../plans/plans.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentTenant } from '../auth/decorators/current-tenant.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('mcp')
 export class McpController {
@@ -141,5 +142,107 @@ export class McpController {
   @Patch('config')
   updateConfig(@Body() body: any, @CurrentTenant() tenantId: number) {
     return this.mcpService.updateAiConfig(body, tenantId);
+  }
+
+  // ─── Flow Builder Endpoints ─────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('flow-config')
+  getFlowConfig(@CurrentTenant() tenantId: number) {
+    return this.mcpService.getFlowConfig(tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('flow-config')
+  updateFlowConfig(@Body() body: { nodes: any[]; edges: any[] }, @CurrentTenant() tenantId: number) {
+    return this.mcpService.updateFlowConfig(body, tenantId);
+  }
+
+  // Flow session endpoints — called by whatsapp-ai service with internal key
+  @Public()
+  @Get('flow-session/:tenantId/:phone')
+  getFlowSession(
+    @Param('tenantId') tenantId: string,
+    @Param('phone') phone: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    this.validateInternalKey(key);
+    return this.mcpService.getFlowSession(+tenantId, phone);
+  }
+
+  @Public()
+  @Patch('flow-session/:tenantId/:phone')
+  upsertFlowSession(
+    @Param('tenantId') tenantId: string,
+    @Param('phone') phone: string,
+    @Body() body: { currentNodeId: string; collectedData: any },
+    @Headers('x-internal-key') key: string,
+  ) {
+    this.validateInternalKey(key);
+    return this.mcpService.upsertFlowSession(+tenantId, phone, body);
+  }
+
+  @Public()
+  @Delete('flow-session/:tenantId/:phone')
+  deleteFlowSession(
+    @Param('tenantId') tenantId: string,
+    @Param('phone') phone: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    this.validateInternalKey(key);
+    return this.mcpService.deleteFlowSession(+tenantId, phone);
+  }
+
+  @Public()
+  @Post('flow-pix')
+  async calculateAndPix(
+    @Body() body: { tenantId: number; productRef: string; quantity: number; customerId?: number },
+    @Headers('x-internal-key') key: string,
+  ) {
+    this.validateInternalKey(key);
+    return this.mcpService.calculateAndPix(body.tenantId, body.productRef, body.quantity, body.customerId);
+  }
+
+  @Public()
+  @Post('flow-preview')
+  async flowPreview(@Body() body: any) {
+    const whatsappAiUrl = process.env.WHATSAPP_AI_URL || 'http://localhost:3005';
+    try {
+      const res = await fetch(`${whatsappAiUrl}/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return res.json();
+    } catch {
+      return { response: '⚠️ Serviço de IA não está rodando. Inicie o whatsapp-ai (porta 3005) para usar o preview real.' };
+    }
+  }
+
+  // Create estimate from flow session — handles customer lookup/creation + price calculation
+  @Public()
+  @Post('flow-estimate')
+  async createFlowEstimate(
+    @Body() body: { tenantId: number; collectedData: Record<string, any> },
+    @Headers('x-internal-key') key: string,
+  ) {
+    this.validateInternalKey(key);
+    return this.mcpService.createEstimateFromFlow(body.tenantId, body.collectedData);
+  }
+
+  // Internal config endpoint — used by whatsapp-ai service (no JWT, x-internal-key required)
+  @Public()
+  @Get('config-internal')
+  getConfigInternal(
+    @Headers('x-internal-key') key: string,
+    @Headers('x-tenant-id') tenantIdHeader: string,
+  ) {
+    this.validateInternalKey(key);
+    return this.mcpService.getAiConfig(+(tenantIdHeader || '1'));
+  }
+
+  private validateInternalKey(key: string) {
+    const expected = process.env.INTERNAL_API_KEY || 'gestorprint-internal-2026';
+    if (key !== expected) throw new UnauthorizedException('Invalid internal key');
   }
 }

@@ -6,6 +6,9 @@ import PaymentModal from './PaymentModal.vue'
 import PaymentErrorModal from './PaymentErrorModal.vue'
 import { useAuthStore } from '../stores/auth'
 import { apiFetch } from '../utils/api'
+import { useToast } from '../composables/useToast'
+
+const { showToast: addToast } = useToast()
 
 const authStore = useAuthStore()
 const showStockWarningModal = ref(false)
@@ -292,12 +295,12 @@ const handleFileUpload = async (event: any, orderId: number) => {
   // Validação local antes de enviar
   const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
   if (BLOCKED_EXTENSIONS.has(ext)) {
-    alert(`Tipo de arquivo não permitido: ${ext}\nExecutáveis e scripts são bloqueados por segurança.`);
+    addToast(`Tipo de arquivo não permitido: ${ext}. Executáveis e scripts são bloqueados.`, 'error')
     event.target.value = '';
     return;
   }
   if (file.size > MAX_UPLOAD_SIZE) {
-    alert(`Arquivo muito grande: ${(file.size / 1024 / 1024).toFixed(1)} MB\nTamanho máximo permitido: 50 MB.`);
+    addToast(`Arquivo muito grande: ${(file.size / 1024 / 1024).toFixed(1)} MB. Máximo permitido: 50 MB.`, 'error')
     event.target.value = '';
     return;
   }
@@ -319,7 +322,7 @@ const handleFileUpload = async (event: any, orderId: number) => {
       }
     } else {
       const err = await res.json().catch(() => ({ message: 'Erro no upload' }));
-      alert(err.message || 'Erro ao enviar arquivo.');
+      addToast(err.message || 'Erro ao enviar arquivo.', 'error')
     }
   } catch (e) {
     console.error('Upload failed', e);
@@ -348,7 +351,7 @@ const deleteAttachment = async (id: number, orderId: number) => {
 
 const openWhatsApp = (order: Order) => {
   if (!order.customerPhone) {
-    alert('Cliente não possui telefone cadastrado.')
+    addToast('Cliente não possui telefone cadastrado.', 'warning')
     return
   }
   
@@ -426,7 +429,7 @@ const isPDF = (mimetype: string) => {
 
     <!-- Kanban -->
     <div class="flex-1 overflow-x-auto pb-4">
-      <div class="flex gap-6 h-full items-start min-w-[1024px]">
+      <div class="flex gap-6 h-full items-start  min-w-[1024px]">
         <div v-for="col in columns" :key="col.id" class="flex flex-col w-80 max-h-full bg-slate-100/70 rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           
           <div class="p-4 border-b border-slate-200 bg-slate-100/80 flex justify-between items-center shrink-0">

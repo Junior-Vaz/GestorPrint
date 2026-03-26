@@ -139,11 +139,11 @@
       </div>
     </div>
 
-    <!-- Modal Criar / Editar -->
+    <!-- Modal Criar Tenant (rápido) -->
     <div v-if="showModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showModal = false">
-      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div class="px-7 py-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white rounded-t-3xl z-10">
-          <h2 class="text-lg font-bold text-slate-800">{{ isEditing ? 'Editar Tenant' : 'Novo Tenant' }}</h2>
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg">
+        <div class="px-7 py-5 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-lg font-bold text-slate-800">Novo Tenant</h2>
           <button @click="showModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -151,7 +151,9 @@
           </button>
         </div>
 
-        <div class="px-7 py-5 space-y-5">
+        <div class="px-7 py-5 space-y-4">
+          <p class="text-xs text-slate-500 italic">Criação rápida. Os demais dados (endereço, CNPJ, plano completo, etc.) são preenchidos na página do tenant.</p>
+
           <!-- Nome + Slug -->
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -179,69 +181,17 @@
             </div>
           </div>
 
-          <!-- Status + isActive -->
+          <!-- Responsável (básico) -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status do Plano</label>
-              <select v-model="form.planStatus"
-                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-                <option value="TRIAL">TRIAL</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="SUSPENDED">SUSPENDED</option>
-                <option value="CANCELLED">CANCELLED</option>
-              </select>
-            </div>
-            <div class="flex items-end pb-1">
-              <label class="flex items-center gap-2.5 cursor-pointer">
-                <input type="checkbox" v-model="form.isActive" class="w-4 h-4 rounded text-indigo-600 accent-indigo-600" />
-                <span class="text-sm font-bold text-slate-700">Tenant Ativo</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Datas -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Fim do Trial</label>
-              <input type="date" v-model="form.trialEndsAt"
-                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Vencimento do Plano</label>
-              <input type="date" v-model="form.planExpiresAt"
-                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-          </div>
-
-          <!-- Limites -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Máx. Usuários</label>
-              <input type="number" v-model.number="form.maxUsers" min="1"
-                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Máx. Pedidos/mês</label>
-              <input type="number" v-model.number="form.maxOrders" min="1"
-                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-          </div>
-
-          <!-- Owner -->
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Responsável</label>
-            <div class="grid grid-cols-3 gap-3 mb-3">
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nome do Responsável</label>
               <input v-model="form.ownerName" placeholder="Nome completo"
-                class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              <input v-model="form.ownerPhone" placeholder="Telefone"
-                class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              <input v-model="form.ownerEmail" type="email" placeholder="E-mail"
-                class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
-            <div class="relative">
-              <input v-model="form.cpfCnpj" placeholder="CPF (11 dígitos) ou CNPJ (14 dígitos) — obrigatório para cobrança Asaas"
-                class="w-full border border-amber-200 bg-amber-50/50 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder-slate-400" />
-              <span class="absolute right-3 top-2.5 text-xs font-bold text-amber-500">Asaas</span>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">E-mail do Responsável</label>
+              <input v-model="form.ownerEmail" type="email" placeholder="email@empresa.com"
+                class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
         </div>
@@ -251,7 +201,7 @@
             class="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors">Cancelar</button>
           <button @click="save" :disabled="saving"
             class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-100 active:scale-95">
-            {{ saving ? 'Salvando...' : (isEditing ? 'Salvar Alterações' : 'Criar Tenant') }}
+            {{ saving ? 'Criando...' : 'Criar Tenant' }}
           </button>
         </div>
       </div>
@@ -270,9 +220,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import SidebarLayout from '../components/SidebarLayout.vue'
 import AlertModal from '../components/AlertModal.vue'
 import { apiFetch } from '../utils/api'
+
+const router = useRouter()
 
 interface Tenant {
   id: number; name: string; slug: string; plan: string; planStatus: string;
@@ -384,40 +337,27 @@ const openCreate = () => {
   showModal.value = true
 }
 const openEdit = (t: Tenant) => {
-  form.value = {
-    name: t.name, slug: t.slug, plan: t.plan, planStatus: t.planStatus,
-    isActive: t.isActive,
-    trialEndsAt: t.trialEndsAt ? t.trialEndsAt.substring(0, 10) : '',
-    planExpiresAt: t.planExpiresAt ? t.planExpiresAt.substring(0, 10) : '',
-    maxUsers: t.maxUsers, maxOrders: t.maxOrders,
-    ownerName: t.ownerName || '', ownerEmail: t.ownerEmail || '', ownerPhone: t.ownerPhone || '',
-  }
-  form.value.cpfCnpj = t.cpfCnpj || ''
-  isEditing.value = true
-  editingId.value = t.id
-  showModal.value = true
+  router.push(`/tenants/${t.id}`)
 }
 
 const save = async () => {
   saving.value = true
   const payload: any = { ...form.value }
-  if (!payload.trialEndsAt) payload.trialEndsAt = null
-  if (!payload.planExpiresAt) payload.planExpiresAt = null
-  const url = isEditing.value ? `/api/tenants/${editingId.value}` : '/api/tenants'
   try {
-    const res = await apiFetch(url, {
-      method: isEditing.value ? 'PATCH' : 'POST',
+    const res = await apiFetch('/api/tenants', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
     if (res.ok) {
+      const created = await res.json()
       showModal.value = false
-      await fetchTenants()
+      router.push(`/tenants/${created.id}`)
     } else {
-      showAlert('error', isEditing.value ? 'Erro ao salvar' : 'Erro ao criar tenant', await parseError(res))
+      showAlert('error', 'Erro ao criar tenant', await parseError(res))
     }
   } catch {
-    showAlert('error', 'Erro de Conexão', 'Não foi possível salvar o tenant.')
+    showAlert('error', 'Erro de Conexão', 'Não foi possível criar o tenant.')
   } finally {
     saving.value = false
   }

@@ -11,6 +11,15 @@ export class UpdateTenantDto {
   @IsOptional() @IsInt() @Min(1) @Max(99999) @Type(() => Number) maxUsers?: number;
   @IsOptional() @IsInt() @Min(1) @Type(() => Number) maxOrders?: number;
   @IsOptional() @IsInt() @Min(1) @Type(() => Number) maxCustomers?: number;
+  @IsOptional() @IsString() @MaxLength(200) razaoSocial?: string;
+  @IsOptional() @IsString() @MaxLength(30) inscricaoEstadual?: string;
+  @IsOptional() @IsString() @MaxLength(10) zipCode?: string;
+  @IsOptional() @IsString() @MaxLength(200) address?: string;
+  @IsOptional() @IsString() @MaxLength(20) number?: string;
+  @IsOptional() @IsString() @MaxLength(60) complement?: string;
+  @IsOptional() @IsString() @MaxLength(100) neighborhood?: string;
+  @IsOptional() @IsString() @MaxLength(100) city?: string;
+  @IsOptional() @IsString() @MaxLength(2) state?: string;
   @IsOptional() @IsString() @MaxLength(120) ownerName?: string;
   @ValidateIf(o => !!o.ownerEmail) @IsOptional() @IsEmail() ownerEmail?: string;
   @IsOptional() @IsString() @MaxLength(20) ownerPhone?: string;

@@ -72,6 +72,27 @@ export class FilesController {
     return this.filesService.saveFile(orderId, file, tenantId);
   }
 
+  @Post('upload-estimate/:estimateId')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: MAX_FILE_SIZE },
+    }),
+  )
+  uploadForEstimate(
+    @Param('estimateId', ParseIntPipe) estimateId: number,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentTenant() tenantId: number,
+  ) {
+    validateUpload(file);
+    return this.filesService.saveFileForEstimate(estimateId, file, tenantId);
+  }
+
+  @Get('estimate/:estimateId')
+  findByEstimate(@Param('estimateId', ParseIntPipe) estimateId: number) {
+    return this.filesService.findByEstimate(estimateId);
+  }
+
   @Get('order/:orderId')
   getByOrder(@Param('orderId', ParseIntPipe) orderId: number) {
     return this.filesService.findByOrder(orderId);

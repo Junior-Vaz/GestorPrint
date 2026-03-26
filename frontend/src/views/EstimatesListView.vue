@@ -3,9 +3,13 @@ import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
 import { useUiStore } from '../stores/ui'
 import { useAuthStore } from '../stores/auth'
+import { useToast } from '../composables/useToast'
+import { useConfirm } from '../composables/useConfirm'
 
 const ui = useUiStore()
 const auth = useAuthStore()
+const { showToast } = useToast()
+const { confirm: confirmDialog } = useConfirm()
 
 interface Estimate {
   id: number;
@@ -36,7 +40,7 @@ const fetchEstimates = async () => {
 }
 
 const deleteEstimate = async (id: number) => {
-  if (!confirm('Tem certeza que deseja excluir este orçamento?')) return
+  if (!await confirmDialog('Tem certeza que deseja excluir este orçamento?', { title: 'Excluir orçamento' })) return
   try {
     const res = await apiFetch(`/api/estimates/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchEstimates()
@@ -51,7 +55,7 @@ const openPdf = (id: number) => {
 }
 
 const convertToOrder = async (id: number) => {
-  if (!confirm('Deseja aprovar este orçamento e enviar para a produção?')) return
+  if (!await confirmDialog('Deseja aprovar este orçamento e enviar para a produção?', { title: 'Aprovar orçamento', confirmLabel: 'Aprovar', danger: false })) return
   try {
     const res = await apiFetch(`/api/estimates/${id}/convert`, { method: 'POST' })
     if (res.ok) await fetchEstimates()
@@ -70,9 +74,9 @@ const sendViaWhatsApp = async (est: Estimate) => {
     // 2. Format message
     const msg = `Olá *${est.customer.name}*!\n\n` +
       `Segue seu orçamento *#ORC-${est.id}* na *GestorPrint*:\n` +
-      `📦 *Produto:* ${est.details.productName || 'Impresso'}\n` +
-      `📐 *Tam:* ${est.details.width}x${est.details.height}cm\n` +
-      `🔢 *Qtd:* ${est.details.quantity} unidades\n` +
+      `📦 *Produto:* ${est.details.productName || est.details.produto || 'Impresso'}\n` +
+      ((est.details.width || est.details.largura) && (est.details.height || est.details.altura) ? `📐 *Tam:* ${est.details.width || est.details.largura}x${est.details.height || est.details.altura}cm\n` : '') +
+      ((est.details.quantity || est.details.quantidade) ? `🔢 *Qtd:* ${est.details.quantity || est.details.quantidade} unidades\n` : '') +
       `💰 *Total:* R$ ${est.totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n` +
       `Para aprovar e iniciar a produção agora, você pode pagar via Pix/Link aqui:\n` +
       `${paymentUrl}\n\n` +
@@ -85,7 +89,7 @@ const sendViaWhatsApp = async (est: Estimate) => {
     fetchEstimates()
   } catch (e) {
     console.error('Error sharing via WhatsApp', e)
-    alert('Erro ao gerar link de pagamento.')
+    showToast('Erro ao gerar link de pagamento.', 'error')
   }
 }
 
@@ -165,8 +169,11 @@ onMounted(fetchEstimates)
                 <div class="font-bold text-slate-800 leading-none">{{ est.customer.name }}</div>
               </td>
               <td class="px-6 py-4">
-                <div class="text-sm font-semibold text-slate-700">{{ est.details.productName || 'Impresso' }}</div>
-                <div class="text-[10px] text-slate-400">{{ est.details.quantity }} unidades • {{ est.details.width }}x{{ est.details.height }}cm</div>
+                <div class="text-sm font-semibold text-slate-700">{{ est.details.productName || est.details.produto || 'Impresso' }}</div>
+                <div class="text-[10px] text-slate-400">
+                  {{ est.details.quantity || est.details.quantidade ? `${est.details.quantity || est.details.quantidade} unidades` : '' }}
+                  {{ (est.details.width || est.details.largura) && (est.details.height || est.details.altura) ? ` • ${est.details.width || est.details.largura}x${est.details.height || est.details.altura}cm` : '' }}
+                </div>
               </td>
               <td class="px-6 py-4">
                 <span :class="['px-3 py-1 text-xs font-black rounded-lg inline-flex',

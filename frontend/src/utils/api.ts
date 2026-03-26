@@ -25,6 +25,14 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   if (response.status === 403) {
     response.clone().json().then((body: any) => {
       const msg = body?.message || 'Funcionalidade não disponível no seu plano atual.'
+      // Account suspended/cancelled during active session → force logout
+      if (msg.includes('suspensa') || msg.includes('cancelada')) {
+        localStorage.removeItem('gp_token')
+        localStorage.removeItem('gp_user')
+        sessionStorage.setItem('suspended_msg', msg)
+        window.location.href = '/login'
+        return
+      }
       window.dispatchEvent(new CustomEvent('plan:limit', { detail: msg }))
     }).catch(() => {})
   }

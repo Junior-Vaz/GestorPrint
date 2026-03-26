@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { apiFetch } from '../utils/api'
 import { ref, onMounted, computed } from 'vue'
+import { useConfirm } from '../composables/useConfirm'
+
+const { confirm: confirmDialog } = useConfirm()
 
 interface Expense {
   id: number;
@@ -83,7 +86,7 @@ const addCategory = async () => {
 }
 
 const deleteCategory = async (id: number) => {
-  if (!confirm('Excluir esta categoria?')) return
+  if (!await confirmDialog('Excluir esta categoria?', { title: 'Excluir categoria' })) return
   try {
     const res = await apiFetch(`/api/expense-categories/${id}`, { method: 'DELETE' })
     if (res.ok) await fetchCategories()
@@ -135,7 +138,7 @@ const saveExpense = async () => {
 }
 
 const deleteExpense = async (id: number) => {
-  if (!confirm('Excluir esta despesa?')) return
+  if (!await confirmDialog('Excluir esta despesa?', { title: 'Excluir despesa' })) return
   try {
     const res = await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' })
     if (res.ok) fetchExpenses()

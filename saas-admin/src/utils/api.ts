@@ -16,7 +16,7 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
 
   const response = await fetch(url, { ...options, headers: mergedHeaders })
 
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     localStorage.removeItem('sa_token')
     localStorage.removeItem('sa_user')
     window.location.href = '/login'

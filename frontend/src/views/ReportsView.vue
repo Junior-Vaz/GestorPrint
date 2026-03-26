@@ -121,9 +121,9 @@ onMounted(fetchReports)
         <!-- Revenue Card -->
         <div class="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg p-5 bg-indigo-600 relative overflow-hidden group">
           <div class="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-125 transition-all duration-700"></div>
-          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-1">Faturamento Bruto</p>
-          <h3 class="text-3xl font-black leading-none mb-3 text-white">R$ {{ summary.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</h3>
-          <div class="flex items-center gap-2 text-[10px] font-black bg-white/10 w-fit px-3 py-1.5 rounded-full text-white uppercase tracking-widest">
+          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Faturamento Bruto</p>
+          <h3 class="text-3xl font-black leading-none mb-3 text-black">R$ {{ summary.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</h3>
+          <div class="flex items-center gap-2 text-[10px] font-black bg-green-500/10 w-fit px-3 py-1.5 rounded-full text-green-600 uppercase tracking-widest">
             Receita {{ selectedPeriod }}
           </div>
         </div>
@@ -140,9 +140,9 @@ onMounted(fetchReports)
         <!-- Profit Card -->
         <div :class="['bg-white/80 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg p-5 relative overflow-hidden', summary.netProfit >= 0 ? 'bg-emerald-500' : 'bg-rose-600']">
           <div class="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
-          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 mb-1">Lucro Líquido Real</p>
-          <h3 class="text-3xl font-black leading-none mb-3 text-white">R$ {{ summary.netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</h3>
-          <div class="flex items-center gap-2 text-[10px] font-black bg-white/20 w-fit px-3 py-1.5 rounded-full text-white uppercase tracking-widest">
+          <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Lucro Líquido Real</p>
+          <h3 class="text-3xl font-black leading-none mb-3 text-black">R$ {{ summary.netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}</h3>
+          <div class="flex items-center gap-2 text-[10px] font-black bg-emerald-500/20 w-fit px-3 py-1.5 rounded-full text-green-600 uppercase tracking-widest">
             {{ summary.netProfit >= 0 ? 'Margem Positiva' : 'Saldo Negativo' }}
           </div>
         </div>

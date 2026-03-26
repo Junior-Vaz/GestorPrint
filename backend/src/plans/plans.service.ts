@@ -120,6 +120,9 @@ export class PlansService {
         hasAudit: planConfig.hasAudit,
         hasCommissions: planConfig.hasCommissions,
         hasApiAccess: planConfig.hasApiAccess,
+        hasPlotterEstimate: (planConfig as any).hasPlotterEstimate ?? false,
+        hasCuttingEstimate: (planConfig as any).hasCuttingEstimate ?? false,
+        hasEmbroideryEstimate: (planConfig as any).hasEmbroideryEstimate ?? false,
       } : {
         // Fallback: plan not found in PlanConfig — fail-closed (no features)
         // This prevents tenants with invalid/deleted plans from getting free access
@@ -127,6 +130,7 @@ export class PlansService {
         price: 0,
         hasPdf: false, hasReports: false, hasKanban: false, hasFileUpload: false,
         hasWhatsapp: false, hasPix: false, hasAudit: false, hasCommissions: false, hasApiAccess: false,
+        hasPlotterEstimate: false, hasCuttingEstimate: false, hasEmbroideryEstimate: false,
       }),
     };
   }

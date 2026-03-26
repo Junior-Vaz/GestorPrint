@@ -66,4 +66,30 @@ export class FilesService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async saveFileForEstimate(estimateId: number, file: Express.Multer.File, tenantId: number) {
+    await this.plansService.requireFeature(tenantId, 'hasFileUpload');
+    const tenantDir = path.join(this.uploadPath, String(tenantId));
+    if (!fs.existsSync(tenantDir)) {
+      fs.mkdirSync(tenantDir, { recursive: true });
+    }
+    const filename = `${Date.now()}-${file.originalname}`;
+    fs.writeFileSync(path.join(tenantDir, filename), file.buffer);
+    return (this.prisma as any).attachment.create({
+      data: {
+        filename: `${tenantId}/${filename}`,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        estimateId,
+      },
+    });
+  }
+
+  async findByEstimate(estimateId: number) {
+    return (this.prisma as any).attachment.findMany({
+      where: { estimateId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

@@ -2,8 +2,12 @@
 import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
 import { usePlanStore } from '../stores/plan'
+import { useToast } from '../composables/useToast'
+import { useConfirm } from '../composables/useConfirm'
 
 const plan = usePlanStore()
+const { showToast } = useToast()
+const { confirm: confirmDialog } = useConfirm()
 
 interface User {
   id: number;
@@ -82,7 +86,7 @@ const fetchUsers = async () => {
 const handleSave = async () => {
   if (!newUser.value.name || !newUser.value.email) return;
   if (!isEditing.value && !newUser.value.password) {
-    alert('Senha é obrigatória para novos usuários')
+    showToast('Senha é obrigatória para novos usuários.', 'warning')
     return
   }
 
@@ -111,14 +115,14 @@ const handleSave = async () => {
 }
 
 const deleteUser = async (id: number) => {
-  if (!confirm('Deseja realmente remover este colaborador do sistema?')) return
+  if (!await confirmDialog('Deseja realmente remover este colaborador do sistema?', { title: 'Remover usuário' })) return
   try {
     const res = await apiFetch(`/api/users/${id}`, { method: 'DELETE' })
     if (res.ok) {
       await fetchUsers()
     } else {
       const err = await res.json()
-      alert(err.message || 'Erro ao excluir usuário')
+      showToast(err.message || 'Erro ao excluir usuário.', 'error')
     }
   } catch (e) {
     console.error('Error deleting user', e)

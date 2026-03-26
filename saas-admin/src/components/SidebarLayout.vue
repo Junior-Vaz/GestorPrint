@@ -47,6 +47,18 @@
           </svg>
           Configurações
         </RouterLink>
+        <RouterLink
+          to="/logs"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
+          :class="route.path === '/logs'
+            ? 'bg-slate-800 text-white shadow-lg shadow-slate-400/30 scale-[1.02]'
+            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/80'"
+        >
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6m-6 4h6"/>
+          </svg>
+          Logs
+        </RouterLink>
       </nav>
 
       <!-- Divider -->
@@ -122,19 +134,14 @@ const navItems = [
     label: 'Planos',
     icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>',
   },
-  {
-    to: '/billing',
-    label: 'Cobrança (Asaas)',
-    icon: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>',
-  },
 ]
 
 const pageMeta: Record<string, { title: string; color: string }> = {
   '/dashboard': { title: 'Dashboard da Plataforma',    color: '#6366f1' },
   '/tenants':   { title: 'Gestão de Tenants',           color: '#a855f7' },
   '/plans':     { title: 'Gestão de Planos',            color: '#3b82f6' },
-  '/billing':   { title: 'Cobrança — Asaas',            color: '#10b981' },
-  '/settings':  { title: 'Configurações da Plataforma', color: '#f59e0b' },
+'/settings':  { title: 'Configurações da Plataforma', color: '#f59e0b' },
+  '/logs':      { title: 'Logs do Sistema',             color: '#1e293b' },
 }
 
 const pageTitle  = computed(() => pageMeta[route.path]?.title  || 'Admin Panel')

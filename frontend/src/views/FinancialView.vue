@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { apiFetch } from '../utils/api'
 import { ref, onMounted } from 'vue'
+import { useConfirm } from '../composables/useConfirm'
+
+const { confirm: confirmDialog } = useConfirm()
 
 const stats = ref({
   revenue: 0,
@@ -72,7 +75,7 @@ const saveSangria = async () => {
 }
 
 const confirmPayment = async (id: number) => {
-  if (!confirm('Deseja confirmar o pagamento manual desta transação?')) return
+  if (!await confirmDialog('Deseja confirmar o pagamento manual desta transação?', { title: 'Confirmar pagamento', confirmLabel: 'Confirmar', danger: false })) return
   try {
     const res = await apiFetch(`/api/payments/confirm/${id}`, { method: 'POST' })
     if (res.ok) {

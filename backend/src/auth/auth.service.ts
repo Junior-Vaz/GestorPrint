@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import { Injectable, OnModuleInit, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -26,7 +26,7 @@ export class AuthService implements OnModuleInit {
       console.log('Default tenant seeded: GestorPrint (id=1)');
     }
 
-    // Seed admin user if none exists
+    // Seed admin user if none exists, and ensure isSuperAdmin is set
     const adminCount = await this.prisma.user.count({ where: { role: 'ADMIN' } });
     if (adminCount === 0) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -37,23 +37,44 @@ export class AuthService implements OnModuleInit {
           name: 'Administrador',
           role: 'ADMIN',
           tenantId: 1,
+          isSuperAdmin: true,
         } as any,
       });
       console.log('Admin user seeded: admin@gestorprint.com / admin123');
+    } else {
+      // Ensure the platform admin has isSuperAdmin=true (idempotent)
+      await (this.prisma as any).user.updateMany({
+        where: { email: 'admin@gestorprint.com' },
+        data: { isSuperAdmin: true },
+      });
     }
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await (this.prisma.user as any).findFirst({ where: { email } });
-    if (user && await bcrypt.compare(pass, user.password)) {
-      const { password, ...result } = user;
-      return result;
+    if (!user || !(await bcrypt.compare(pass, user.password))) {
+      return null;
     }
-    return null;
+
+    // Check tenant suspension — super admins are always exempt
+    if (!user.isSuperAdmin && user.tenantId) {
+      const tenant = await (this.prisma as any).tenant.findUnique({
+        where: { id: user.tenantId },
+        select: { planStatus: true },
+      });
+      if (tenant && ['SUSPENDED', 'CANCELLED'].includes(tenant.planStatus)) {
+        throw new ForbiddenException(
+          'Sua conta está suspensa ou cancelada. Entre em contato com o suporte para reativá-la.',
+        );
+      }
+    }
+
+    const { password, ...result } = user;
+    return result;
   }
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user.id, role: user.role, tenantId: user.tenantId };
+    const payload = { email: user.email, sub: user.id, role: user.role, tenantId: user.tenantId, isSuperAdmin: user.isSuperAdmin ?? false };
     return {
       access_token: this.jwtService.sign(payload),
       user: {

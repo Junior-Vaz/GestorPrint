@@ -23,6 +23,7 @@ import { McpModule } from './mcp/mcp.module';
 import { AuditModule } from './audit/audit.module';
 import { BillingModule } from './billing/billing.module';
 import { PlansModule } from './plans/plans.module';
+import { LogsModule } from './logs/logs.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { PlansModule } from './plans/plans.module';
     McpModule,
     AuditModule,
     BillingModule,
+    LogsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

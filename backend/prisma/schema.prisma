@@ -20,6 +20,16 @@ model Tenant {
   maxUsers        Int       @default(3)             // limite de usuários por plano
   maxOrders       Int       @default(100)           // limite de pedidos/mês por plano
   maxCustomers    Int       @default(50)            // limite de clientes cadastrados
+  // Dados da empresa (para contrato)
+  razaoSocial        String?
+  inscricaoEstadual  String?
+  zipCode            String?
+  address            String?
+  number             String?
+  complement         String?
+  neighborhood       String?
+  city               String?
+  state              String?
   // Contato do responsável
   ownerName       String?
   ownerEmail      String?
@@ -46,6 +56,8 @@ model Tenant {
   auditLogs         AuditLog[]
   settings          Settings[]
   aiConfigs         AiConfig[]
+  flowConfig        FlowConfig?
+  flowSessions      FlowSession[]
 }
 
 model Customer {
@@ -121,17 +133,19 @@ model Estimate {
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId Int
-  status     String   @default("DRAFT") // DRAFT, SENT, APPROVED, REJECTED
-  details    Json // Contains dynamic calculator fields like width, height, colors, etc.
-  totalPrice Float
+  status       String   @default("DRAFT") // DRAFT, SENT, APPROVED, REJECTED
+  estimateType String   @default("service") // service | plotter | cutting | embroidery
+  details      Json // Contains dynamic calculator fields like width, height, colors, etc.
+  totalPrice   Float
   orders     Order[] // An estimate can generate one or more production orders
 
   // Employee Assignment
   salespersonId Int?
   salesperson   User? @relation("EstimateSalesperson", fields: [salespersonId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  attachments Attachment[]
 }
 
 model Order {
@@ -159,14 +173,16 @@ model Order {
 }
 
 model Attachment {
-  id           Int      @id @default(autoincrement())
-  filename     String   @unique
+  id           Int       @id @default(autoincrement())
+  filename     String    @unique
   originalName String
   mimetype     String
   size         Int
-  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId      Int
-  createdAt    DateTime @default(now())
+  order        Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      Int?
+  estimate     Estimate? @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  estimateId   Int?
+  createdAt    DateTime  @default(now())
 }
 
 model Settings {
@@ -196,7 +212,8 @@ model User {
   email    String
   password String
   name     String
-  role     String @default("ADMIN") // ADMIN, SALES, PRODUCTION
+  role          String  @default("ADMIN") // ADMIN, SALES, PRODUCTION
+  isSuperAdmin  Boolean @default(false)   // Platform-level admin (saas-admin), exempt from tenant suspension
 
   // Employee Details
   phone          String?
@@ -321,6 +338,11 @@ model PlanConfig {
   hasWhatsapp Boolean @default(false)  // WhatsApp AI (Gemini + Evolution API)
   hasPix      Boolean @default(false)  // PIX via Mercado Pago
 
+  // ── Tipos de Orçamento ────────────────────────────────────────────────────
+  hasPlotterEstimate    Boolean @default(false) // Orçamento Impressão Plotter
+  hasCuttingEstimate    Boolean @default(false) // Orçamento Recorte
+  hasEmbroideryEstimate Boolean @default(false) // Orçamento Estamparia
+
   // ── Gestão Avançada ───────────────────────────────────────────────────────
   hasAudit       Boolean @default(false) // Auditoria completa de ações
   hasCommissions Boolean @default(false) // Comissões por vendedor
@@ -344,4 +366,26 @@ model AuditLog {
   entityId  Int? // ID of the entity that was affected
   details   Json? // Optional JSON containing old/new values or specific change notes
   createdAt DateTime @default(now())
+}
+
+// ─── WHATSAPP FLOW BUILDER ───────────────────────────────────────────────────
+model FlowConfig {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @unique @default(1)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  nodes     Json     @default("[]")   // FlowNode[] serializado
+  edges     Json     @default("[]")   // FlowEdge[] serializado
+  updatedAt DateTime @updatedAt
+}
+
+model FlowSession {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int      @default(1)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  contactPhone  String
+  currentNodeId String
+  collectedData Json     @default("{}")
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tenantId, contactPhone])
 }

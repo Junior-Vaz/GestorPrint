@@ -5,6 +5,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { CreateTenantAdminDto } from './dto/create-tenant-admin.dto';
 
 /**
  * Endpoints de gerenciamento de Tenants (Super-Admin SaaS).
@@ -49,5 +50,10 @@ export class TenantsController {
   @Patch(':id/activate')
   activate(@Param('id') id: string) {
     return this.tenantsService.activate(+id);
+  }
+
+  @Post(':id/admin-user')
+  createAdminUser(@Param('id') id: string, @Body() body: CreateTenantAdminDto) {
+    return this.tenantsService.createAdminUser(+id, body);
   }
 }

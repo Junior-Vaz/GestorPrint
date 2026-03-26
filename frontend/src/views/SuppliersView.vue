@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { apiFetch } from '../utils/api'
 import { ref, onMounted, computed } from 'vue'
+import { useConfirm } from '../composables/useConfirm'
+
+const { confirm: confirmDialog } = useConfirm()
 
 interface Supplier {
   id: number
@@ -91,7 +94,7 @@ const saveSupplier = async () => {
 }
 
 const deleteSupplier = async (id: number) => {
-  if (!confirm('Excluir este fornecedor?')) return
+  if (!await confirmDialog('Excluir este fornecedor?', { title: 'Excluir fornecedor' })) return
   try {
     const res = await apiFetch(`/api/suppliers/${id}`, { method: 'DELETE' })
     if (res.ok) fetchSuppliers()

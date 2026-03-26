@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { apiFetch } from '../utils/api'
 import { ref, onMounted, computed } from 'vue'
+import { useToast } from '../composables/useToast'
+import { useConfirm } from '../composables/useConfirm'
+
+const { showToast } = useToast()
+const { confirm: confirmDialog } = useConfirm()
+
+// Stock adjustment modal state
+const stockModal = ref(false)
+const stockProduct = ref<Product | null>(null)
+const stockQty = ref('')
+const stockSaving = ref(false)
 
 interface ProductType {
   id: number
@@ -102,7 +113,7 @@ const saveProduct = async () => {
 }
 
 const deleteProduct = async (id: number) => {
-  if (!confirm('Excluir este insumo?')) return
+  if (!await confirmDialog('Excluir este insumo?', { title: 'Excluir insumo' })) return
   await apiFetch(`/api/products/${id}`, { method: 'DELETE' })
   await fetchAll()
 }
@@ -130,23 +141,33 @@ const saveType = async () => {
 }
 
 const deleteType = async (id: number) => {
-  if (!confirm('Excluir este tipo?')) return
+  if (!await confirmDialog('Excluir este tipo?', { title: 'Excluir tipo' })) return
   const res = await apiFetch(`/api/product-types/${id}`, { method: 'DELETE' })
-  if (!res.ok) { const e = await res.json(); alert(e.message || 'Erro ao excluir') }
+  if (!res.ok) { const e = await res.json(); showToast(e.message || 'Erro ao excluir.', 'error') }
   await fetchAll()
 }
 
-// --- Stock adjustment ---
-const adjustStock = async (product: Product) => {
-  const qtyStr = prompt(`Ajustar estoque de "${product.name}" (use + para entrada, - para saída):\nAtual: ${product.stock} ${product.unit}`)
-  if (qtyStr === null) return
-  const qty = parseFloat(qtyStr)
-  if (isNaN(qty)) { alert('Valor inválido'); return }
-  await apiFetch(`/api/products/${product.id}/stock`, {
+// --- Stock adjustment modal ---
+const openStockModal = (product: Product) => {
+  stockProduct.value = product
+  stockQty.value = ''
+  stockModal.value = true
+}
+
+const confirmStockAdjust = async () => {
+  const qty = parseFloat(stockQty.value)
+  if (isNaN(qty) || qty === 0) {
+    showToast('Informe um valor válido (ex: 10 ou -5).', 'warning')
+    return
+  }
+  stockSaving.value = true
+  await apiFetch(`/api/products/${stockProduct.value!.id}/stock`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ quantity: qty, type: qty > 0 ? 'PURCHASE' : 'ADJUSTMENT', reason: 'Ajuste manual' })
   })
+  stockSaving.value = false
+  stockModal.value = false
   await fetchAll()
 }
 
@@ -273,7 +294,7 @@ onMounted(fetchAll)
                 <div class="flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                   <button
                     v-if="product.productType.hasStock"
-                    @click="adjustStock(product)"
+                    @click="openStockModal(product)"
                     title="Ajustar Estoque"
                     class="text-slate-400 hover:text-amber-600 p-1.5 hover:bg-amber-50 rounded-lg transition-all"
                   >
@@ -422,6 +443,35 @@ onMounted(fetchAll)
             {{ editingTypeId ? 'Atualizar Tipo' : 'Criar Tipo' }}
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Adjustment Modal -->
+  <div v-if="stockModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+      <h3 class="font-bold text-slate-800 text-base mb-1">Ajustar Estoque</h3>
+      <p v-if="stockProduct" class="text-slate-500 text-sm mb-5">
+        <span class="font-semibold text-slate-700">{{ stockProduct.name }}</span>
+        &nbsp;· Atual: <span class="font-bold">{{ stockProduct.stock }} {{ stockProduct.unit }}</span>
+      </p>
+      <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Quantidade (use - para saída)</label>
+      <input
+        v-model="stockQty"
+        type="number"
+        step="0.1"
+        placeholder="Ex: 10 ou -5"
+        autofocus
+        @keyup.enter="confirmStockAdjust"
+        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm mb-5"
+      >
+      <div class="flex gap-3">
+        <button @click="stockModal = false" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+          Cancelar
+        </button>
+        <button @click="confirmStockAdjust" :disabled="stockSaving" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50">
+          {{ stockSaving ? 'Salvando...' : 'Confirmar' }}
+        </button>
       </div>
     </div>
   </div>

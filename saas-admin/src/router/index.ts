@@ -2,9 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import TenantsView from '../views/TenantsView.vue'
+import TenantDetailView from '../views/TenantDetailView.vue'
 import PlansView from '../views/PlansView.vue'
-import BillingView from '../views/BillingView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import LogsView from '../views/LogsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -12,9 +13,10 @@ const router = createRouter({
     { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
     { path: '/dashboard', name: 'dashboard', component: DashboardView },
     { path: '/tenants', name: 'tenants', component: TenantsView },
+    { path: '/tenants/:id', name: 'tenant-detail', component: TenantDetailView },
     { path: '/plans', name: 'plans', component: PlansView },
-    { path: '/billing', name: 'billing', component: BillingView },
     { path: '/settings', name: 'settings', component: SettingsView },
+    { path: '/logs', name: 'logs', component: LogsView },
     { path: '/', redirect: '/dashboard' },
     { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
   ],

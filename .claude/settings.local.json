@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r @Roles /d/Projetos/GitHub/GestorPrint/backend/src/ --include=*.ts)",
+      "Bash(npx prisma:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(grep -v \"//.*tenant\")",
+      "Bash(npm run:*)",
+      "Bash(ls d:/Projetos/GitHub/GestorPrint/frontend/src/*.d.ts)",
+      "Bash(node -e \":*)",
+      "Bash(find d:/Projetos/GitHub/GestorPrint -name .env* -not -path */node_modules/*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdlc3RvcnByaW50LmNvbSIsInN1YiI6MSwicm9sZSI6IkFETUlOIiwidGVuYW50SWQiOjEsImlhdCI6MTc3Mzk3NzkxNSwiZXhwIjoxNzc0MDY0MzE1fQ.MHne8aWpA4ATbZCzk_NGhNYTPl-0UBBM8EniIgiFxus\" __NEW_LINE_04012e7d41893bad__ echo \"=== CUSTOMERS ===\" curl -s http://localhost:3000/api/customers -H \"Authorization: Bearer $TOKEN\")",
+      "Read(//d/Projetos/GitHub/GestorPrint/frontend/**)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdlc3RvcnByaW50LmNvbSIsInN1YiI6MSwicm9sZSI6IkFETUlOIiwidGVuYW50SWQiOjEsImlhdCI6MTc3Mzk3NzkxNSwiZXhwIjoxNzc0MDY0MzE1fQ.MHne8aWpA4ATbZCzk_NGhNYTPl-0UBBM8EniIgiFxus\" __NEW_LINE_d3eb1f7642f18591__ echo \"=== NOTIFICATIONS ===\" curl -s http://localhost:3000/api/notifications -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdlc3RvcnByaW50LmNvbSIsInN1YiI6MSwicm9sZSI6IkFETUlOIiwidGVuYW50SWQiOjEsImlhdCI6MTc3Mzk3NzkxNSwiZXhwIjoxNzc0MDY0MzE1fQ.MHne8aWpA4ATbZCzk_NGhNYTPl-0UBBM8EniIgiFxus\" __NEW_LINE_a1ca99db9f91b358__ echo \"=== Test DTO validation - bad email ===\" curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"not-an-email\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"x\"\"\"\"}' __NEW_LINE_a1ca99db9f91b358__ echo \"\" echo \"=== Test DTO validation - bad customer ===\" curl -s -X POST http://localhost:3000/api/customers -H \"Content-Type: application/json\" -H \"Authorization: Bearer $TOKEN\" -d '{\"\"\"\"name\"\"\"\":\"\"\"\"\"\"\"\"}' __NEW_LINE_a1ca99db9f91b358__ echo \"\" echo \"=== Test unauthenticated request ===\" curl -s http://localhost:3000/api/customers)",
+      "Bash(wc -l grep -rn \"fetch\\(\" d:/Projetos/GitHub/GestorPrint/frontend/src/components/ --include=\"*.vue\")",
+      "Bash(head -3 grep -n \"fetch\\(\" d:/Projetos/GitHub/GestorPrint/frontend/src/views/CustomersView.vue)",
+      "Bash(head -3 grep -n \"fetch\\(\" d:/Projetos/GitHub/GestorPrint/frontend/src/views/UsersView.vue)",
+      "Bash(head -3 grep -n \"fetch\\(\" d:/Projetos/GitHub/GestorPrint/frontend/src/views/ExpensesView.vue)",
+      "Bash(head -3 grep -n \"fetch\\(\" d:/Projetos/GitHub/GestorPrint/frontend/src/views/SuppliersView.vue)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGdlc3RvcnByaW50LmNvbSIsInN1YiI6MSwicm9sZSI6IkFETUlOIiwidGVuYW50SWQiOjEsImlhdCI6MTc3Mzk3NzkxNSwiZXhwIjoxNzc0MDY0MzE1fQ.MHne8aWpA4ATbZCzk_NGhNYTPl-0UBBM8EniIgiFxus\" __NEW_LINE_825b2cb83b385f53__ echo \"=== Test create order ===\" curl -s -X POST http://localhost:3000/api/orders -H \"Content-Type: application/json\" -H \"Authorization: Bearer $TOKEN\" -d '{\"\"\"\"customerName\"\"\"\":\"\"\"\"Teste\"\"\"\",\"\"\"\"customerPhone\"\"\"\":\"\"\"\"11999990000\"\"\"\",\"\"\"\"productDescription\"\"\"\":\"\"\"\"Banner 100x80\"\"\"\",\"\"\"\"amount\"\"\"\":150.00}')"
+    ]
+  }
+}

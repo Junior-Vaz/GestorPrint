@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Header, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Header, Res, UseGuards, Query } from '@nestjs/common';
 import type { Response } from 'express';
 import { EstimatesService } from './estimates.service';
 import { CreateEstimateDto } from './dto/create-estimate.dto';
@@ -17,8 +17,8 @@ export class EstimatesController {
   }
 
   @Get()
-  findAll(@CurrentTenant() tenantId: number) {
-    return this.estimatesService.findAll(tenantId);
+  findAll(@CurrentTenant() tenantId: number, @Query('type') type?: string) {
+    return this.estimatesService.findAll(tenantId, type);
   }
 
   @Get(':id')
