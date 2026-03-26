@@ -21,7 +21,7 @@ services:
   # 2. Backend (API)
   # ─────────────────────────────────────────────
   backend:
-    image: ghcr.io/junior-vaz/gestorprint-backend:3114e0e581456f7af5d75360e1ed882a3b4fac24
+    image: ghcr.io/junior-vaz/gestorprint-backend:efbcd88660465f9846d86c2c89ac78f8f5a66438
     restart: unless-stopped
     command: >
       sh -c "until npx prisma migrate deploy; do
@@ -55,7 +55,7 @@ services:
   # 3. WhatsApp AI Agent
   # ─────────────────────────────────────────────
   whatsapp-ai:
-    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:3114e0e581456f7af5d75360e1ed882a3b4fac24
+    image: ghcr.io/junior-vaz/gestorprint-whatsapp-ai:efbcd88660465f9846d86c2c89ac78f8f5a66438
     restart: unless-stopped
     depends_on:
       backend:
@@ -71,7 +71,7 @@ services:
   # 4. Frontend (Web)
   # ─────────────────────────────────────────────
   frontend:
-    image: ghcr.io/junior-vaz/gestorprint-frontend:3114e0e581456f7af5d75360e1ed882a3b4fac24
+    image: ghcr.io/junior-vaz/gestorprint-frontend:efbcd88660465f9846d86c2c89ac78f8f5a66438
     restart: unless-stopped
     depends_on:
       - backend
@@ -81,7 +81,7 @@ services:
   # 5. SaaS Admin Panel
   # ─────────────────────────────────────────────
   saas-admin:
-    image: ghcr.io/junior-vaz/gestorprint-saas-admin:3114e0e581456f7af5d75360e1ed882a3b4fac24
+    image: ghcr.io/junior-vaz/gestorprint-saas-admin:efbcd88660465f9846d86c2c89ac78f8f5a66438
     restart: unless-stopped
     depends_on:
       - backend
