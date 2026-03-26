@@ -23,6 +23,12 @@ services:
   backend:
     image: ghcr.io/junior-vaz/gestorprint-backend:3114e0e581456f7af5d75360e1ed882a3b4fac24
     restart: unless-stopped
+    command: >
+      sh -c "until npx prisma migrate deploy; do
+      echo 'Database not ready yet, retrying in 3s...';
+      sleep 3;
+      done;
+      node dist/main"
     depends_on:
       db:
         condition: service_healthy
