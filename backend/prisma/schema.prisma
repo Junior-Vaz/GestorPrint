@@ -1,0 +1,1127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum FeatureKey {
+  PDF_GENERATION
+  FINANCIAL_REPORTS
+  KANBAN_BOARD
+  FILE_UPLOAD
+  WHATSAPP_AI
+  PIX_PAYMENTS
+  PLOTTER_ESTIMATE
+  CUTTING_ESTIMATE
+  EMBROIDERY_ESTIMATE
+  AUDIT_LOG
+  COMMISSIONS
+  API_ACCESS
+  RECEIVABLES
+  // ── Adicionados após o ecommerce ─────────────────────────────────────
+  ECOMMERCE // Loja online completa (catálogo público, pedidos, cupons, blog, reviews)
+  MP_CARD // Cartão de crédito via Mercado Pago Card Brick (PCI-compliant)
+  MELHOR_ENVIOS // Frete calculado e compra de etiquetas via Melhor Envios
+  LOYALTY_PROGRAM // Programa de fidelidade: pontos, cashback, tiers, aniversário, referral
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+}
+
+// ─── PLATFORM SETTINGS (config global do SaaS, editável pelo Super Admin) ──
+//
+// Singleton key-value pra centralizar configurações que antes ficavam só em env vars
+// (Asaas API key, SMTP, webhook tokens). Editável via SaaS Admin sem precisar restart.
+//
+// Padrão de leitura no código:
+//   const v = await platformSettings.get('asaasApiKey') ?? process.env.ASAAS_API_KEY
+//
+// Mantemos fallback em env pra dev/CI funcionarem sem precisar popular o DB.
+model PlatformSetting {
+  key       String   @id // ex: "asaasApiKey", "smtpHost", "asaasEnv"
+  value     String // string sempre — converte tipos no service
+  isSecret  Boolean  @default(false) // se true, mascarado nas respostas (****1234)
+  updatedAt DateTime @updatedAt
+  updatedBy Int? // userId que editou por último (FK opcional pro User)
+}
+
+// ─── TENANT (SaaS Multi-Tenant) ─────────────────────────────────────────────
+model Tenant {
+  id                  Int                @id @default(autoincrement())
+  uuid                String             @unique @default(uuid())
+  name                String
+  slug                String             @unique
+  // Plano & Assinatura
+  plan                String             @default("FREE") // FREE, BASIC, PRO, ENTERPRISE
+  planStatus          String             @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED, CANCELLED
+  trialEndsAt         DateTime?
+  planExpiresAt       DateTime?
+  maxUsers            Int                @default(3) // limite de usuários por plano
+  maxOrders           Int                @default(100) // limite de pedidos/mês por plano
+  maxCustomers        Int                @default(50) // limite de clientes cadastrados
+  // Dados da empresa (para contrato)
+  razaoSocial         String?
+  inscricaoEstadual   String?
+  zipCode             String?
+  address             String?
+  number              String?
+  complement          String?
+  neighborhood        String?
+  city                String?
+  state               String?
+  // Contato do responsável
+  ownerName           String?
+  ownerEmail          String?
+  ownerPhone          String?
+  cpfCnpj             String?
+  // Asaas (gateway de cobrança SaaS)
+  asaasCustomerId     String?
+  asaasSubscriptionId String?
+  // Domínio da loja (SPA Ecommerce). Resolve o tenant pelo hostname quando a SPA é
+  // hospedada num domínio próprio do cliente (ex: "loja.graficax.com.br"). Sem isso
+  // a SPA não sabe que tenant carregar — não tem fallback intencional.
+  storeDomain         String?            @unique
+  // Estado
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  // Relacionamentos existentes
+  customers           Customer[]
+  productTypes        ProductType[]
+  products            Product[]
+  estimates           Estimate[]
+  orders              Order[]
+  users               User[]
+  expenses            Expense[]
+  expenseCategories   ExpenseCategory[]
+  suppliers           Supplier[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  settings            Settings[]
+  aiConfigs           AiConfig[]
+  // Novos relacionamentos Clean Architecture
+  subscription        Subscription?
+  entitlement         TenantEntitlement?
+  invoices            Invoice[]
+  bills               Bill[]
+  // Ecommerce
+  siteContent         SiteContent?
+  blogPosts           BlogPost[]
+
+  @@index([plan, isActive])
+  @@index([planStatus, isActive])
+}
+
+model Customer {
+  id           Int       @id @default(autoincrement())
+  uuid         String    @unique @default(uuid())
+  tenantId     Int       @default(1)
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+  name         String
+  email        String?
+  phone        String?
+  document     String?
+  zipCode      String?
+  address      String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+  photoUrl     String? // URL relativa do avatar (ex: /api/files/{tenant}/abc.jpg)
+  birthDate    DateTime? // só data, sem hora — usado pelo cron do programa de fidelidade
+  notes        String? // observações livres do operador
+
+  // ── Programa de Fidelidade ─────────────────────────────────────────────────
+  // Pontos: moeda virtual (1 ponto = R$ X conforme loyaltyConfig do tenant).
+  // Ganha-se ao pagar pedido, perde-se ao resgatar ou expirar.
+  loyaltyPoints   Int                  @default(0)
+  // Cashback: crédito em R$ acumulado (% do pedido configurada por tenant).
+  // Diferente de pontos — vai direto pra conta como saldo monetário usável.
+  loyaltyBalance  Float                @default(0)
+  // Tier atual (BRONZE | SILVER | GOLD | PLATINUM). Recalculado por cron diário
+  // baseado no spend dos últimos 12 meses (ver loyaltyConfig.tiers).
+  loyaltyTier     String?
+  // Spend acumulado nos últimos 12 meses (cache pra evitar recalcular toda vez
+  // que mostra o cliente). Atualizado pelo cron junto com o tier.
+  loyaltySpend12m Float                @default(0)
+  // Código único de indicação. Compartilhado pelo cliente; quando alguém usa
+  // no cadastro, ambos ganham bônus configurável.
+  referralCode    String?              @unique
+  // FK self-relation: cliente que indicou este. Bônus liberado só após primeira
+  // compra paga do indicado (anti-fraude).
+  referredById    Int?
+  referredBy      Customer?            @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals       Customer[]           @relation("Referrals")
+  loyaltyTx       LoyaltyTransaction[]
+  coupons         Coupon[]             @relation("CustomerCoupons")
+
+  // Ecommerce: conta de cliente final
+  passwordHash           String?
+  emailVerified          Boolean           @default(false)
+  passwordResetToken     String?           @unique
+  passwordResetExpires   DateTime?
+  emailVerificationToken String?           @unique
+  storeAddresses         CustomerAddress[]
+  reviews                Review[]
+  wishlist               WishlistItem[]
+  orders                 Order[]
+  estimates              Estimate[]
+  invoices               Invoice[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  @@unique([email, tenantId])
+  @@unique([document, tenantId])
+  @@index([tenantId])
+  @@index([tenantId, loyaltyTier])
+}
+
+model ProductType {
+  id                      Int       @id @default(autoincrement())
+  uuid                    String    @unique @default(uuid())
+  tenantId                Int       @default(1)
+  tenant                  Tenant    @relation(fields: [tenantId], references: [id])
+  name                    String
+  color                   String    @default("#6366f1")
+  hasStock                Boolean   @default(true)
+  applicableEstimateTypes String[]  @default([]) // [] = aparece em todas; ex: ['service','plotter']
+  // Ecommerce
+  visibleInStore          Boolean   @default(false) // categoria aparece na vitrine
+  storeOrder              Int       @default(0) // ordem manual na nav do site
+  storeIcon               String? // emoji ou nome de ícone
+  products                Product[]
+  createdAt               DateTime  @default(now())
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+}
+
+model Product {
+  id                 Int             @id @default(autoincrement())
+  uuid               String          @unique @default(uuid())
+  tenantId           Int             @default(1)
+  tenant             Tenant          @relation(fields: [tenantId], references: [id])
+  name               String
+  productType        ProductType     @relation(fields: [typeId], references: [id])
+  typeId             Int
+  unit               String          @default("un") // m², kg, un, h
+  unitPrice          Float
+  brand              String?
+  markup             Float           @default(0)
+  stock              Float           @default(0)
+  minStock           Float           @default(0)
+  description        String?
+  supplierId         Int?
+  supplier           Supplier?       @relation(fields: [supplierId], references: [id])
+  movements          StockMovement[]
+  // Ecommerce
+  visibleInStore     Boolean         @default(false) // toggle "vender na loja"
+  slug               String?         @unique // URL amigável: /produtos/{slug}
+  photos             String[]        @default([]) // URLs de fotos extras
+  shortDescription   String? // pra cards do catálogo
+  longDescription    String? // pra página do produto
+  storeOrder         Int             @default(0) // ordem manual na vitrine
+  pixDiscountPercent Float           @default(0) // % de desconto no PIX (0–100). 0 = sem desconto
+  originalPrice      Decimal?        @db.Decimal(10, 2) // preço "de" pra promoções honestas (deve ser > unitPrice). null = sem promoção
+  storePrice         Float? // preço opcional da loja online. null = usa unitPrice (preço interno padrão)
+  productionDays     Int             @default(0) // dias úteis de produção (gráfica). 0 = pronta-entrega/sem produção
+  // Dimensões pra cálculo de frete (Melhor Envios)
+  weightGrams        Int? // peso embalado em gramas
+  heightCm           Int? // altura
+  widthCm            Int? // largura
+  lengthCm           Int? // comprimento
+  reviews            Review[]
+  wishlistedBy       WishlistItem[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, typeId])
+  @@index([tenantId, visibleInStore])
+}
+
+model StockMovement {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  quantity  Float
+  type      String // PURCHASE, SALE, ADJUSTMENT
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+model Estimate {
+  id             Int       @id @default(autoincrement())
+  uuid           String    @unique @default(uuid())
+  tenantId       Int       @default(1)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId     Int
+  status         String    @default("DRAFT") // DRAFT | SENT | APPROVED | REJECTED | EXPIRED
+  estimateType   String    @default("service") // service | plotter | cutting | embroidery
+  details        Json
+  totalPrice     Float
+  validUntil     DateTime?
+  rejectedReason String?
+  sentAt         DateTime?
+  orders         Order[]
+
+  salespersonId Int?
+  salesperson   User? @relation("EstimateSalesperson", fields: [salespersonId], references: [id])
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  attachments Attachment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, estimateType])
+}
+
+// Endereços de entrega do cliente final (ecommerce)
+model CustomerAddress {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int      @default(1)
+  customerId   Int
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label        String? // "Casa", "Trabalho"
+  cep          String
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String // UF
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+// Wishlist (lista de favoritos) — vincula cliente final a produto
+model WishlistItem {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@index([customerId])
+}
+
+// Cupons de desconto do ecommerce
+model Coupon {
+  id                 Int       @id @default(autoincrement())
+  tenantId           Int       @default(1)
+  code               String // único por tenant — ex: "BEMVINDO10"
+  description        String?
+  type               String // PERCENT | FIXED | FREE_SHIPPING
+  value              Float     @default(0) // percentual (10 = 10%) ou valor fixo (10 = R$10); ignorado p/ FREE_SHIPPING
+  minPurchase        Float? // valor mínimo do subtotal pra cupom valer
+  maxUses            Int? // total de usos permitidos (null = ilimitado)
+  usedCount          Int       @default(0)
+  maxUsesPerCustomer Int       @default(1)
+  validFrom          DateTime?
+  validUntil         DateTime?
+  firstOrderOnly     Boolean   @default(false)
+  active             Boolean   @default(true)
+  // ── Fidelidade ────────────────────────────────────────────────────────────
+  // source: MANUAL (criado pelo admin) | BIRTHDAY | REFERRAL | LOYALTY (gerado pelo programa)
+  // Cupons gerados pelo programa têm customerId preenchido — só esse cliente pode usar.
+  source             String    @default("MANUAL")
+  customerId         Int?
+  customer           Customer? @relation("CustomerCoupons", fields: [customerId], references: [id], onDelete: SetNull)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId, active])
+  @@index([tenantId, customerId])
+  @@index([tenantId, source])
+}
+
+// ─── PROGRAMA DE FIDELIDADE ────────────────────────────────────────────────
+// Ledger de transações de pontos/cashback. Toda movimentação cria uma linha
+// (EARN/REDEEM/EXPIRE/BONUS/REFERRAL/ADJUST). O saldo do Customer é o
+// agregado dessas transações — mantemos os campos `loyaltyPoints` e
+// `loyaltyBalance` no Customer como cache pra evitar SUM em toda leitura.
+//
+// Invariante: a soma de `points` por customerId deve bater com Customer.loyaltyPoints.
+// Garantida via transação Prisma no service (update + create no mesmo commit).
+model LoyaltyTransaction {
+  id         Int       @id @default(autoincrement())
+  tenantId   Int       @default(1)
+  customerId Int
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  // Tipos de movimentação:
+  //   EARN     — ganhou pontos por compra paga
+  //   REDEEM   — usou pontos como desconto
+  //   EXPIRE   — pontos vencidos pelo cron (saldo negativo no ledger)
+  //   BONUS    — admin deu pontos manualmente, cupom de aniversário, etc.
+  //   REFERRAL — bônus liberado quando o indicado fez 1ª compra
+  //   ADJUST   — correção manual de saldo (admin)
+  type       String
+  // points pode ser negativo (REDEEM/EXPIRE). cashback idem.
+  // Decisão: pontos e cashback têm transações SEPARADAS — mais auditável,
+  // o relatório mostra os dois fluxos sem misturar unidades.
+  points     Int       @default(0)
+  cashback   Float     @default(0)
+  reason     String? // "Pedido #123 pago", "Aniversário", etc.
+  orderId    Int? // FK fraco — não cascade, pra preservar histórico se pedido for excluído
+  // Data de expiração (só nos EARNs/BONUS positivos). EXPIRE/REDEEM ficam null.
+  // Cron diário busca por `expiresAt < now() AND expired=false` e cria EXPIRE compensatório.
+  expiresAt  DateTime?
+  expired    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, customerId, expired, expiresAt])
+  @@index([tenantId, type])
+  @@index([orderId])
+}
+
+// Avaliações de produtos (do cliente final, vinculadas a um pedido entregue pra evitar review fake)
+model Review {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int      @default(1)
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orderId    Int? // pedido onde o cliente comprou (opcional pra suportar reviews antigos/migrados)
+  rating     Int // 1-5
+  title      String?
+  comment    String?
+  photos     String[] @default([])
+  status     String   @default("PUBLISHED") // PUBLISHED | PENDING | REJECTED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([customerId, productId]) // 1 review por cliente por produto
+  @@index([tenantId])
+  @@index([productId, status])
+}
+
+// Conteúdo gerenciável da loja online (slides, depoimentos, FAQs, blog)
+model SiteContent {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int      @unique @default(1)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  slides       Json     @default("[]")
+  testimonials Json     @default("[]")
+  faqs         Json     @default("[]")
+  about        Json?
+  // Páginas legais editáveis no admin (renderizadas em /politica-de-trocas, etc).
+  // Schema: { returns: { title, body }, privacy: {...}, terms: {...} } — body em HTML.
+  legal        Json?
+  config       Json? // cores, paleta, contato, política
+  updatedAt    DateTime @updatedAt
+}
+
+// Posts do blog do ecommerce
+model BlogPost {
+  id              Int       @id @default(autoincrement())
+  tenantId        Int       @default(1)
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  title           String
+  slug            String    @unique
+  coverImage      String?
+  excerpt         String? // resumo pra cards
+  content         String // markdown ou HTML
+  category        String?
+  tags            String[]  @default([])
+  author          String?
+  status          String    @default("DRAFT") // DRAFT | PUBLISHED
+  publishedAt     DateTime?
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, slug])
+}
+
+model Order {
+  id                 Int       @id @default(autoincrement())
+  uuid               String    @unique @default(uuid())
+  tenantId           Int       @default(1)
+  tenant             Tenant    @relation(fields: [tenantId], references: [id])
+  customer           Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId         Int
+  estimate           Estimate? @relation(fields: [estimateId], references: [id])
+  estimateId         Int?
+  productDescription String
+  amount             Float
+  status             String    @default("PENDING") // PENDING, PRODUCTION, FINISHED, DELIVERED
+  details            Json?
+  // Anotações livres do operador exibidas no card do Kanban (medidas, observações
+  // de arte, decisões de produção, etc). Diferente de productDescription que
+  // veio do orçamento — `notes` é editável a qualquer hora pela equipe.
+  notes              String?
+  salespersonId      Int?
+  salesperson        User?     @relation("Salesperson", fields: [salespersonId], references: [id])
+  producerId         Int?
+  producer           User?     @relation("Producer", fields: [producerId], references: [id])
+
+  deliveryDate DateTime?
+  priority     String    @default("NORMAL") // NORMAL | URGENT
+
+  // ── Programa de Fidelidade (snapshot do que aconteceu neste pedido) ────────
+  // loyaltyProcessed: flag idempotente. Garante que o crédito de pontos/cashback
+  // só roda 1x mesmo que o pedido transite por DELIVERED múltiplas vezes ou
+  // que o cron de reconciliação rode mais de uma vez.
+  loyaltyProcessed Boolean @default(false)
+  pointsEarned     Int     @default(0) // pontos creditados quando pedido fechou
+  pointsRedeemed   Int     @default(0) // pontos usados como desconto neste pedido
+  cashbackEarned   Float   @default(0) // R$ de cashback creditados
+  cashbackRedeemed Float   @default(0) // R$ de cashback aplicados como desconto
+  loyaltyDiscount  Float   @default(0) // total de desconto via fidelidade (resgate + cupom)
+
+  // Origem do pedido
+  source String @default("ERP") // ERP | ECOMMERCE | PDV | WHATSAPP | AI
+
+  // Ecommerce: endereço, frete e pagamento online
+  shippingAddress     Json? // snapshot do endereço (preserva histórico)
+  shippingService     String? // PAC | SEDEX | JADLOG | TOTAL_EXPRESS
+  shippingCarrier     String? // Correios | Jadlog | Total Express
+  shippingCost        Float?
+  trackingCode        String?
+  shippingLabelUrl    String? // URL pública do PDF da etiqueta
+  meShipmentId        String? // ID do envio no Melhor Envios
+  shippingStatus      String? // PENDING | LABELED | POSTED | IN_TRANSIT | DELIVERED
+  paymentMethod       String? // PIX | CREDIT_CARD | BOLETO
+  paymentStatus       String  @default("PENDING") // PENDING | APPROVED | REJECTED | REFUNDED
+  paymentExternalId   String? // ID no Mercado Pago
+  paymentInstallments Int? // parcelas (cartão)
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+  attachments  Attachment[]
+  invoices     Invoice[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, source])
+  @@index([tenantId, createdAt])
+  @@index([customerId])
+}
+
+model Attachment {
+  id           Int       @id @default(autoincrement())
+  filename     String    @unique
+  originalName String
+  mimetype     String
+  size         Int
+  order        Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      Int?
+  estimate     Estimate? @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  estimateId   Int?
+  createdAt    DateTime  @default(now())
+}
+
+model Settings {
+  id          Int     @id @default(autoincrement())
+  tenantId    Int     @unique @default(1)
+  tenant      Tenant  @relation(fields: [tenantId], references: [id])
+  companyName String  @default("Minha Gráfica")
+  cnpj        String?
+  phone       String?
+  email       String?
+  address     String?
+
+  // Dados de negócio expostos pra IA via tool get_business_info e variáveis
+  // de prompt ({{paymentMethods}}, {{businessHours}}, {{deliveryDays}}).
+  // Antes ficavam hardcoded em McpService — agora editáveis em Settings.
+  paymentMethods      String[] @default(["PIX", "Cartão", "Boleto", "Dinheiro"])
+  businessHours       String? // ex: "Segunda a sexta, 9h às 18h"
+  defaultDeliveryDays Int      @default(5)
+
+  smtpHost        String?
+  smtpPort        Int?     @default(587)
+  smtpUser        String?
+  smtpPass        String? // TODO: migrar para AES-256 (fase credenciais)
+  smtpSecure      Boolean  @default(false)
+  mpAccessToken   String? // TODO: migrar para TenantPaymentConfig
+  mpPublicKey     String?
+  mpWebhookSecret String? // segredo do webhook MP (HMAC SHA-256) — pra validar notificações
+  logoUrl         String?
+  pricingConfig   Json? // Tabela de cobrança (ex: estamparia.colorSurcharge, estamparia.darkSurcharge, etc)
+  // Ecommerce: integração Melhor Envios
+  meAccessToken   String? // Token Melhor Envios (sandbox ou production)
+  meEnvironment   String   @default("sandbox") // sandbox | production
+  originCep       String? // CEP de origem dos envios
+  originAddress   Json? // Endereço completo de origem (rua, número, bairro, etc.)
+  // Ecommerce: configuração geral da loja
+  storeConfig     Json? // cores, paleta, política, contatos públicos
+  // Fidelidade: regras configuráveis por tenant. Shape esperado:
+  // {
+  //   enabled: bool,
+  //   // pontos
+  //   pointsPerReal: 1,           // 1 ponto a cada R$ 1 gasto
+  //   realsPerPoint: 0.05,        // 1 ponto = R$ 0.05 ao resgatar
+  //   pointsExpiryMonths: 12,     // pontos expiram em 12 meses
+  //   minRedeemPoints: 100,       // só resgata a partir de 100 pts
+  //   // cashback
+  //   cashbackPercent: 2,         // 2% do pedido vira cashback
+  //   cashbackExpiryMonths: 6,
+  //   // tiers (calculados pelo spend dos últimos 12 meses)
+  //   tiers: [
+  //     { name: 'BRONZE',   minSpend: 0,    discount: 0, pointsMultiplier: 1   },
+  //     { name: 'SILVER',   minSpend: 1000, discount: 2, pointsMultiplier: 1.5 },
+  //     { name: 'GOLD',     minSpend: 5000, discount: 5, pointsMultiplier: 2   },
+  //     { name: 'PLATINUM', minSpend: 15000,discount: 8, pointsMultiplier: 3   }
+  //   ],
+  //   // aniversário (cupom automático no mês do bday)
+  //   birthdayCoupon: { enabled: true, discountPercent: 10, validityDays: 30 },
+  //   // referral
+  //   referralBonusPoints: 200,   // bônus em pontos pra quem indicou + indicado (após 1ª compra)
+  //   referralBonusCashback: 0
+  // }
+  loyaltyConfig   Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model User {
+  id           Int     @id @default(autoincrement())
+  uuid         String  @unique @default(uuid())
+  // tenantId continua NOT NULL — PLATFORM users ficam no tenant 1 (ghost tenant
+  // exclusivo da plataforma). Separação de identidade vem do `userType`, não
+  // do tenant. Isso simplifica todas as queries existentes (que filtram por
+  // tenantId) sem precisar lidar com null.
+  tenantId     Int     @default(1)
+  tenant       Tenant  @relation(fields: [tenantId], references: [id])
+  email        String
+  password     String
+  name         String
+  // role: papel DENTRO do tenant (ADMIN/SALES/PRODUCTION) — só faz sentido
+  // pra userType=TENANT. Em PLATFORM, role pode ficar 'ADMIN' por convenção
+  // mas é ignorado.
+  role         String  @default("ADMIN")
+  // userType: separa OPERADOR DE GRÁFICA de OPERADOR DA PLATAFORMA SaaS.
+  //   TENANT   → user comum, opera o ERP de uma gráfica específica
+  //   PLATFORM → funcionário da Anthropic (você + equipe), gerencia o SaaS Admin
+  // Login do ERP rejeita PLATFORM. Login do SaaS Admin rejeita TENANT.
+  // Defaults pra TENANT pra retrocompatibilidade — todo user existente vira TENANT
+  // automaticamente; super admins são migrados pra PLATFORM no onModuleInit.
+  userType     String  @default("TENANT")
+  // isSuperAdmin: deprecated — mantido temporariamente por compat com código
+  // legado. Vai ser removido depois que toda referência migrar pra userType.
+  // Read: prefira `user.userType === 'PLATFORM'`.
+  isSuperAdmin Boolean @default(false)
+
+  phone          String?
+  document       String?
+  salary         Float?
+  commissionRate Float?  @default(0)
+  isActive       Boolean @default(true)
+  photoUrl       String? // Avatar do colaborador (data URL ou /api/files/...)
+
+  salesOrders    Order[]    @relation("Salesperson")
+  producedOrders Order[]    @relation("Producer")
+  salesEstimates Estimate[] @relation("EstimateSalesperson")
+
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  AuditLog         AuditLog[]
+  featureOverrides TenantFeatureOverride[]
+
+  // Email único POR (tenant, userType). Permite que o mesmo email exista
+  // como TENANT (gráfica X) e PLATFORM (sua equipe) sem colidir — útil pra
+  // vc se quiser ter conta de teste de gráfica + conta de admin da plataforma
+  // com mesmo email.
+  @@unique([email, tenantId, userType])
+  @@index([tenantId])
+  @@index([tenantId, role])
+  @@index([userType])
+}
+
+// RBAC dinâmico — matriz de permissões editável pelo admin do tenant.
+//
+// Cada linha é a interseção (role × resource): "o que SALES pode fazer
+// em 'orders'?". 4 ações booleanas (view/create/edit/delete) cobrem 99%
+// dos casos sem complicar com permissões mais finas.
+//
+// Defaults são populados via `PermissionsService.seedDefaults()` na primeira
+// vez que o tenant consulta a matriz — tabela vazia = comportamento legacy
+// (volta pros @Roles hardcoded), então é seguro deployar gradualmente.
+//
+// `resource` é uma string aberta (não enum) pra suportar adicionar novas
+// telas sem migration. Lista canônica vive em PermissionsService.RESOURCES.
+model RolePermission {
+  id        Int     @id @default(autoincrement())
+  tenantId  Int
+  role      String // ADMIN | SALES | PRODUCTION
+  resource  String // home | orders | customers | reports | settings | ...
+  canView   Boolean @default(false)
+  canCreate Boolean @default(false)
+  canEdit   Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  @@unique([tenantId, role, resource])
+  @@index([tenantId, role])
+}
+
+model Transaction {
+  id           Int      @id @default(autoincrement())
+  uuid         String   @unique @default(uuid())
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      Int
+  amount       Float
+  status       String   @default("PENDING") // PENDING, PAID, CANCELLED, REFUNDED
+  paymentType  String   @default("PIX") // PIX, CREDIT_CARD, CASH
+  gatewayId    String?  @unique
+  paymentUrl   String?
+  qrCode       String?
+  qrCodeBase64 String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model Expense {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  tenantId    Int       @default(1)
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  description String
+  amount      Float
+  category    String
+  date        DateTime  @default(now())
+  supplierId  Int?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+}
+
+model Invoice {
+  id         Int      @id @default(autoincrement())
+  uuid       String   @unique @default(uuid())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId   Int      @default(1)
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId Int
+  order      Order?   @relation(fields: [orderId], references: [id])
+  orderId    Int?
+
+  description String
+  amount      Float
+  dueDate     DateTime
+  paidAt      DateTime?
+  paidAmount  Float?
+
+  // PENDING | PAID | OVERDUE | CANCELLED
+  status String @default("PENDING")
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, dueDate])
+}
+
+model Bill {
+  id         Int       @id @default(autoincrement())
+  uuid       String    @unique @default(uuid())
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId   Int       @default(1)
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+  supplierId Int?
+
+  description String
+  amount      Float
+  dueDate     DateTime
+  paidAt      DateTime?
+  paidAmount  Float?
+
+  // PENDING | PAID | OVERDUE | CANCELLED
+  status String @default("PENDING")
+
+  notes     String?
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, dueDate])
+}
+
+model ExpenseCategory {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @default(1)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
+
+  @@unique([name, tenantId])
+  @@index([tenantId])
+}
+
+model Supplier {
+  id        Int       @id @default(autoincrement())
+  uuid      String    @unique @default(uuid())
+  tenantId  Int       @default(1)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  name      String
+  email     String?
+  phone     String?
+  category  String?
+  address   String?
+  expenses  Expense[]
+  products  Product[]
+  bills     Bill[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @default(1)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ALERT
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, read])
+  @@index([tenantId, createdAt])
+}
+
+model AiConfig {
+  id                   Int      @id @default(autoincrement())
+  tenantId             Int      @unique @default(1)
+  tenant               Tenant   @relation(fields: [tenantId], references: [id])
+  enabled              Boolean  @default(false)
+  // Provedor de IA — Vercel AI SDK aceita "google" | "openai" | "anthropic"
+  // (e dá pra adicionar groq, mistral, deepseek, etc sem mexer no resto).
+  aiProvider           String   @default("google")
+  // API key do provedor escolhido. Encriptada em repouso (CredentialEncryptor).
+  // Nome `geminiKey` é histórico — hoje serve qualquer provider.
+  geminiKey            String?
+  // Modelo do provider (varia por provider — UI dropdown muda dinamicamente).
+  geminiModel          String?  @default("gemini-2.0-flash")
+  maxTokens            Int?     @default(1000)
+  evolutionUrl         String?  @default("https://api.cslsoftwares.com.br")
+  evolutionKey         String? // TODO: migrar para AES-256 (fase credenciais)
+  evolutionInstance    String?  @default("gestorprint")
+  // URL pública pra Evolution chamar quando chega mensagem.
+  // Vazio = usa "${API_URL}/api/whatsapp/webhook" no momento do set.
+  // Editável na AiView pra apontar pra ngrok/Cloudflare em dev.
+  webhookUrl           String?
+  // Eventos que a Evolution dispara pro webhook. Default só MESSAGES_UPSERT
+  // (que é o único que o nosso handler processa). Admin pode habilitar
+  // outros via UI se quiser logar/auditar.
+  webhookEvents        String[] @default(["MESSAGES_UPSERT"])
+  // Prompt do agente WhatsApp (cliente final) — editável na AiView.
+  agentPrompt          String?  @default("Você é um atendente inteligente da nossa gráfica...")
+  // Prompt do chat ERP (operador autenticado) — editável na AiView.
+  // Vazio = usa o default hardcoded no AiChatService como fallback.
+  erpAgentPrompt       String?
+  // Modo "prompt completo" — quando true, o backend NÃO apenda mais o bloco
+  // de REGRAS CRÍTICAS e FERRAMENTAS RECOMENDADAS. O texto que o admin
+  // escrever na AiView é o system prompt inteiro. Power users só.
+  erpPromptStrict      Boolean  @default(false)
+  whatsappPromptStrict Boolean  @default(false)
+
+  // TTS (texto-pra-voz) — voz natural em vez do browser robotizado.
+  //
+  // Providers suportados:
+  //   "browser"    → Web Speech API (grátis, qualidade variável)
+  //   "openai"     → OpenAI (~R$ 0,08/min, bom equilíbrio)
+  //   "elevenlabs" → ElevenLabs (~R$ 1,30/min, qualidade superior)
+  //   "google"     → Google Cloud TTS (4M chars FREE/mês — generoso)
+  //
+  // ttsVoice/ttsModel guardam a voz e o modelo escolhidos, formato varia
+  // por provider (validado no controller no momento da chamada).
+  ttsProvider   String? @default("browser")
+  ttsVoice      String? @default("nova")
+  ttsModel      String? @default("tts-1")
+  openaiTtsKey  String? // encrypted (AES-256-GCM)
+  elevenlabsKey String? // encrypted
+  googleTtsKey  String? // encrypted (API key, não service account)
+  // Comandos rápidos do widget (chips no estado vazio). Json:
+  // [{ icon: '📋', text: 'Pedidos pendentes hoje' }, ...]
+  // Vazio/null = usa defaults do widget.
+  quickCommands Json?
+
+  // Restrições do agente — o que o WhatsApp pode oferecer pro cliente
+  // Filtragem cumulativa: se ambos vazios, devolve TUDO. Mais granular ganha.
+  allowedProductTypes  Int[]    @default([]) // Filtro por tipo (Papel/Acabamento/etc)
+  allowedProductIds    Int[]    @default([]) // Filtro por produto específico (mais granular)
+  allowedEstimateTypes String[] @default([]) // ["service","plotter","cutting","embroidery"] — vazio = todos
+
+  allowFileUploads Boolean  @default(true)
+  updatedAt        DateTime @updatedAt
+}
+
+// ── AI Chat History ────────────────────────────────────────────────────────
+// Histórico de mensagens do chat IA do ERP (widget flutuante).
+//
+// O agente do WhatsApp NÃO grava aqui — ele tem contexto curto na memória
+// do AiAgent (cleared quando termina o atendimento). O chat ERP por outro
+// lado é continuado: o operador volta no widget dia seguinte, vê histórico.
+//
+// sessionId permite múltiplas conversas paralelas pro mesmo user (ex: aba
+// separada com outro tópico). Default: "erp-widget".
+model AiChatMessage {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  userId    Int
+  sessionId String   @default("erp-widget")
+  role      String // "user" | "assistant"
+  text      String
+  toolName  String? // se a mensagem disparou uma tool, qual foi (debug/auditoria)
+  // null = sem avaliação, 1 = 👍, -1 = 👎. Útil pra ajustar o agentPrompt
+  // baseado em onde a IA acerta/erra.
+  feedback  Int?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, userId, sessionId, createdAt])
+}
+
+// AiChatSession — metadados de cada conversa do widget. Permite múltiplas
+// conversas paralelas pro mesmo user (estilo "Nova conversa" do ChatGPT).
+// O id é o sessionId usado pelo widget — string livre (ex: "s_xyz123").
+model AiChatSession {
+  id           String   @id
+  tenantId     Int
+  userId       Int
+  title        String   @default("Nova conversa")
+  createdAt    DateTime @default(now())
+  lastActivity DateTime @default(now())
+
+  @@index([tenantId, userId, lastActivity])
+}
+
+// AiUserMemory — memória persistente da IA entre sessões.
+// Texto livre (markdown) que o operador edita na AiView OU a IA preenche
+// autonomamente via tools `remember_preference` / `forget_preference`.
+//
+// É injetado no system prompt antes de cada chamada — IA sabe que
+// "operador X prefere PIX", "cliente Y só atende sextas", etc.
+model AiUserMemory {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  userId    Int
+  content   String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, userId])
+}
+
+// AiToolCall — auditoria de TODA chamada de tool feita pela IA (chat ERP +
+// WhatsApp). Útil pra:
+//   - debugar "a IA mexeu nisso? quem pediu?"
+//   - compliance (rastrear ações destrutivas)
+//   - dashboard de uso (top tools, latência média, taxa de erro)
+//   - identificar tools com bug (success=false frequente)
+model AiToolCall {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  userId    Int? // null pra calls do canal WhatsApp (sem operador logado)
+  sessionId String? // erp-widget session id ou phone do WhatsApp
+  channel   String // "erp" | "whatsapp"
+  toolName  String
+  args      Json?
+  result    Json? // só primeiros 4kb pra não estourar
+  success   Boolean
+  errorMsg  String?
+  latencyMs Int
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, toolName])
+  @@index([tenantId, userId, createdAt])
+}
+
+// ─── PLAN CONFIG (SaaS Plan Management) ─────────────────────────────────────
+model PlanConfig {
+  id          Int     @id @default(autoincrement())
+  uuid        String  @unique @default(uuid())
+  name        String  @unique // "FREE", "BASIC", "PRO", "ENTERPRISE" ou custom
+  displayName String
+  description String?
+
+  // ── Limites numéricos ──────────────────────────────────────────────────────
+  price        Float @default(0)
+  maxUsers     Int   @default(1)
+  maxOrders    Int   @default(30)
+  maxCustomers Int   @default(50)
+
+  // ── Módulos Operacionais ──────────────────────────────────────────────────
+  hasPdf        Boolean @default(false)
+  hasReports    Boolean @default(false)
+  hasKanban     Boolean @default(false)
+  hasFileUpload Boolean @default(false)
+
+  // ── Integrações ───────────────────────────────────────────────────────────
+  hasWhatsapp Boolean @default(false)
+  hasPix      Boolean @default(false)
+
+  // ── Tipos de Orçamento ────────────────────────────────────────────────────
+  hasPlotterEstimate    Boolean @default(false)
+  hasCuttingEstimate    Boolean @default(false)
+  hasEmbroideryEstimate Boolean @default(false)
+
+  // ── Gestão Avançada ───────────────────────────────────────────────────────
+  hasAudit       Boolean @default(false)
+  hasCommissions Boolean @default(false)
+  hasApiAccess   Boolean @default(false)
+  hasReceivables Boolean @default(false)
+
+  // ── Ecommerce / Loja online ───────────────────────────────────────────────
+  // hasEcommerce libera todo o módulo Ecommerce (catálogo público, pedidos,
+  // cupons, blog, reviews, customer area). Geralmente vendido em PRO+.
+  hasEcommerce    Boolean @default(false)
+  // hasMpCard libera o Card Brick do Mercado Pago (cartão PCI-compliant).
+  // PIX continua gateaado por hasPix — separado por sensibilidade.
+  hasMpCard       Boolean @default(false)
+  // hasMelhorEnvios libera cálculo de frete e compra de etiquetas Melhor Envios.
+  hasMelhorEnvios Boolean @default(false)
+
+  // ── Programa de Fidelidade ───────────────────────────────────────────────
+  // Pontos por compra, cashback, tiers (Bronze/Prata/Ouro/Platina), cupom de
+  // aniversário automático e indicação (referral). Default ON em BASIC+.
+  hasLoyalty Boolean @default(false)
+
+  // ── Meta ─────────────────────────────────────────────────────────────────
+  isActive  Boolean  @default(true)
+  isPublic  Boolean  @default(true) // false = plano enterprise/custom oculto
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, isPublic])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int      @default(1)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  // userId opcional — ações sem operador logado (cron, agente IA via webhook,
+  // hooks) gravam null em vez de quebrar com FK violation.
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String // CREATE, UPDATE, DELETE
+  entity    String
+  entityId  Int?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, entity])
+  @@index([tenantId, createdAt])
+  @@index([userId])
+}
+
+// ─── CLEAN ARCHITECTURE — ENTITLEMENT ENGINE ─────────────────────────────────
+
+/// Contrato financeiro do tenant — máquina de estados
+model Subscription {
+  id       String             @id @default(uuid())
+  tenantId Int                @unique
+  planName String // snapshot do nome do plano na criação
+  status   SubscriptionStatus @default(TRIALING)
+
+  trialEndsAt        DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelledAt        DateTime?
+
+  // Gateway externo
+  gatewayName           String? // "ASAAS" | "STRIPE"
+  gatewayCustomerId     String?
+  gatewaySubscriptionId String?
+
+  tenant Tenant              @relation(fields: [tenantId], references: [id])
+  events SubscriptionEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@index([trialEndsAt])
+}
+
+/// Audit trail de cada transição de estado da assinatura
+model SubscriptionEvent {
+  id             String  @id @default(uuid())
+  subscriptionId String
+  eventType      String // "PAYMENT_CONFIRMED" | "TRIAL_EXPIRED" | "MANUAL_SUSPEND"
+  fromStatus     String
+  toStatus       String
+  gatewayEventId String? @unique // idempotência: mesmo evento do gateway = mesma linha
+  payload        Json?
+  performedBy    String? // userId ou "system" ou "webhook"
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  createdAt    DateTime     @default(now())
+
+  @@index([subscriptionId])
+}
+
+/// O que o tenant pode fazer AGORA (computed de plano + overrides)
+model TenantEntitlement {
+  id       String @id @default(uuid())
+  tenantId Int    @unique
+
+  // Limites efetivos (podem diferir do PlanConfig — override manual pelo admin)
+  maxUsers     Int
+  maxOrders    Int
+  maxCustomers Int
+
+  overrides TenantFeatureOverride[]
+  tenant    Tenant                  @relation(fields: [tenantId], references: [id])
+
+  updatedAt DateTime @updatedAt
+}
+
+/// Override pontual de feature por tenant (liberar ou bloquear individualmente)
+model TenantFeatureOverride {
+  id            String     @id @default(uuid())
+  entitlementId String
+  feature       FeatureKey
+  granted       Boolean // true = libera mesmo sem o plano, false = bloqueia mesmo com o plano
+  reason        String? // "Negociação comercial — contrato #1234"
+  expiresAt     DateTime? // null = permanente
+  grantedById   Int? // userId do admin que concedeu
+
+  entitlement TenantEntitlement @relation(fields: [entitlementId], references: [id])
+  grantedBy   User?             @relation(fields: [grantedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([entitlementId, feature])
+  @@index([entitlementId])
+}

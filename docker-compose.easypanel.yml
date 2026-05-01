@@ -1,0 +1,112 @@
+# GestorPrint — stack EasyPanel
+#
+# Estrutura: db (Postgres) + backend (NestJS) + frontend (ERP) + saas-admin.
+# Imagens vêm do GHCR — pipeline `.github/workflows/build.yml` empurra a cada
+# push em `main`. Storefront (Ecommerce SPA) vive em repo separado.
+#
+# Variáveis vêm do painel do EasyPanel (Service → Environment). Defaults aqui
+# servem só pra dev local; em produção SOBRESCREVA tudo que tem `change_me`.
+
+services:
+  db:
+    image: postgres:15-alpine
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-gestorprint_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_easypanel}
+      POSTGRES_DB:       ${POSTGRES_DB:-gestorprint_db}
+    volumes:
+      - gestorprint_postgres_data_v2:/var/lib/postgresql/data
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gestorprint_admin} -d ${POSTGRES_DB:-gestorprint_db}"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+
+  backend:
+    image: ghcr.io/junior-vaz/gestorprint-backend:latest
+    pull_policy: always
+    restart: unless-stopped
+    # Aplica migrations antes de subir. Retry em loop até o Postgres estar
+    # disponível (o healthcheck do db cuida da maior parte, mas em cold-start
+    # pode dar uma janela de 1-3s).
+    command: >
+      sh -c "until npx prisma migrate deploy; do
+        echo 'Database not ready, retrying in 3s...';
+        sleep 3;
+      done;
+      node dist/main"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # ── Banco ──────────────────────────────────────────────────────────
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gestorprint_admin}:${POSTGRES_PASSWORD:-change_me_in_easypanel}@db:5432/${POSTGRES_DB:-gestorprint_db}?schema=public
+
+      # ── Segurança (OBRIGATÓRIAS — boot falha sem) ─────────────────────
+      # openssl rand -hex 32  (cada uma >= 32 chars)
+      NODE_ENV:        ${NODE_ENV:-production}
+      JWT_SECRET:      ${JWT_SECRET:-change_me_in_easypanel_min_32_chars}
+      ENCRYPTION_KEY:  ${ENCRYPTION_KEY:-change_me_in_easypanel_min_32_chars}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://app.gestorprint.com.br,https://admin.gestorprint.com.br}
+
+      # ── URL pública (obrigatória — usada em webhook + links) ──────────
+      API_URL:     ${API_URL:-https://api.gestorprint.com.br}
+      PORT:        3000
+      FORCE_HTTPS: ${FORCE_HTTPS:-true}
+
+      # ── Super Admin inicial (lido no 1º boot, depois é no-op) ─────────
+      SUPER_ADMIN_EMAIL:    ${SUPER_ADMIN_EMAIL:-}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
+      SUPER_ADMIN_NAME:     ${SUPER_ADMIN_NAME:-}
+
+      # ── Tokens de webhook (opcionais — recomendados) ──────────────────
+      WHATSAPP_WEBHOOK_TOKEN: ${WHATSAPP_WEBHOOK_TOKEN:-}
+
+      # ── Swagger (default off em prod) ─────────────────────────────────
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-}
+      SWAGGER_USER:    ${SWAGGER_USER:-}
+      SWAGGER_PASS:    ${SWAGGER_PASS:-}
+
+      # ── Storage (default: disco local em /app/uploads) ────────────────
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-}
+
+      # ── Fallbacks de PlatformSettings (preferível configurar via UI) ──
+      ASAAS_API_KEY:           ${ASAAS_API_KEY:-}
+      ASAAS_ENV:               ${ASAAS_ENV:-production}
+      ASAAS_WEBHOOK_TOKEN:     ${ASAAS_WEBHOOK_TOKEN:-}
+      ASAAS_GRACE_PERIOD_DAYS: ${ASAAS_GRACE_PERIOD_DAYS:-3}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    volumes:
+      - gestorprint_uploads:/app/uploads
+    healthcheck:
+      test:         ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/health || exit 1"]
+      interval:     15s
+      timeout:      10s
+      retries:      5
+      start_period: 60s
+
+  # ERP — mapear no EasyPanel: app.gestorprint.com.br → porta 80
+  frontend:
+    image: ghcr.io/junior-vaz/gestorprint-frontend:latest
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # SaaS Admin — mapear no EasyPanel: admin.gestorprint.com.br → porta 80
+  saas-admin:
+    image: ghcr.io/junior-vaz/gestorprint-saas-admin:latest
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  gestorprint_postgres_data_v2:
+  gestorprint_uploads:

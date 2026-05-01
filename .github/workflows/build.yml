@@ -1,0 +1,176 @@
+name: Build & Push Docker Images
+
+# Roda em push pra main (única branch de produção) ou disparo manual
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  validate-backend:
+    name: Validate Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      # Prisma client é necessário pro TS compilar — gera antes do build
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Build (NestJS — inclui type-check)
+        working-directory: backend
+        run: npm run build
+
+  validate-frontend:
+    name: Validate Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      # `npm run build` faz vue-tsc + vite build — pega bugs de tipo
+      - name: Build (vue-tsc + vite)
+        working-directory: frontend
+        run: npm run build
+
+  validate-saas-admin:
+    name: Validate SaaS Admin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: saas-admin/package-lock.json
+
+      - name: Install dependencies
+        working-directory: saas-admin
+        run: npm ci
+
+      - name: Type-check
+        working-directory: saas-admin
+        run: npm run type-check
+
+      - name: Build
+        working-directory: saas-admin
+        run: npm run build
+
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    needs: validate-backend
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase owner name
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/gestorprint-backend:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/gestorprint-backend:${{ github.sha }}
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: validate-frontend
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase owner name
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/gestorprint-frontend:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/gestorprint-frontend:${{ github.sha }}
+
+  build-saas-admin:
+    name: Build SaaS Admin
+    runs-on: ubuntu-latest
+    needs: validate-saas-admin
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase owner name
+        run: echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push saas-admin
+        uses: docker/build-push-action@v5
+        with:
+          context: ./saas-admin
+          push: true
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/gestorprint-saas-admin:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/gestorprint-saas-admin:${{ github.sha }}
