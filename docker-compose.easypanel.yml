@@ -72,16 +72,10 @@ services:
       # ── Storage (default: disco local em /app/uploads) ────────────────
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-}
 
-      # ── Fallbacks de PlatformSettings (preferível configurar via UI) ──
-      ASAAS_API_KEY:           ${ASAAS_API_KEY:-}
-      ASAAS_ENV:               ${ASAAS_ENV:-production}
-      ASAAS_WEBHOOK_TOKEN:     ${ASAAS_WEBHOOK_TOKEN:-}
-      ASAAS_GRACE_PERIOD_DAYS: ${ASAAS_GRACE_PERIOD_DAYS:-3}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-}
+      # ── Configs persistidas no banco (não precisa env) ────────────────
+      # Asaas, SMTP, MP, Evolution: configurados via UI:
+      #   • Plataforma  →  SaaS Admin Panel → Configurações da Plataforma
+      #   • Tenant      →  ERP → Configurações
     volumes:
       - gestorprint_uploads:/app/uploads
     healthcheck:

@@ -355,76 +355,121 @@ const goTo = (tab: string) => { ui.setTab(tab) }
             </button>
           </div>
 
-          <!-- KPI cards -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            <div class="border border-slate-200 rounded-xl px-4 py-3.5">
-              <div class="text-xs text-slate-500 mb-2">Pedidos totais</div>
-              <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-medium text-slate-900">{{ stats.loading ? '—' : stats.orders.toLocaleString('pt-BR') }}</span>
-                <span v-if="!stats.loading && stats.completedOrders > 0" class="inline-flex items-center gap-0.5 text-xs" style="color:#1D9E75">
-                  <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2l4 5H8v3H4V7H2z"/></svg>
-                  {{ stats.completedOrders }}
-                </span>
+          <!-- KPI cards (estilo BI: border + ícone discreto + padding generoso) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <!-- Pedidos totais -->
+            <div class="border border-slate-200 rounded-xl p-5">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="text-xs text-slate-500">Pedidos totais</div>
+                  <div class="text-2xl font-medium text-slate-900 mt-1">{{ stats.loading ? '—' : stats.orders.toLocaleString('pt-BR') }}</div>
+                </div>
+                <svg class="w-4 h-4 mt-1 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
               </div>
+              <div v-if="!stats.loading && stats.completedOrders > 0" class="flex items-center gap-1 text-[11px]" style="color:#1D9E75">
+                <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2l4 5H8v3H4V7H2z"/></svg>
+                <span class="font-medium">{{ stats.completedOrders }}</span>
+                <span class="text-slate-400">concluídos</span>
+              </div>
+              <div v-else class="text-[11px] text-slate-400">sem concluídos</div>
             </div>
 
-            <div class="border border-slate-200 rounded-xl px-4 py-3.5">
-              <div class="text-xs text-slate-500 mb-2">Em produção</div>
-              <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-medium text-slate-900">{{ stats.loading ? '—' : stats.pendingOrders.toLocaleString('pt-BR') }}</span>
-                <span v-if="!stats.loading && (stats.ordersByStatus.PRODUCTION || 0) > 0" class="inline-flex items-center gap-0.5 text-xs" style="color:#BA7517">
-                  <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="2.5"/></svg>
-                  {{ stats.ordersByStatus.PRODUCTION || 0 }} ativos
-                </span>
+            <!-- Em produção -->
+            <div class="border border-slate-200 rounded-xl p-5">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="text-xs text-slate-500">Em produção</div>
+                  <div class="text-2xl font-medium text-slate-900 mt-1">{{ stats.loading ? '—' : stats.pendingOrders.toLocaleString('pt-BR') }}</div>
+                </div>
+                <svg class="w-4 h-4 mt-1 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
               </div>
+              <div v-if="!stats.loading && (stats.ordersByStatus.PRODUCTION || 0) > 0" class="flex items-center gap-1 text-[11px]" style="color:#BA7517">
+                <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="2.5"/></svg>
+                <span class="font-medium">{{ stats.ordersByStatus.PRODUCTION || 0 }}</span>
+                <span class="text-slate-400">ativos no kanban</span>
+              </div>
+              <div v-else class="text-[11px] text-slate-400">nenhum em andamento</div>
             </div>
 
-            <div class="border border-slate-200 rounded-xl px-4 py-3.5">
-              <div class="text-xs text-slate-500 mb-2">Clientes</div>
-              <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-medium text-slate-900">{{ stats.loading ? '—' : stats.customers.toLocaleString('pt-BR') }}</span>
-                <span v-if="!stats.loading && topCustomers.length > 0" class="inline-flex items-center gap-0.5 text-xs" style="color:#1D9E75">
-                  <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2l4 5H8v3H4V7H2z"/></svg>
-                  {{ topCustomers.length }} ativos
-                </span>
+            <!-- Clientes -->
+            <div class="border border-slate-200 rounded-xl p-5">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="text-xs text-slate-500">Clientes</div>
+                  <div class="text-2xl font-medium text-slate-900 mt-1">{{ stats.loading ? '—' : stats.customers.toLocaleString('pt-BR') }}</div>
+                </div>
+                <svg class="w-4 h-4 mt-1 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
               </div>
+              <div v-if="!stats.loading && topCustomers.length > 0" class="flex items-center gap-1 text-[11px]" style="color:#1D9E75">
+                <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2l4 5H8v3H4V7H2z"/></svg>
+                <span class="font-medium">{{ topCustomers.length }}</span>
+                <span class="text-slate-400">ativos no período</span>
+              </div>
+              <div v-else class="text-[11px] text-slate-400">sem atividade recente</div>
             </div>
 
-            <div class="border border-slate-200 rounded-xl px-4 py-3.5">
-              <div class="text-xs text-slate-500 mb-2">Estoque baixo</div>
-              <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-medium text-slate-900">{{ stats.loading ? '—' : stats.lowStockItems.length.toLocaleString('pt-BR') }}</span>
-                <span v-if="!stats.loading && stats.lowStockItems.length > 0" class="inline-flex items-center gap-0.5 text-xs" style="color:#A32D2D">
-                  <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 10L2 5h2V2h4v3h2z"/></svg>
-                  alerta
-                </span>
-                <span v-else-if="!stats.loading" class="inline-flex items-center gap-0.5 text-xs" style="color:#1D9E75">
-                  <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M4.5 8.5l-2-2 1-1 1 1 3-3 1 1z"/></svg>
-                  em dia
-                </span>
+            <!-- Estoque baixo -->
+            <div class="border border-slate-200 rounded-xl p-5">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="text-xs text-slate-500">Estoque baixo</div>
+                  <div class="text-2xl font-medium mt-1"
+                       :style="{ color: !stats.loading && stats.lowStockItems.length > 0 ? '#A32D2D' : '#0F172A' }">
+                    {{ stats.loading ? '—' : stats.lowStockItems.length.toLocaleString('pt-BR') }}
+                  </div>
+                </div>
+                <svg class="w-4 h-4 mt-1 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
               </div>
+              <div v-if="!stats.loading && stats.lowStockItems.length > 0" class="flex items-center gap-1 text-[11px]" style="color:#A32D2D">
+                <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M6 10L2 5h2V2h4v3h2z"/></svg>
+                <span class="font-medium">precisa de reposição</span>
+              </div>
+              <div v-else-if="!stats.loading" class="flex items-center gap-1 text-[11px]" style="color:#1D9E75">
+                <svg class="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M4.5 8.5l-2-2 1-1 1 1 3-3 1 1z"/></svg>
+                <span class="font-medium">tudo em dia</span>
+              </div>
+              <div v-else class="text-[11px] text-slate-400">carregando…</div>
             </div>
           </div>
 
-          <!-- Revenue chart -->
-          <div class="mb-8 pt-8 border-t border-slate-100">
-            <div class="text-base font-medium text-slate-900 mb-4">Faturamento</div>
-
-            <div class="flex flex-wrap gap-8 mb-4">
+          <!-- Revenue chart (estilo BI: card bordado, header com legenda à direita) -->
+          <div class="border border-slate-200 rounded-xl p-6 mb-6">
+            <div class="flex items-start justify-between mb-5 flex-wrap gap-3">
               <div>
-                <div class="flex items-center gap-2 text-xs text-slate-500">
-                  <span class="w-2.5 h-2.5 rounded-sm" style="background:#185FA5"></span> Receita
+                <div class="text-base font-medium text-slate-900">Faturamento</div>
+                <div class="text-xs text-slate-500 mt-0.5">Receita e despesas dos últimos dias</div>
+              </div>
+              <div class="flex gap-4 text-xs">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-sm" style="background:#185FA5"></span>
+                  <span class="text-slate-500">Receita</span>
                 </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-sm" style="background:#B4B2A9"></span>
+                  <span class="text-slate-500">Despesas</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 mb-5 pb-5 border-b border-slate-100">
+              <div>
+                <div class="text-[11px] text-slate-500 uppercase tracking-wider">Receita</div>
                 <div class="text-xl font-medium text-slate-900 mt-1">{{ currency(stats.revenue) }}</div>
               </div>
               <div>
-                <div class="flex items-center gap-2 text-xs text-slate-500">
-                  <span class="w-2.5 h-2.5 rounded-sm" style="background:#B4B2A9"></span> Despesas
-                </div>
+                <div class="text-[11px] text-slate-500 uppercase tracking-wider">Despesas</div>
                 <div class="text-xl font-medium text-slate-900 mt-1">{{ currency(stats.expenses) }}</div>
               </div>
               <div>
-                <div class="text-xs text-slate-500">Lucro líquido</div>
+                <div class="text-[11px] text-slate-500 uppercase tracking-wider">Lucro líquido</div>
                 <div class="text-xl font-medium mt-1" :style="{ color: stats.netProfit >= 0 ? '#1D9E75' : '#A32D2D' }">{{ currency(stats.netProfit) }}</div>
               </div>
             </div>
@@ -474,12 +519,14 @@ const goTo = (tab: string) => { ui.setTab(tab) }
             </div>
           </div>
 
-          <!-- Recent orders table -->
-          <div class="pt-8 border-t border-slate-100">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-baseline gap-2">
+          <!-- Recent orders table (estilo BI: card bordado com header) -->
+          <div class="border border-slate-200 rounded-xl p-6">
+            <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+              <div>
                 <div class="text-base font-medium text-slate-900">Últimos pedidos</div>
-                <span v-if="recentOrders.length" class="text-xs text-slate-400">{{ recentOrders.length }}</span>
+                <div class="text-xs text-slate-500 mt-0.5">
+                  {{ recentOrders.length ? `${recentOrders.length} pedido${recentOrders.length === 1 ? '' : 's'} mais recente${recentOrders.length === 1 ? '' : 's'}` : 'Atalho rápido pra produção' }}
+                </div>
               </div>
               <button v-if="perms.can.view('orders-board')" @click="goTo('board')" class="text-xs text-slate-500 hover:text-slate-900 font-medium transition-colors">Ver todos →</button>
             </div>
@@ -524,7 +571,7 @@ const goTo = (tab: string) => { ui.setTab(tab) }
             <div v-else
                  v-for="o in recentOrders" :key="o.id"
                  @click="perms.can.view('orders-board') && goTo('board')"
-                 :class="['group grid grid-cols-[1.5fr_1.2fr_120px_110px_110px] gap-4 items-center py-4 px-2 -mx-2 border-b border-slate-100 text-sm rounded-lg transition-colors',
+                 :class="['group grid grid-cols-[1.5fr_1.2fr_120px_110px_110px] gap-4 items-center py-4 px-2 border-b border-slate-100 last:border-0 text-sm rounded-lg transition-colors',
                           perms.can.view('orders-board') ? 'cursor-pointer hover:bg-slate-50' : 'cursor-default']">
               <div class="flex items-center gap-3 min-w-0">
                 <span class="w-8 h-8 rounded-full text-xs font-medium flex items-center justify-center shrink-0"

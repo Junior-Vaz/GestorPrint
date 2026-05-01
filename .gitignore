@@ -78,8 +78,5 @@ backend/prisma/dev.db
 backend/uploads/*
 !backend/uploads/.gitkeep
 
-# Migrations antigas substituídas pela consolidada
-backend/prisma/migrations/20260318180614_add_saleperson_fields/
-
 # Scripts locais descartáveis
 .cleanup-and-push.ps1

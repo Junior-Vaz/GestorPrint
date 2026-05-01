@@ -230,52 +230,81 @@ const handleLogin = async () => {
         <div class="max-w-md">
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur border border-white/10 text-[11px] text-white/80">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            Novo · agente de IA no WhatsApp
+            Novidades · IA, loja online e fidelidade
           </div>
           <h2 class="text-[42px] xl:text-[52px] leading-[1.05] font-medium text-white mt-6 tracking-tight">
-            Sua gráfica<br/>
-            <span class="bg-clip-text text-transparent" style="background-image: linear-gradient(90deg, #A7F3D0 0%, #6EE7B7 50%, #34D399 100%)">sem atritos.</span>
+            Mais que um ERP.<br/>
+            <span class="bg-clip-text text-transparent" style="background-image: linear-gradient(90deg, #A7F3D0 0%, #6EE7B7 50%, #34D399 100%)">um ecossistema.</span>
           </h2>
           <p class="text-[15px] text-white/60 mt-5 leading-relaxed">
-            Orçamento, produção, PDV e financeiro em uma única plataforma moderna — feita pra quem imprime todo dia.
+            Produção, vendas, loja online, fidelidade e IA conversando entre si.
+            Tudo num só painel — feito pra gráficas que imprimem todo dia.
           </p>
         </div>
 
-        <!-- Middle: dashboard preview -->
-        <div class="mt-10 mb-10 relative">
-          <!-- KPI strip -->
-          <div class="grid grid-cols-3 gap-3 mb-3">
-            <div class="rounded-xl bg-white/[0.04] backdrop-blur border border-white/[0.08] px-4 py-3.5">
-              <div class="text-[10px] uppercase tracking-wider text-white/40">Receita</div>
-              <div class="text-lg font-medium text-white mt-1">R$ 48.2k</div>
-              <div class="flex items-center gap-1 text-[10px] mt-0.5" style="color:#6EE7B7">
-                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                +18%
+        <!-- Middle: feature chips + animated kanban + chat ERP -->
+        <div class="mt-8 mb-8 relative">
+          <!-- Faixa de 4 features novas em chips compactos -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            <div class="rounded-lg bg-white/[0.04] backdrop-blur border border-white/[0.08] px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background: rgba(56,189,248,0.14)">
+                  <svg class="w-3 h-3" fill="none" stroke="#7DD3FC" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-medium text-white leading-tight">Loja online</div>
+                  <div class="text-[9px] text-white/40 truncate">+ frete real</div>
+                </div>
               </div>
             </div>
-            <div class="rounded-xl bg-white/[0.04] backdrop-blur border border-white/[0.08] px-4 py-3.5">
-              <div class="text-[10px] uppercase tracking-wider text-white/40">Produção</div>
-              <div class="text-lg font-medium text-white mt-1">23</div>
-              <div class="text-[10px] text-white/40 mt-0.5">pedidos ativos</div>
+            <div class="rounded-lg bg-white/[0.04] backdrop-blur border border-white/[0.08] px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background: rgba(167,139,250,0.16)">
+                  <svg class="w-3 h-3" fill="none" stroke="#C4B5FD" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-medium text-white leading-tight">Agente IA</div>
+                  <div class="text-[9px] text-white/40 truncate">WhatsApp + ERP</div>
+                </div>
+              </div>
             </div>
-            <div class="rounded-xl bg-white/[0.04] backdrop-blur border border-white/[0.08] px-4 py-3.5">
-              <div class="text-[10px] uppercase tracking-wider text-white/40">Pix recebido</div>
-              <div class="text-lg font-medium text-white mt-1">R$ 12.4k</div>
-              <div class="flex items-center gap-1 text-[10px] mt-0.5" style="color:#6EE7B7">
-                <span class="w-1 h-1 rounded-full animate-pulse" style="background:#6EE7B7"></span>
-                ao vivo
+            <div class="rounded-lg bg-white/[0.04] backdrop-blur border border-white/[0.08] px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background: rgba(251,191,36,0.14)">
+                  <svg class="w-3 h-3" fill="none" stroke="#FBBF24" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 16V8a2 2 0 00-1-1.732l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.732l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-medium text-white leading-tight">Plotter 3D</div>
+                  <div class="text-[9px] text-white/40 truncate">preview real</div>
+                </div>
+              </div>
+            </div>
+            <div class="rounded-lg bg-white/[0.04] backdrop-blur border border-white/[0.08] px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style="background: rgba(244,114,182,0.14)">
+                  <svg class="w-3 h-3" fill="none" stroke="#F9A8D4" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-[10px] font-medium text-white leading-tight">Fidelidade</div>
+                  <div class="text-[9px] text-white/40 truncate">pontos + cashback</div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Kanban mini -->
-          <div class="rounded-xl bg-white/[0.04] backdrop-blur border border-white/[0.08] p-4">
+          <!-- Kanban animado: card "ghost" viaja entre as colunas em loop -->
+          <div class="rounded-xl bg-white/[0.04] backdrop-blur border border-white/[0.08] p-4 mb-3">
             <div class="flex items-center justify-between mb-3">
-              <span class="text-[11px] font-medium text-white/80">Produção — hoje</span>
-              <span class="text-[10px] text-white/40">kanban</span>
+              <span class="text-[11px] font-medium text-white/80">Produção · ao vivo</span>
+              <span class="inline-flex items-center gap-1 text-[10px] text-white/40">
+                <span class="w-1 h-1 rounded-full animate-pulse" style="background:#6EE7B7"></span>
+                kanban
+              </span>
             </div>
-            <div class="grid grid-cols-3 gap-2">
-              <!-- Col: Pendente -->
+            <!-- min-h reserva espaço pro ghost card (linha de baixo) que é
+                 absolute — sem isso, ele vaza no próximo bloco (chat ERP). -->
+            <div class="grid grid-cols-3 gap-2 relative min-h-[140px]">
+              <!-- Col Pendente -->
               <div>
                 <div class="flex items-center gap-1.5 mb-2">
                   <span class="w-1 h-1 rounded-full bg-white/30"></span>
@@ -283,16 +312,12 @@ const handleLogin = async () => {
                 </div>
                 <div class="space-y-1.5">
                   <div class="rounded-lg bg-white/[0.06] border border-white/[0.06] px-2.5 py-2">
-                    <div class="text-[10px] text-white font-medium truncate">Banner 2x1m</div>
+                    <div class="text-[10px] text-white font-medium truncate">Banner 2×1m</div>
                     <div class="text-[9px] text-white/40 mt-0.5">Ana M.</div>
-                  </div>
-                  <div class="rounded-lg bg-white/[0.06] border border-white/[0.06] px-2.5 py-2">
-                    <div class="text-[10px] text-white font-medium truncate">Cartão 500un</div>
-                    <div class="text-[9px] text-white/40 mt-0.5">Carlos T.</div>
                   </div>
                 </div>
               </div>
-              <!-- Col: Em produção -->
+              <!-- Col Produção -->
               <div>
                 <div class="flex items-center gap-1.5 mb-2">
                   <span class="w-1 h-1 rounded-full" style="background:#FBBF24"></span>
@@ -310,7 +335,7 @@ const handleLogin = async () => {
                   </div>
                 </div>
               </div>
-              <!-- Col: Concluído -->
+              <!-- Col Concluído -->
               <div>
                 <div class="flex items-center gap-1.5 mb-2">
                   <span class="w-1 h-1 rounded-full" style="background:#6EE7B7"></span>
@@ -324,24 +349,82 @@ const handleLogin = async () => {
                       entregue
                     </div>
                   </div>
-                  <div class="rounded-lg border px-2.5 py-2" style="background: rgba(110,231,183,0.08); border-color: rgba(110,231,183,0.18)">
-                    <div class="text-[10px] text-white font-medium truncate">Lona 3x2m</div>
-                    <div class="text-[9px] text-white/40 mt-0.5">pago · Pix</div>
+                </div>
+              </div>
+
+              <!-- Card "ghost" que viaja entre as 3 colunas — vira um "novo card"
+                   que se anexa abaixo do card estático em cada coluna durante o loop.
+                   Cor neutra (white-glass) pra combinar com qualquer status. -->
+              <div class="absolute top-[78px] left-0 w-[calc(33.333%-5.5px)] pointer-events-none animate-kanban-flow">
+                <div class="rounded-lg px-2.5 py-2 backdrop-blur"
+                     style="background: rgba(255,255,255,0.10);
+                            border: 1px solid rgba(255,255,255,0.22);
+                            box-shadow: 0 8px 24px -6px rgba(0,0,0,0.5), 0 0 0 1px rgba(110,231,183,0.18);">
+                  <div class="text-[10px] text-white font-medium truncate">Cartão F&V 200un</div>
+                  <div class="flex items-center justify-between mt-0.5">
+                    <div class="text-[9px] text-white/60">Pedro · #1284</div>
+                    <span class="w-1 h-1 rounded-full animate-pulse" style="background:#6EE7B7"></span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Incoming WhatsApp notification -->
+          <!-- Chat ERP mini (animado: mensagens aparecem em sequência + typing) -->
+          <div class="rounded-xl bg-white/[0.04] backdrop-blur border border-white/[0.08] p-3.5">
+            <div class="flex items-center justify-between mb-2.5">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg flex items-center justify-center" style="background: rgba(167,139,250,0.18)">
+                  <svg class="w-3 h-3" fill="none" stroke="#C4B5FD" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <div>
+                  <div class="text-[11px] font-medium text-white leading-tight">Assistente IA do ERP</div>
+                  <div class="text-[9px] text-white/40">conectado ao seu Gemini</div>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1 text-[9px] text-white/50">
+                <span class="w-1 h-1 rounded-full animate-pulse" style="background:#6EE7B7"></span>
+                online
+              </span>
+            </div>
+
+            <div class="space-y-1.5">
+              <!-- User message -->
+              <div class="flex justify-end animate-msg-1">
+                <div class="rounded-lg rounded-br-sm px-2.5 py-1.5 max-w-[80%]" style="background: rgba(167,139,250,0.18)">
+                  <div class="text-[10px] text-white/90 leading-snug">Cria orçamento de 200 cartões pro Pedro</div>
+                </div>
+              </div>
+
+              <!-- Bot message -->
+              <div class="flex justify-start animate-msg-2">
+                <div class="rounded-lg rounded-bl-sm bg-white/[0.06] border border-white/[0.06] px-2.5 py-1.5 max-w-[85%]">
+                  <div class="text-[10px] text-white/85 leading-snug">Pronto. R$ 240, prazo 3 dias. Quer enviar pelo WhatsApp?</div>
+                </div>
+              </div>
+
+              <!-- Typing indicator -->
+              <div class="flex justify-end animate-msg-3">
+                <div class="rounded-lg rounded-br-sm px-2.5 py-1.5" style="background: rgba(167,139,250,0.18)">
+                  <div class="flex items-center gap-0.5 h-3">
+                    <span class="w-1 h-1 rounded-full bg-white/60 animate-typing-dot" style="animation-delay: 0s"></span>
+                    <span class="w-1 h-1 rounded-full bg-white/60 animate-typing-dot" style="animation-delay: 0.2s"></span>
+                    <span class="w-1 h-1 rounded-full bg-white/60 animate-typing-dot" style="animation-delay: 0.4s"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notificação WhatsApp flutuante (mantida — ancora a IA externa) -->
           <div class="absolute -right-4 -bottom-4 animate-rise-slow">
             <div class="rounded-xl bg-white shadow-2xl shadow-black/40 px-3.5 py-2.5 flex items-center gap-2.5 max-w-[260px]">
               <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background:#E1F5EE">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="#1D9E75" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
               </div>
               <div class="min-w-0">
-                <div class="text-[11px] text-slate-900 font-medium truncate">Novo orçamento no WhatsApp</div>
-                <div class="text-[10px] text-slate-500 truncate">Cliente · 200 cartões frente e verso</div>
+                <div class="text-[11px] text-slate-900 font-medium truncate">IA respondeu no WhatsApp</div>
+                <div class="text-[10px] text-slate-500 truncate">Orçamento gerado · 200 cartões F&V</div>
               </div>
               <span class="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style="background:#1D9E75"></span>
             </div>
@@ -415,4 +498,37 @@ const handleLogin = async () => {
   100% { width: 45%; }
 }
 .animate-progress { animation: progress 4s ease-in-out infinite; }
+
+/* Card ghost viajando entre as 3 colunas do kanban (loop 9s).
+   `left` em % é mais previsível que translateX porque escala com o container. */
+@keyframes kanban-flow {
+  0%, 18%   { left: 0%;       opacity: 0;   transform: scale(0.95); }
+  22%, 38%  { left: 0%;       opacity: 1;   transform: scale(1); }
+  42%       { left: 33.333%;  opacity: 0.6; transform: scale(0.97); }
+  46%, 62%  { left: 33.333%;  opacity: 1;   transform: scale(1); }
+  66%       { left: 66.666%;  opacity: 0.6; transform: scale(0.97); }
+  70%, 90%  { left: 66.666%;  opacity: 1;   transform: scale(1); }
+  100%      { left: 0%;       opacity: 0;   transform: scale(0.95); }
+}
+.animate-kanban-flow {
+  animation: kanban-flow 9s cubic-bezier(.5,.05,.5,.95) infinite;
+}
+
+/* Chat ERP — mensagens aparecem em sequência (user → bot → user typing). */
+@keyframes msg-appear {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-msg-1 { animation: msg-appear 0.4s cubic-bezier(.16,1,.3,1) 0.6s both; }
+.animate-msg-2 { animation: msg-appear 0.4s cubic-bezier(.16,1,.3,1) 1.6s both; }
+.animate-msg-3 { animation: msg-appear 0.4s cubic-bezier(.16,1,.3,1) 2.8s both; }
+
+/* 3 dots do typing indicator com delay escalonado */
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30%           { opacity: 1;   transform: translateY(-1px); }
+}
+.animate-typing-dot {
+  animation: typing-dot 1.4s ease-in-out infinite;
+}
 </style>

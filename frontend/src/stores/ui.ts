@@ -36,8 +36,24 @@ const TAB_FEATURE_MAP: Record<string, { feature: string; label: string }> = {
   'ecommerce-settings':     { feature: 'hasEcommerce',          label: 'Configurações da loja' },
 }
 
+// Persistência da aba atual em sessionStorage. Por que session e não local:
+//   - F5 (refresh) mantém a aba                              ← objetivo
+//   - Fechar e reabrir a aba volta pro 'home' (Dashboard)    ← UX padrão
+//   - Não polui se admin abre múltiplas abas em paralelo (cada aba tem seu próprio sessionStorage)
+const TAB_KEY = 'gp_current_tab'
+
+// `calculator` é o form de edição que precisa de data (editingEstimate). Restaurar
+// sem data deixaria o form num estado "novo" inesperado, então no init a gente
+// faz fallback pra 'home' nesse caso. Os demais ESTIMATE_TABS são listas — OK
+// restaurar.
+function getInitialTab(): string {
+  const saved = sessionStorage.getItem(TAB_KEY)
+  if (!saved || saved === 'calculator') return 'home'
+  return saved
+}
+
 export const useUiStore = defineStore('ui', () => {
-  const currentTab = ref('home')
+  const currentTab = ref(getInitialTab())
   const editingEstimate = ref<any>(null)
 
   const ESTIMATE_TABS = ['calculator', 'estimates-service', 'estimates-plotter', 'estimates-cutting', 'estimates-embroidery']
@@ -58,6 +74,7 @@ export const useUiStore = defineStore('ui', () => {
       }
     }
     currentTab.value = tab
+    sessionStorage.setItem(TAB_KEY, tab)
     if (ESTIMATE_TABS.includes(tab)) {
       editingEstimate.value = data || null
     }

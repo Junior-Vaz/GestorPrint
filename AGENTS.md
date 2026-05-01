@@ -3,10 +3,10 @@
 ## Project Overview
 
 GestorPrint is a multi-tenant SaaS ERP for print shops with:
-- **Backend**: NestJS + Prisma + PostgreSQL
-- **Frontend**: Vue 3 + Pinia + TailwindCSS
+- **Backend**: NestJS + Prisma + PostgreSQL (REST + WebSockets + WhatsApp AI engine + Chat ERP IA)
+- **Frontend**: Vue 3 + Pinia + TailwindCSS (ERP SPA)
 - **SaaS Admin**: Vue 3 + TailwindCSS (tenant management)
-- **WhatsApp AI**: TypeScript + Express (AI agent integration)
+- **Storefront** (Ecommerce SPA): repositório separado
 
 ## Build Commands
 
@@ -43,14 +43,6 @@ cd saas-admin
 npm run dev                # Development server
 npm run build              # Production build
 npm run type-check         # TypeScript validation
-```
-
-### WhatsApp AI
-```bash
-cd whatsapp-ai
-npm run dev                # Watch mode (tsx)
-npm run start              # Production start
-# No test command configured
 ```
 
 ## Code Style Guidelines

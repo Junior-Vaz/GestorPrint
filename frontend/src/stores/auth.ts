@@ -44,6 +44,9 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     localStorage.removeItem('gp_token')
     localStorage.removeItem('gp_user')
+    // Limpa a aba persistida pra que o próximo login caia em 'home', não na
+    // última tela do user anterior (poderia ser uma feature que ele não tem).
+    sessionStorage.removeItem('gp_current_tab')
   }
 
   /**

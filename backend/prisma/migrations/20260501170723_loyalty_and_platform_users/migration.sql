@@ -87,16 +87,16 @@ ADD COLUMN     "passwordResetToken" TEXT,
 ADD COLUMN     "photoUrl" TEXT,
 ADD COLUMN     "referralCode" TEXT,
 ADD COLUMN     "referredById" INTEGER,
-ADD COLUMN     "uuid" TEXT NOT NULL;
+ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text;
 
 -- AlterTable
 ALTER TABLE "Estimate" ADD COLUMN     "rejectedReason" TEXT,
 ADD COLUMN     "sentAt" TIMESTAMP(3),
-ADD COLUMN     "uuid" TEXT NOT NULL,
+ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
 ADD COLUMN     "validUntil" TIMESTAMP(3);
 
 -- AlterTable
-ALTER TABLE "Expense" ADD COLUMN     "uuid" TEXT NOT NULL;
+ALTER TABLE "Expense" ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text;
 
 -- AlterTable
 ALTER TABLE "ExpenseCategory" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
@@ -124,7 +124,7 @@ ADD COLUMN     "shippingService" TEXT,
 ADD COLUMN     "shippingStatus" TEXT,
 ADD COLUMN     "source" TEXT NOT NULL DEFAULT 'ERP',
 ADD COLUMN     "trackingCode" TEXT,
-ADD COLUMN     "uuid" TEXT NOT NULL;
+ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text;
 
 -- AlterTable
 ALTER TABLE "PlanConfig" ADD COLUMN     "hasEcommerce" BOOLEAN NOT NULL DEFAULT false,
@@ -133,7 +133,7 @@ ADD COLUMN     "hasMelhorEnvios" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "hasMpCard" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "hasReceivables" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "isPublic" BOOLEAN NOT NULL DEFAULT true,
-ADD COLUMN     "uuid" TEXT NOT NULL;
+ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text;
 
 -- AlterTable
 ALTER TABLE "Product" ADD COLUMN     "heightCm" INTEGER,
@@ -147,7 +147,7 @@ ADD COLUMN     "shortDescription" TEXT,
 ADD COLUMN     "slug" TEXT,
 ADD COLUMN     "storeOrder" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "storePrice" DOUBLE PRECISION,
-ADD COLUMN     "uuid" TEXT NOT NULL,
+ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
 ADD COLUMN     "visibleInStore" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "weightGrams" INTEGER,
 ADD COLUMN     "widthCm" INTEGER;
@@ -156,7 +156,7 @@ ADD COLUMN     "widthCm" INTEGER;
 ALTER TABLE "ProductType" ADD COLUMN     "applicableEstimateTypes" TEXT[] DEFAULT ARRAY[]::TEXT[],
 ADD COLUMN     "storeIcon" TEXT,
 ADD COLUMN     "storeOrder" INTEGER NOT NULL DEFAULT 0,
-ADD COLUMN     "uuid" TEXT NOT NULL,
+ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
 ADD COLUMN     "visibleInStore" BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
@@ -174,19 +174,19 @@ ADD COLUMN     "pricingConfig" JSONB,
 ADD COLUMN     "storeConfig" JSONB;
 
 -- AlterTable
-ALTER TABLE "Supplier" ADD COLUMN     "uuid" TEXT NOT NULL;
+ALTER TABLE "Supplier" ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text;
 
 -- AlterTable
 ALTER TABLE "Tenant" ADD COLUMN     "storeDomain" TEXT,
-ADD COLUMN     "uuid" TEXT NOT NULL;
+ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text;
 
 -- AlterTable
-ALTER TABLE "Transaction" ADD COLUMN     "uuid" TEXT NOT NULL;
+ALTER TABLE "Transaction" ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text;
 
 -- AlterTable
 ALTER TABLE "User" ADD COLUMN     "photoUrl" TEXT,
 ADD COLUMN     "userType" TEXT NOT NULL DEFAULT 'TENANT',
-ADD COLUMN     "uuid" TEXT NOT NULL;
+ADD COLUMN     "uuid" TEXT NOT NULL DEFAULT gen_random_uuid()::text;
 
 -- DropTable
 DROP TABLE "FlowConfig";

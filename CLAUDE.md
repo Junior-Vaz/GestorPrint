@@ -24,16 +24,17 @@ Before creating, moving, renaming, merging, or deleting files under any of these
 
 ## Project overview
 
-**GestorPrint** is a multi-tenant SaaS ERP for print shops. Four services:
+**GestorPrint** is a multi-tenant SaaS ERP for print shops. Three services:
 
 | Service | Tech | Dev port | Purpose |
 |---------|------|----------|---------|
-| `backend/` | NestJS 11 + Prisma 5.21 + PostgreSQL 15 | 3000 | REST API + WebSockets |
+| `backend/` | NestJS 11 + Prisma 5.21 + PostgreSQL 15 | 3000 | REST API + WebSockets + WhatsApp AI engine |
 | `frontend/` | Vue 3.5 + Pinia + TailwindCSS 4 + Vite 7 | 5173 | ERP SPA (TypeScript) |
 | `saas-admin/` | Vue 3.5 + Pinia + TailwindCSS 4 + Vite 7 | 5174 | Platform admin panel |
-| `ai-agent/` | Express 5 + Google Gemini + MCP SDK | 3005 | WhatsApp AI flow agent |
 
-Full architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
+> Storefront (Ecommerce SPA) lives in a separate repo.
+
+Module-level READMEs in `backend/src/interface/http/{ai-chat,mcp}/README.md` cover the IA architecture details.
 
 ---
 
@@ -71,17 +72,10 @@ npm run build
 npm run type-check
 ```
 
-### WhatsApp AI
+### Full stack (production-like local)
 ```bash
-cd ai-agent
-npm run dev              # tsx watch
-npm run start            # tsx (production)
-```
-
-### Full stack
-```bash
-docker-compose up -d                   # start all
-docker-compose logs -f backend         # follow logs
+docker-compose -f docker-compose.easypanel.yml up -d   # start all 3 services
+docker-compose -f docker-compose.easypanel.yml logs -f backend
 ```
 
 Swagger: http://localhost:3000/api/docs  
@@ -109,7 +103,7 @@ src/
 ```
 
 ### Module list (`src/interface/http/`)
-`auth`, `audit`, `billing`, `customers`, `estimates`, `expenses`, `files`, `logs`, `mcp`, `messaging`, `notifications`, `orders`, `payments`, `plans`, `product-types`, `products`, `reports`, `settings`, `suppliers`, `tenants`, `users`
+`ai-chat`, `auth`, `audit`, `billing`, `customers`, `ecommerce`, `estimates`, `expenses`, `files`, `logs`, `loyalty`, `mcp`, `messaging`, `notifications`, `orders`, `payments`, `plans`, `platform-users`, `product-types`, `products`, `reports`, `settings`, `suppliers`, `tenants`, `users`, `whatsapp`
 
 ### Global providers (no import needed in other modules)
 - `SharedModule` — exports `PrismaService`, `CheckFeatureUseCase`, `FeatureGuard`
@@ -133,7 +127,9 @@ const allowed = await this.checkFeature.check(tenantId, FeatureKey.PIX_PAYMENTS)
 - `JwtAuthGuard` is applied globally; opt out with `@Public()` decorator.
 - JWT accepts token via `Authorization: Bearer` header **or** `?token=` query param (used for file downloads).
 - `@CurrentTenant()` param decorator extracts `tenantId: number` from the JWT.
-- Super admins (`isSuperAdmin: true` in JWT payload) bypass tenant suspension checks and feature gates.
+- Two login endpoints: `POST /api/auth/login` (TENANT users) and `POST /api/auth/saas-login` (PLATFORM users).
+- `User.userType` is the canonical discriminator: `'TENANT'` (gráfica) vs `'PLATFORM'` (sua equipe). `isSuperAdmin` é mantido sincronizado por compat.
+- Super admins (`userType='PLATFORM'`) bypass tenant suspension checks and feature gates.
 
 ### DTO validation
 `ValidationPipe` runs with `whitelist: true, forbidNonWhitelisted: true, transform: true`. Every field the client sends **must be declared in the DTO**, including optional ones. Use `@ValidateIf(o => !!o.email)` before `@IsEmail()` to avoid failures when optional email fields are empty strings.
@@ -203,39 +199,42 @@ Separate Vue 3 SPA at port 5174. Uses `sa_token` (not `gp_token`) in localStorag
 
 ---
 
-## Dois agentes IA — separados mas compartilham tools
+## Dois agentes IA — mesmo backend, contextos diferentes
 
-O GestorPrint tem **dois agentes Gemini distintos** que reusam o mesmo conjunto de capacidades:
+Os dois agentes vivem dentro do `backend/`, compartilham o mesmo `AiAgentEngine` e o mesmo catálogo de 16+ tools. O que muda é o **canal** e a **persona**:
 
 ```
-              ┌─────────────────────────────┐
-              │   /mcp/* (backend)          │
-              │   16 tools compartilhadas   │
-              └──────────┬──────────────────┘
-                         │
-            ┌────────────┴────────────┐
-            ▼                         ▼
-   ┌────────────────┐        ┌────────────────┐
-   │ Chat ERP       │        │ WhatsApp Agent │
-   │ /api/ai-chat/  │        │ ai-agent/   │
-   │ (operador)     │        │ (cliente)      │
-   └────────────────┘        └────────────────┘
+                    ┌─────────────────────────────┐
+                    │  AiAgentEngine + Tools MCP  │
+                    │  (mesmo backend NestJS)     │
+                    └──────────┬──────────────────┘
+                               │
+                  ┌────────────┴────────────┐
+                  ▼                         ▼
+         ┌────────────────┐        ┌──────────────────┐
+         │ Chat ERP       │        │ WhatsApp         │
+         │ /api/ai-chat/* │        │ /api/whatsapp/*  │
+         │ context=erp    │        │ context=whatsapp │
+         │ operador       │        │ cliente final    │
+         └────────────────┘        └──────────────────┘
 ```
 
-### Chat ERP — backend `src/interface/http/ai-chat/`
-Widget flutuante no canto inferior direito do ERP. Operador autenticado conversa em linguagem natural pra executar comandos no sistema. Reusa `McpService.callTool()` direto (sem HTTP). Sessão por `(tenantId, userId)`. Persona: "assistente operacional do ERP".
+### Chat ERP — `src/interface/http/ai-chat/`
+Widget flutuante no ERP. Operador autenticado conversa em linguagem natural pra executar comandos. Sessão por `(tenantId, userId)`. Persona: "assistente operacional". Streaming SSE, slash commands, voz, anexos. Restrito a role ADMIN.
 Ver [backend/src/interface/http/ai-chat/README.md](backend/src/interface/http/ai-chat/README.md).
 
-### WhatsApp Agent — `ai-agent/` (porta 3005)
-Express server separado. Recebe webhooks da Evolution API, processa via Gemini com function-calling, e responde via Evolution. Sessão por telefone. Persona: "atendente da gráfica falando com cliente".
-Ver [ai-agent/README.md](ai-agent/README.md).
+### WhatsApp — `src/interface/http/whatsapp/`
+Recebe webhooks da Evolution API, processa via mesmo `AiAgentEngine` com `context=whatsapp`, responde via Evolution. Sessão persistida em `WhatsappSession` (não-memória). Persona: "atendente da gráfica falando com cliente".
 
-### Servidor compartilhado de tools — backend `src/interface/http/mcp/`
-16 funções declarativas (`find_or_create_customer`, `search_products`, `create_estimate`, `generate_payment`, etc) com schema JSON pra Gemini function-calling. Implementação única em `mcp.service.ts`. Adicionar tool nova propaga pros 2 agentes automaticamente.
+### Catálogo MCP compartilhado — `src/interface/http/mcp/`
+16+ funções declarativas (`find_or_create_customer`, `search_products`, `create_estimate`, `generate_payment`, `update_order`, `mark_paid`, etc) com schema JSON pra function-calling. Implementação única em `mcp.service.ts`. Adicionar tool nova propaga pros 2 canais automaticamente. Tools sensíveis (financeiras) só ativam em `context=erp`.
 Ver [backend/src/interface/http/mcp/README.md](backend/src/interface/http/mcp/README.md).
 
+### Multi-provider via Vercel AI SDK
+Provider configurável por tenant em `AiConfig.aiProvider`: `google` (Gemini), `groq`, `deepseek`, `openrouter`, `ollama`. TTS opcional via OpenAI / ElevenLabs / Google Cloud.
+
 ### Credenciais sensíveis
-`geminiKey` e `evolutionKey` são encriptadas em repouso via `CredentialEncryptor` (AES-256-GCM, chave master `ENCRYPTION_KEY` no `.env`). Migração lazy — valores legados em texto puro re-encriptam na próxima save.
+`geminiKey`, `evolutionKey`, `openaiTtsKey`, `elevenlabsKey`, `googleTtsKey` são encriptadas em repouso via `CredentialEncryptor` (AES-256-GCM, chave master `ENCRYPTION_KEY`). Migração lazy — valores legados em texto puro re-encriptam na próxima save.
 
 ---
 
@@ -258,31 +257,31 @@ Schema: [backend/prisma/schema.prisma](backend/prisma/schema.prisma)
 
 ## Environment variables
 
-Copy `.env.production.example`. Required:
+Copy `.env.production.example`. Filosofia: env só pra coisas que o BOOT precisa antes do banco subir. Tudo configurável via UI fica fora.
 
+**Obrigatórias em produção (boot quebra sem):**
 ```env
-# Database
-POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
-DATABASE_URL=postgresql://...@db:5432/gestorprint_db?schema=public
-
-# Backend
-JWT_SECRET=<long random string>
+DATABASE_URL=postgresql://user:pass@db:5432/gestorprint_db?schema=public
+JWT_SECRET=<openssl rand -hex 32>             # ≥32 chars
+ENCRYPTION_KEY=<openssl rand -hex 32>          # ≥32 chars — encripta credenciais
+ALLOWED_ORIGINS=https://app.x.com,https://admin.x.com    # CSV de origens HTTPS
 API_URL=https://api.your-domain.com
-
-# Payments / billing
-MP_ACCESS_TOKEN / MP_PUBLIC_KEY        # Mercado Pago PIX
-ASAAS_API_KEY / ASAAS_WEBHOOK_TOKEN    # Asaas SaaS billing
-ASAAS_ENV=sandbox|production
-
-# WhatsApp AI
-INTERNAL_API_KEY=<shared secret between backend and ai-agent>
-TENANT_ID=1
-
-# Frontend (build arg — baked in at Docker build time)
-VITE_API_URL=https://api.your-domain.com
+NODE_ENV=production
 ```
 
-Optional: `STORAGE_PROVIDER=minio` (defaults to local disk).
+**Primeiro boot (depois é no-op):**
+```env
+SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD / SUPER_ADMIN_NAME
+```
+
+**Opcionais:** `WHATSAPP_WEBHOOK_TOKEN`, `STORAGE_PROVIDER=minio`, `SWAGGER_ENABLED/USER/PASS`, `FORCE_HTTPS`.
+
+**Build args (frontend/saas-admin):** `VITE_API_URL` — embutido no bundle.
+
+**NÃO vai em env (configurar via UI):**
+- SaaS Admin Panel → Configurações da Plataforma: Asaas, SMTP global
+- ERP do tenant → Configurações: Mercado Pago, Melhor Envios, SMTP do tenant
+- ERP do tenant → IA: Gemini/OpenAI/etc, Evolution API
 
 ---
 
@@ -292,6 +291,6 @@ Optional: `STORAGE_PROVIDER=minio` (defaults to local disk).
 1. Validates each service (build / type-check) in parallel
 2. Builds and pushes Docker images to GHCR tagged `:latest` and `:{git-sha}`
 
-Images: `ghcr.io/{owner}/gestorprint-{backend|frontend|saas-admin|ai-agent}`
+Images: `ghcr.io/{owner}/gestorprint-{backend|frontend|saas-admin}`
 
 <!-- internal_template_version: 2.1.0 -->

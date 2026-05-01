@@ -7,15 +7,17 @@
  * (ver/criar/editar/excluir) por role. Cada checkbox dispara PATCH imediato no
  * backend. "Restaurar padrão" reseta tudo pros defaults sensatos.
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { apiFetch, safeJson } from '../utils/api'
 import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
 import { usePermissionsStore } from '../stores/permissions'
+import { usePlanStore } from '../stores/plan'
 
 const { showToast } = useToast()
 const { confirm: confirmDialog } = useConfirm()
 const permsStore = usePermissionsStore()
+const plan = usePlanStore()
 
 interface Row {
   id: number
@@ -32,15 +34,63 @@ const rows = ref<Row[]>([])
 const loading = ref(true)
 const saving = ref<Record<string, boolean>>({})
 
-// Catálogo de resources agrupado pra UI ficar organizada (mesma ordem do menu)
-const RESOURCE_GROUPS = [
+// Estado de colapso por grupo — persistido em localStorage pra preservar
+// preferência do admin entre sessões. Default: tudo colapsado na primeira
+// visita (admin geralmente sabe qual seção quer mexer e prefere a tela
+// densa). hasSavedState diferencia "primeira visita" de "user esvaziou".
+const COLLAPSED_KEY = 'gp_perms_collapsed'
+const hasSavedState = localStorage.getItem(COLLAPSED_KEY) !== null
+const collapsed = ref<Set<string>>(new Set(
+  (() => {
+    try { return JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]') as string[] }
+    catch { return [] }
+  })()
+))
+function isCollapsed(label: string): boolean {
+  return collapsed.value.has(label)
+}
+function toggleGroup(label: string): void {
+  const next = new Set(collapsed.value)
+  if (next.has(label)) next.delete(label)
+  else next.add(label)
+  collapsed.value = next
+  localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...next]))
+}
+function collapseAll(): void {
+  const all = new Set(visibleGroups.value.map(g => g.label))
+  collapsed.value = all
+  localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...all]))
+}
+function expandAll(): void {
+  collapsed.value = new Set()
+  localStorage.setItem(COLLAPSED_KEY, '[]')
+}
+const allCollapsed = computed(() =>
+  visibleGroups.value.length > 0 && visibleGroups.value.every(g => collapsed.value.has(g.label))
+)
+
+// Catálogo de resources agrupado pra UI ficar organizada (mesma ordem do menu).
+// `requiresFeature` (opcional) liga cada resource a uma flag do plano. Resources
+// sem essa propriedade são sempre exibidos. Os gated somem da matriz quando o
+// plano do tenant não inclui a feature — evita confusão pro admin.
+type FeatureFlag =
+  | 'hasKanban' | 'hasReports' | 'hasReceivables' | 'hasAudit'
+  | 'hasWhatsapp' | 'hasLoyalty' | 'hasEcommerce'
+
+interface ResourceItem {
+  key: string
+  name: string
+  requiresFeature?: FeatureFlag
+}
+
+const RESOURCE_GROUPS: ReadonlyArray<{ label: string; items: ReadonlyArray<ResourceItem> }> = [
   { label: 'Visão geral', items: [
     { key: 'home', name: 'Dashboard' },
   ]},
   { label: 'Operação', items: [
     { key: 'pdv', name: 'PDV Balcão' },
     { key: 'estimates', name: 'Orçamentos' },
-    { key: 'orders-board', name: 'Produção (Kanban)' },
+    { key: 'orders-board', name: 'Produção (Kanban)', requiresFeature: 'hasKanban' },
   ]},
   { label: 'Cadastros', items: [
     { key: 'customers', name: 'Clientes' },
@@ -50,27 +100,53 @@ const RESOURCE_GROUPS = [
   { label: 'Financeiro', items: [
     { key: 'financial', name: 'Fluxo de Caixa' },
     { key: 'expenses', name: 'Despesas' },
-    { key: 'receivables', name: 'Contas a Receber' },
+    { key: 'receivables', name: 'Contas a Receber', requiresFeature: 'hasReceivables' },
     { key: 'payables', name: 'Contas a Pagar' },
-    { key: 'reports', name: 'Relatórios & BI' },
+    { key: 'reports', name: 'Relatórios & BI', requiresFeature: 'hasReports' },
+  ]},
+  { label: 'Fidelidade', items: [
+    { key: 'loyalty', name: 'Programa de Fidelidade', requiresFeature: 'hasLoyalty' },
   ]},
   { label: 'Sistema', items: [
     { key: 'users', name: 'Gestão de Equipe' },
     { key: 'settings', name: 'Configurações' },
-    { key: 'audit', name: 'Auditoria' },
-    { key: 'ai', name: 'Agente de IA' },
+    { key: 'audit', name: 'Auditoria', requiresFeature: 'hasAudit' },
+    { key: 'ai', name: 'Agente de IA', requiresFeature: 'hasWhatsapp' },
   ]},
   { label: 'Loja Online', items: [
-    { key: 'ecommerce-dashboard', name: 'Resumo' },
-    { key: 'ecommerce-orders', name: 'Pedidos' },
-    { key: 'ecommerce-catalog', name: 'Catálogo' },
-    { key: 'ecommerce-coupons', name: 'Cupons' },
-    { key: 'ecommerce-blog', name: 'Blog' },
-    { key: 'ecommerce-site', name: 'Conteúdo do site' },
-    { key: 'ecommerce-reviews', name: 'Avaliações' },
-    { key: 'ecommerce-settings', name: 'Configurações' },
+    { key: 'ecommerce-dashboard', name: 'Resumo',             requiresFeature: 'hasEcommerce' },
+    { key: 'ecommerce-orders',    name: 'Pedidos',            requiresFeature: 'hasEcommerce' },
+    { key: 'ecommerce-catalog',   name: 'Catálogo',           requiresFeature: 'hasEcommerce' },
+    { key: 'ecommerce-coupons',   name: 'Cupons',             requiresFeature: 'hasEcommerce' },
+    { key: 'ecommerce-blog',      name: 'Blog',               requiresFeature: 'hasEcommerce' },
+    { key: 'ecommerce-site',      name: 'Conteúdo do site',   requiresFeature: 'hasEcommerce' },
+    { key: 'ecommerce-reviews',   name: 'Avaliações',         requiresFeature: 'hasEcommerce' },
+    { key: 'ecommerce-settings',  name: 'Configurações',      requiresFeature: 'hasEcommerce' },
   ]},
-] as const
+]
+
+// Filtra grupos pelas features ativas do plano. Grupos que ficam sem nenhum
+// item visível somem inteiros (não exibe header vazio).
+const visibleGroups = computed(() => {
+  // Mapa explícito flag → valor atual. Pinia setup store retorna ComputedRef
+  // mas acesso via dot notation no script desempacota automaticamente quando
+  // usado dentro de outro computed (reativo).
+  const featureMap: Record<FeatureFlag, boolean> = {
+    hasKanban:      plan.hasKanban,
+    hasReports:     plan.hasReports,
+    hasReceivables: plan.hasReceivables,
+    hasAudit:       plan.hasAudit,
+    hasWhatsapp:    plan.hasWhatsapp,
+    hasLoyalty:     plan.hasLoyalty,
+    hasEcommerce:   plan.hasEcommerce,
+  }
+  return RESOURCE_GROUPS
+    .map(group => ({
+      label: group.label,
+      items: group.items.filter(it => !it.requiresFeature || featureMap[it.requiresFeature]),
+    }))
+    .filter(group => group.items.length > 0)
+})
 
 const ROLES = ['ADMIN', 'SALES', 'PRODUCTION'] as const
 const ACTIONS = [
@@ -164,6 +240,17 @@ async function resetDefaults() {
 }
 
 onMounted(fetchMatrix)
+
+// Default = tudo colapsado na primeira visita (quando o admin nunca mexeu).
+// Espera visibleGroups popular pelo plano antes de colapsar — senão coleta
+// só os grupos sem feature gate. Roda só uma vez (guard via collapsed.size).
+watch(visibleGroups, (groups) => {
+  if (!hasSavedState && groups.length > 0 && collapsed.value.size === 0) {
+    const all = new Set(groups.map(g => g.label))
+    collapsed.value = all
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...all]))
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -178,10 +265,16 @@ onMounted(fetchMatrix)
             Mudanças se aplicam imediatamente aos usuários online.
           </p>
         </div>
-        <button @click="resetDefaults" :disabled="loading"
-          class="text-xs text-slate-700 border border-slate-200 hover:bg-slate-50 disabled:opacity-50 rounded-full px-4 py-1.5 transition-colors">
-          Restaurar padrão
-        </button>
+        <div class="flex items-center gap-2">
+          <button v-if="!loading" @click="allCollapsed ? expandAll() : collapseAll()"
+            class="text-xs text-slate-700 border border-slate-200 hover:bg-slate-50 rounded-full px-4 py-1.5 transition-colors">
+            {{ allCollapsed ? 'Expandir todos' : 'Colapsar todos' }}
+          </button>
+          <button @click="resetDefaults" :disabled="loading"
+            class="text-xs text-slate-700 border border-slate-200 hover:bg-slate-50 disabled:opacity-50 rounded-full px-4 py-1.5 transition-colors">
+            Restaurar padrão
+          </button>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -216,15 +309,29 @@ onMounted(fetchMatrix)
               </tr>
             </thead>
             <tbody>
-              <template v-for="group in RESOURCE_GROUPS" :key="group.label">
-                <!-- Group header -->
-                <tr class="bg-slate-50/40 text-[10px] uppercase tracking-wider text-slate-400 border-y border-slate-100">
-                  <td class="px-4 py-1.5 font-medium sticky left-0 bg-slate-50/40 z-10" :colspan="1 + ROLES.length * ACTIONS.length">
-                    {{ group.label }}
+              <template v-for="group in visibleGroups" :key="group.label">
+                <!-- Group header (clicável: colapsa/expande) -->
+                <tr class="border-y border-slate-200 bg-slate-50">
+                  <td class="px-0 py-0 sticky left-0 bg-slate-50 z-10" :colspan="1 + ROLES.length * ACTIONS.length">
+                    <button type="button"
+                      @click="toggleGroup(group.label)"
+                      :aria-expanded="!isCollapsed(group.label)"
+                      :aria-label="`${isCollapsed(group.label) ? 'Expandir' : 'Colapsar'} grupo ${group.label}`"
+                      class="w-full flex items-center gap-3 px-4 py-3 text-left text-[13px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
+                      <svg class="w-4 h-4 text-slate-500 transition-transform shrink-0"
+                        :class="isCollapsed(group.label) ? '-rotate-90' : ''"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                      <span>{{ group.label }}</span>
+                      <span class="ml-auto text-[11px] font-normal text-slate-400">
+                        {{ group.items.length }} {{ group.items.length === 1 ? 'item' : 'itens' }}
+                      </span>
+                    </button>
                   </td>
                 </tr>
-                <!-- Resource rows -->
-                <tr v-for="item in group.items" :key="item.key"
+                <!-- Resource rows (escondidos quando grupo colapsado) -->
+                <tr v-for="item in group.items" v-show="!isCollapsed(group.label)" :key="item.key"
                   class="border-b border-slate-100 last:border-0 hover:bg-slate-50/40 transition-colors">
                   <td class="px-4 py-2.5 text-slate-700 sticky left-0 bg-white z-10">
                     {{ item.name }}
