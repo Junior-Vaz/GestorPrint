@@ -3,15 +3,28 @@ import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { PaginationDto, PaginatedResult, paginateResult } from '../../../shared/dto/pagination.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class SuppliersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async create(createSupplierDto: CreateSupplierDto, tenantId: number) {
-    return (this.prisma as any).supplier.create({
+    const created = await (this.prisma as any).supplier.create({
       data: { ...createSupplierDto, tenantId },
     });
+    await this.audit.logAction(
+      null,
+      'CREATE',
+      'Supplier',
+      created.id,
+      { name: created.name, category: created.category, email: created.email },
+      tenantId,
+    );
+    return created;
   }
 
   async findAll(tenantId: number, dto: PaginationDto): Promise<PaginatedResult<any>> {
@@ -49,15 +62,26 @@ export class SuppliersService {
   }
 
   async update(id: number, updateSupplierDto: UpdateSupplierDto, tenantId: number) {
-    return (this.prisma as any).supplier.updateMany({
+    const result = await (this.prisma as any).supplier.updateMany({
       where: { id, tenantId },
       data: updateSupplierDto,
     });
+    await this.audit.logAction(
+      null,
+      'UPDATE',
+      'Supplier',
+      id,
+      { changedFields: Object.keys(updateSupplierDto) },
+      tenantId,
+    );
+    return result;
   }
 
   async remove(id: number, tenantId: number) {
-    return (this.prisma as any).supplier.deleteMany({
+    const result = await (this.prisma as any).supplier.deleteMany({
       where: { id, tenantId },
     });
+    await this.audit.logAction(null, 'DELETE', 'Supplier', id, {}, tenantId);
+    return result;
   }
 }

@@ -2,6 +2,7 @@ import { Injectable, ForbiddenException, NotFoundException, BadRequestException 
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { PaginationDto, PaginatedResult, paginateResult } from '../../../shared/dto/pagination.dto';
+import { AuditService } from '../audit/audit.service';
 
 /**
  * UsersService — gerencia equipe da gráfica (tela "Usuários" no ERP).
@@ -27,7 +28,10 @@ import { PaginationDto, PaginatedResult, paginateResult } from '../../../shared/
  */
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async findAll(tenantId: number, dto: PaginationDto): Promise<PaginatedResult<any>> {
     const page = Number(dto.page) || 1;
@@ -106,7 +110,7 @@ export class UsersService {
     const { isSuperAdmin: _ignore, ...safeData } = data;
 
     const hashedPassword = await bcrypt.hash(safeData.password || 'mudar123', 10);
-    return (this.prisma as any).user.create({
+    const created = await (this.prisma as any).user.create({
       data: {
         ...safeData,
         tenantId,
@@ -114,6 +118,16 @@ export class UsersService {
         userType: 'TENANT', // sempre false pra usuários criados via ERP
       },
     });
+    // Audit — sem password no log (segurança).
+    await this.audit.logAction(
+      null,
+      'CREATE',
+      'User',
+      created.id,
+      { name: created.name, email: created.email, role: created.role },
+      tenantId,
+    );
+    return created;
   }
 
   async update(id: number, data: any, tenantId: number) {
@@ -144,10 +158,25 @@ export class UsersService {
       delete updateData.password;
     }
 
-    return (this.prisma as any).user.updateMany({
+    const result = await (this.prisma as any).user.updateMany({
       where: { id, tenantId, userType: 'TENANT' },
       data: updateData,
     });
+    // Audit — captura apenas campos não-sensíveis. Marca passwordChanged=true
+    // se a senha foi alterada (sem logar o valor).
+    await this.audit.logAction(
+      null,
+      'UPDATE',
+      'User',
+      id,
+      {
+        targetUserId: id,
+        changedFields: Object.keys(safeData).filter(k => k !== 'password'),
+        passwordChanged: !!safeData.password,
+      },
+      tenantId,
+    );
+    return result;
   }
 
   async remove(id: number, tenantId: number) {
@@ -174,8 +203,17 @@ export class UsersService {
       }
     }
 
-    return (this.prisma as any).user.deleteMany({
+    const result = await (this.prisma as any).user.deleteMany({
       where: { id, tenantId, userType: 'TENANT' },
     });
+    await this.audit.logAction(
+      null,
+      'DELETE',
+      'User',
+      id,
+      { targetRole: target.role },
+      tenantId,
+    );
+    return result;
   }
 }

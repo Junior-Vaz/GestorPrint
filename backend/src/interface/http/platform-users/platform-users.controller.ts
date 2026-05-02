@@ -1,12 +1,13 @@
 import {
   BadRequestException, Body, Controller, Delete,
-  Get, Param, ParseIntPipe, Patch, Post, UseGuards,
+  Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlatformOnlyGuard } from './platform-only.guard';
+import { AuditService } from '../audit/audit.service';
 
 /**
  * CRUD de PLATFORM users — equipe da plataforma SaaS.
@@ -24,7 +25,10 @@ import { PlatformOnlyGuard } from './platform-only.guard';
 @UseGuards(JwtAuthGuard, PlatformOnlyGuard)
 @Controller('platform-users')
 export class PlatformUsersController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Lista todos os PLATFORM users' })
@@ -43,7 +47,7 @@ export class PlatformUsersController {
 
   @Post()
   @ApiOperation({ summary: 'Cria um novo PLATFORM user' })
-  async create(@Body() body: any) {
+  async create(@Body() body: any, @Req() req: any) {
     if (!body.email || !body.password) {
       throw new BadRequestException('Email e senha são obrigatórios');
     }
@@ -79,12 +83,21 @@ export class PlatformUsersController {
         id: true, name: true, email: true, photoUrl: true, isActive: true,
       },
     });
+    // Audit — registra quem criou e qual o novo PLATFORM user (sem password).
+    await this.audit.logAction(
+      req?.user?.id ?? null,
+      'CREATE',
+      'PlatformUser',
+      user.id,
+      { name: user.name, email: user.email },
+      1, // tenant 1 — ghost da plataforma
+    );
     return user;
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualiza dados ou senha de um PLATFORM user' })
-  async update(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
+  async update(@Param('id', ParseIntPipe) id: number, @Body() body: any, @Req() req: any) {
     const target = await (this.prisma as any).user.findUnique({
       where: { id },
       select: { id: true, userType: true },
@@ -106,16 +119,25 @@ export class PlatformUsersController {
       data.password = await bcrypt.hash(password, 10);
     }
 
-    return (this.prisma as any).user.update({
+    const updated = await (this.prisma as any).user.update({
       where: { id },
       data,
       select: { id: true, name: true, email: true, photoUrl: true, isActive: true },
     });
+    await this.audit.logAction(
+      req?.user?.id ?? null,
+      'UPDATE',
+      'PlatformUser',
+      id,
+      { changedFields: Object.keys(data).filter(k => k !== 'password'), passwordChanged: !!password },
+      1,
+    );
+    return updated;
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remove um PLATFORM user (não deixa zerar)' })
-  async remove(@Param('id', ParseIntPipe) id: number) {
+  async remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     // Salvaguarda crítica: nunca deleta o ÚLTIMO PLATFORM user — senão o SaaS
     // Admin fica inacessível e ninguém consegue logar pra criar outro.
     const total = await (this.prisma as any).user.count({ where: { userType: 'PLATFORM' } });
@@ -132,6 +154,14 @@ export class PlatformUsersController {
     }
 
     await (this.prisma as any).user.delete({ where: { id } });
+    await this.audit.logAction(
+      req?.user?.id ?? null,
+      'DELETE',
+      'PlatformUser',
+      id,
+      { remainingMembers: total - 1 },
+      1,
+    );
     return { ok: true };
   }
 }

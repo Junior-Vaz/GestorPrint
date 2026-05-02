@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, OnModuleInit, Logger, ConflictException,
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { AuditService } from '../audit/audit.service';
 
 // "2026-03-20" → "2026-03-20T00:00:00.000Z" (Prisma DateTime exige ISO completo)
 function toDateTime(s?: string | null): string | null | undefined {
@@ -31,6 +32,7 @@ export class TenantsService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private readonly auditService: AuditService,
   ) {}
 
   async onModuleInit() {
@@ -385,17 +387,35 @@ export class TenantsService implements OnModuleInit {
   }
 
   async suspend(id: number) {
-    return (this.prisma as any).tenant.update({
+    const result = await (this.prisma as any).tenant.update({
       where: { id },
       data: { planStatus: 'SUSPENDED', isActive: false }
     });
+    await this.auditService.logAction(
+      null,
+      'SUSPEND',
+      'Tenant',
+      id,
+      { planStatus: 'SUSPENDED', isActive: false },
+      id,
+    );
+    return result;
   }
 
   async activate(id: number) {
-    return (this.prisma as any).tenant.update({
+    const result = await (this.prisma as any).tenant.update({
       where: { id },
       data: { planStatus: 'ACTIVE', isActive: true }
     });
+    await this.auditService.logAction(
+      null,
+      'ACTIVATE',
+      'Tenant',
+      id,
+      { planStatus: 'ACTIVE', isActive: true },
+      id,
+    );
+    return result;
   }
 
   // ── Feature Overrides ─────────────────────────────────────────────────────

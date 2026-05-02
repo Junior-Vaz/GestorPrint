@@ -6,6 +6,7 @@ import TenantDetailView from '../views/TenantDetailView.vue'
 import PlansView from '../views/PlansView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import LogsView from '../views/LogsView.vue'
+import AuditView from '../views/AuditView.vue'
 import PlatformTeamView from '../views/PlatformTeamView.vue'
 
 const router = createRouter({
@@ -18,6 +19,7 @@ const router = createRouter({
     { path: '/plans', name: 'plans', component: PlansView },
     { path: '/settings', name: 'settings', component: SettingsView },
     { path: '/logs', name: 'logs', component: LogsView },
+    { path: '/audit', name: 'audit', component: AuditView },
     { path: '/team', name: 'platform-team', component: PlatformTeamView },
     { path: '/', redirect: '/dashboard' },
     { path: '/:pathMatch(.*)*', redirect: '/dashboard' },

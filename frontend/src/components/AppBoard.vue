@@ -13,15 +13,15 @@ import { useConfirm } from '../composables/useConfirm'
 const { showToast: addToast } = useToast()
 const { confirm: confirmDialog } = useConfirm()
 
-// Nome da gráfica vem das Settings — sem isso a mensagem do WhatsApp ficaria
-// genérica. Carrega 1x no mount, fallback "nossa gráfica" se vazio.
-// silentOn403: PRODUCTION tem Kanban mas geralmente NÃO tem acesso a Settings.
-// Sem o flag, abrir o Kanban como production gerava popup "Recurso não disponível"
-// só pra pegar o nome da empresa. Falha silenciosa preserva o fallback "nossa gráfica".
+// Nome da gráfica vem do endpoint público de Settings — qualquer role
+// autenticada pode ler (incluindo PRODUCTION operator). Antes usava
+// `/api/settings` direto + silentOn403, mas isso poluía o DevTools com 403.
+// O endpoint /public devolve só campos não-sensíveis (companyName, logoUrl,
+// phone, cnpj, businessHours).
 const companyName = ref('nossa gráfica')
 async function loadCompanyName() {
   try {
-    const res = await apiFetch('/api/settings', { silentOn403: true })
+    const res = await apiFetch('/api/settings/public')
     if (!res.ok) return
     const data = await res.json()
     if (data?.companyName) companyName.value = data.companyName

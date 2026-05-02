@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 /**
  * Catálogo canônico dos resources (telas/módulos do ERP). Adicione um
@@ -93,7 +94,10 @@ function expandPreset(preset: 'V' | '*' | 'VE' | 'VCE' | '_'): Pick<PermissionRo
 
 @Injectable()
 export class PermissionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /** Retorna a matriz completa do tenant (3 roles × N resources). */
   async getMatrix(tenantId: number): Promise<PermissionRow[]> {
@@ -152,12 +156,29 @@ export class PermissionsService {
         [field]: value,
       },
     });
+    // Audit — crítico pra compliance: quem mudou permissão de quem.
+    await this.audit.logAction(
+      null,
+      'UPDATE',
+      'RolePermission',
+      undefined,
+      { role, resource, field, value },
+      tenantId,
+    );
   }
 
   /** Reseta TUDO pros defaults. Chamado no botão "Restaurar padrão". */
   async resetToDefaults(tenantId: number) {
     await (this.prisma as any).rolePermission.deleteMany({ where: { tenantId } });
     await this.seedDefaults(tenantId);
+    await this.audit.logAction(
+      null,
+      'RESET_DEFAULTS',
+      'RolePermission',
+      undefined,
+      { scope: 'all_roles_all_resources' },
+      tenantId,
+    );
   }
 
   /** Popula defaults pra um tenant que ainda não tem nada. */

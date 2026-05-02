@@ -56,6 +56,7 @@ const ENTITY_LABEL: Record<string, string> = {
   ProductType: 'Tipo de insumo',
   Supplier: 'Fornecedor', Suppliers: 'Fornecedor',
   User: 'Usuário', Users: 'Usuário',
+  PlatformUser: 'Membro da plataforma',
   Invoice: 'Fatura',
   Bill: 'Conta a pagar',
   Expense: 'Despesa',
@@ -63,11 +64,64 @@ const ENTITY_LABEL: Record<string, string> = {
   Payment: 'Pagamento',
   Transaction: 'Transação',
   Settings: 'Configurações',
+  'Settings.pricingConfig': 'Tabela de preços',
   Attachment: 'Anexo',
-  Tenant: 'Tenant',
+  Tenant: 'Gráfica',
   Plan: 'Plano',
+  PlanConfig: 'Plano da plataforma',
   Subscription: 'Assinatura',
+  RolePermission: 'Permissão',
+  LoyaltyConfig: 'Configuração de fidelidade',
+  LoyaltyTransaction: 'Saldo de fidelidade',
+  EvolutionInstance: 'Instância WhatsApp',
 }
+
+// ── Vocabulário de ações: mapa centralizado de verbo + categoria + cor ──────
+// Categoria define o agrupamento nas tabs de filtro; cor casa com o pill.
+type ActionCategory = 'create' | 'edit' | 'delete' | 'security' | 'finance' | 'lifecycle'
+interface ActionMeta {
+  past:     string                         // "criou", "editou", etc — pra describeAction
+  shortLabel: string                       // "Criou", "Editou" — pra pill
+  category: ActionCategory                 // grupo do filtro
+  color:    string                         // hex da cor principal
+  soft:     string                         // bg suave do pill
+}
+const ACTION_META: Record<string, ActionMeta> = {
+  // Genéricos
+  CREATE:           { past: 'criado',          shortLabel: 'Criou',     category: 'create',    color: '#0F6E56', soft: '#E1F5EE' },
+  UPDATE:           { past: 'editado',         shortLabel: 'Editou',    category: 'edit',      color: '#854F0B', soft: '#FAEEDA' },
+  DELETE:           { past: 'excluído',        shortLabel: 'Excluiu',   category: 'delete',    color: '#A32D2D', soft: '#FCEBEB' },
+  // Segurança / acesso
+  LOGIN:            { past: 'entrou',          shortLabel: 'Login',     category: 'security',  color: '#3C3489', soft: '#EEEDFE' },
+  LOGIN_FAILED:     { past: 'tentou entrar',   shortLabel: 'Falha login', category: 'security',color: '#A32D2D', soft: '#FCEBEB' },
+  RESET_DEFAULTS:   { past: 'resetado pro padrão', shortLabel: 'Restaurou', category: 'security', color: '#854F0B', soft: '#FAEEDA' },
+  // Ciclo de vida
+  APPROVE:          { past: 'aprovado',        shortLabel: 'Aprovou',   category: 'lifecycle', color: '#0F6E56', soft: '#E1F5EE' },
+  REJECT:           { past: 'rejeitado',       shortLabel: 'Rejeitou',  category: 'lifecycle', color: '#A32D2D', soft: '#FCEBEB' },
+  SEND:             { past: 'enviado',         shortLabel: 'Enviou',    category: 'lifecycle', color: '#0C447C', soft: '#E6F1FB' },
+  CANCEL:           { past: 'cancelado',       shortLabel: 'Cancelou',  category: 'lifecycle', color: '#A32D2D', soft: '#FCEBEB' },
+  SUSPEND:          { past: 'suspenso',        shortLabel: 'Suspendeu', category: 'lifecycle', color: '#A32D2D', soft: '#FCEBEB' },
+  ACTIVATE:         { past: 'ativado',         shortLabel: 'Ativou',    category: 'lifecycle', color: '#0F6E56', soft: '#E1F5EE' },
+  DEACTIVATE:       { past: 'desativado',      shortLabel: 'Desativou', category: 'lifecycle', color: '#A32D2D', soft: '#FCEBEB' },
+  ENABLE:           { past: 'ligado',          shortLabel: 'Ligou',     category: 'lifecycle', color: '#0F6E56', soft: '#E1F5EE' },
+  DISABLE:          { past: 'desligado',       shortLabel: 'Desligou',  category: 'lifecycle', color: '#5F5E5A', soft: '#F1EFE8' },
+  // Financeiro
+  MARK_PAID:        { past: 'marcado como pago', shortLabel: 'Pagou',  category: 'finance',   color: '#0F6E56', soft: '#E1F5EE' },
+  PAY:              { past: 'marcado como pago', shortLabel: 'Pagou',  category: 'finance',   color: '#0F6E56', soft: '#E1F5EE' },
+  REFUND:           { past: 'estornado',       shortLabel: 'Estornou',  category: 'finance',   color: '#854F0B', soft: '#FAEEDA' },
+  ADJUST:           { past: 'ajustado',        shortLabel: 'Ajustou',   category: 'finance',   color: '#854F0B', soft: '#FAEEDA' },
+  // Integração externa
+  CONNECT:          { past: 'conectado',       shortLabel: 'Conectou',  category: 'lifecycle', color: '#0F6E56', soft: '#E1F5EE' },
+  DISCONNECT:       { past: 'desconectado',    shortLabel: 'Desconectou', category: 'lifecycle', color: '#5F5E5A', soft: '#F1EFE8' },
+  RESTART:          { past: 'reiniciado',      shortLabel: 'Reiniciou', category: 'lifecycle', color: '#854F0B', soft: '#FAEEDA' },
+}
+
+const FALLBACK_ACTION: ActionMeta = {
+  past: 'alterado', shortLabel: 'Ação', category: 'edit',
+  color: '#5F5E5A', soft: '#F1EFE8',
+}
+const actionMeta = (action?: string): ActionMeta =>
+  (action && ACTION_META[action]) || FALLBACK_ACTION
 
 const pickName = (details: any): string => {
   if (!details || typeof details !== 'object') return ''
@@ -84,23 +138,79 @@ const describeAction = (log: any): string => {
   const entity = ENTITY_LABEL[log.entity] || log.entity || 'registro'
   const target = pickName(log.details)
   const ref = log.entityId ? `#${String(log.entityId).padStart(4, '0')}` : ''
+  const past = actionMeta(log.action).past
+  const action = log.action
 
-  const past = log.action === 'CREATE' ? 'criado'
-             : log.action === 'UPDATE' ? 'editado'
-             : log.action === 'DELETE' ? 'excluído'
-             : log.action === 'CANCEL' ? 'cancelado'
-             : log.action === 'PAY'    ? 'marcado como pago'
-             : log.action?.toLowerCase() || 'alterado'
-
-  // Casos especiais com "para cliente X"
-  if (log.action === 'CREATE' && (log.entity === 'Estimate' || log.entity === 'Estimates') && target) {
+  // Casos especiais ricos em contexto — frase mais legível
+  if (action === 'CREATE' && (log.entity === 'Estimate' || log.entity === 'Estimates') && target) {
     return `Orçamento criado para ${target}`
   }
-  if (log.action === 'CREATE' && (log.entity === 'Order' || log.entity === 'Orders') && target) {
+  if (action === 'CREATE' && (log.entity === 'Order' || log.entity === 'Orders') && target) {
     return `Pedido criado para ${target}`
   }
-  if (log.action === 'PAY' && target) {
-    return `Pagamento registrado — ${target}`
+  if ((action === 'MARK_PAID' || action === 'PAY') && entity) {
+    return `${entity}${ref ? ' ' + ref : ''} marcada como paga${log.details?.paidAmount ? ` (R$ ${log.details.paidAmount})` : ''}`
+  }
+  if (action === 'REFUND') {
+    const amt = log.details?.amount ? ` de R$ ${Number(log.details.amount).toFixed(2)}` : ''
+    const partial = log.details?.isFull === false ? ' (parcial)' : ''
+    return `Pedido${ref ? ' ' + ref : ''} estornado${amt}${partial}`
+  }
+  if (action === 'LOGIN') {
+    return `Acesso ao sistema${log.details?.email ? ` — ${log.details.email}` : ''}`
+  }
+  if (action === 'LOGIN_FAILED') {
+    const reason = log.details?.reason === 'invalid_password' ? 'senha incorreta'
+                 : log.details?.reason === 'user_not_found' ? 'usuário não encontrado'
+                 : 'falha'
+    return `Tentativa de login (${reason})${log.details?.email ? ` — ${log.details.email}` : ''}`
+  }
+  if (action === 'APPROVE' && log.entity === 'Estimate') {
+    const source = log.details?.source === 'public_link' ? ' (link público)' : ''
+    return `Orçamento${ref ? ' ' + ref : ''} aprovado${source}`
+  }
+  if (action === 'REJECT' && log.entity === 'Estimate') {
+    const reason = log.details?.reason ? ` — ${log.details.reason}` : ''
+    return `Orçamento${ref ? ' ' + ref : ''} rejeitado${reason}`
+  }
+  if (action === 'SUSPEND' && log.entity === 'Tenant') {
+    return `Gráfica${ref ? ' ' + ref : ''} suspensa`
+  }
+  if (action === 'ACTIVATE' && log.entity === 'Tenant') {
+    return `Gráfica${ref ? ' ' + ref : ''} reativada`
+  }
+  if (action === 'ENABLE' && log.entity === 'LoyaltyConfig') {
+    return 'Programa de fidelidade ativado'
+  }
+  if (action === 'DISABLE' && log.entity === 'LoyaltyConfig') {
+    return 'Programa de fidelidade desativado'
+  }
+  if (action === 'ADJUST' && log.entity === 'LoyaltyTransaction') {
+    const pts = log.details?.points
+    const cb = log.details?.cashback
+    const parts: string[] = []
+    if (pts) parts.push(`${pts > 0 ? '+' : ''}${pts} pts`)
+    if (cb) parts.push(`${cb > 0 ? '+' : ''}R$ ${Number(cb).toFixed(2)}`)
+    return `Saldo de fidelidade ajustado${parts.length ? ` (${parts.join(', ')})` : ''}`
+  }
+  if (action === 'UPDATE' && log.entity === 'RolePermission') {
+    const role = log.details?.role || ''
+    const resource = log.details?.resource || ''
+    const field = (log.details?.field || '').replace('can', '').toLowerCase()
+    const value = log.details?.value ? 'liberou' : 'bloqueou'
+    return `${value} "${field}" de ${role} em ${resource}`
+  }
+  if (action === 'RESET_DEFAULTS' && log.entity === 'RolePermission') {
+    return 'Permissões restauradas para o padrão'
+  }
+  if (action === 'CONNECT' && log.entity === 'EvolutionInstance') {
+    return 'WhatsApp conectado (QR code gerado)'
+  }
+  if (action === 'DISCONNECT' && log.entity === 'EvolutionInstance') {
+    return 'WhatsApp desconectado'
+  }
+  if (action === 'RESTART' && log.entity === 'EvolutionInstance') {
+    return 'Instância WhatsApp reiniciada'
   }
 
   // Com identificador: "Cliente João editado" / "Insumo Papel A4 excluído"
@@ -148,14 +258,21 @@ const detailsRaw = (details: any): string => {
                  class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-400 transition-colors"/>
         </div>
 
-        <!-- Tabs de ação coloridas -->
+        <!-- Tabs de ação coloridas. "Segurança" agrupa LOGIN/LOGIN_FAILED/RESET,
+             "Financeiro" agrupa pagamento/estorno/ajuste — assim user filtra por
+             intenção em vez de precisar saber o nome técnico do verbo. -->
         <div class="flex gap-1.5 overflow-x-auto no-scrollbar">
           <button
             v-for="tab in [
-              { key: '',       label: 'Todas',    color: '#0F172A', soft: '#F1F5F9' },
-              { key: 'CREATE', label: 'Criação',  color: '#1D9E75', soft: '#E1F5EE' },
-              { key: 'UPDATE', label: 'Edição',   color: '#BA7517', soft: '#FAEEDA' },
-              { key: 'DELETE', label: 'Exclusão', color: '#A32D2D', soft: '#FCEBEB' },
+              { key: '',           label: 'Todas',       color: '#0F172A', soft: '#F1F5F9' },
+              { key: 'CREATE',     label: 'Criação',     color: '#1D9E75', soft: '#E1F5EE' },
+              { key: 'UPDATE',     label: 'Edição',      color: '#BA7517', soft: '#FAEEDA' },
+              { key: 'DELETE',     label: 'Exclusão',    color: '#A32D2D', soft: '#FCEBEB' },
+              { key: 'LOGIN',      label: 'Acesso',      color: '#534AB7', soft: '#EEEDFE' },
+              { key: 'MARK_PAID',  label: 'Pagamento',   color: '#0F6E56', soft: '#E1F5EE' },
+              { key: 'REFUND',     label: 'Estorno',     color: '#854F0B', soft: '#FAEEDA' },
+              { key: 'APPROVE',    label: 'Aprovação',   color: '#0F6E56', soft: '#E1F5EE' },
+              { key: 'REJECT',     label: 'Rejeição',    color: '#A32D2D', soft: '#FCEBEB' },
             ]"
             :key="tab.key"
             @click="actionFilter = tab.key"
@@ -226,16 +343,10 @@ const detailsRaw = (details: any): string => {
 
             <span>
               <span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full"
-                    :style="log.action === 'CREATE' ? { background: '#E1F5EE', color: '#0F6E56' }
-                          : log.action === 'UPDATE' ? { background: '#FAEEDA', color: '#854F0B' }
-                          : log.action === 'DELETE' ? { background: '#FCEBEB', color: '#A32D2D' }
-                          : { background: '#F1EFE8', color: '#5F5E5A' }">
+                    :style="{ background: actionMeta(log.action).soft, color: actionMeta(log.action).color }">
                 <span class="w-1.5 h-1.5 rounded-full"
-                      :style="log.action === 'CREATE' ? { background: '#1D9E75' }
-                            : log.action === 'UPDATE' ? { background: '#BA7517' }
-                            : log.action === 'DELETE' ? { background: '#A32D2D' }
-                            : { background: '#888780' }"></span>
-                {{ log.action === 'CREATE' ? 'Criou' : log.action === 'UPDATE' ? 'Editou' : log.action === 'DELETE' ? 'Excluiu' : log.action }}
+                      :style="{ background: actionMeta(log.action).color }"></span>
+                {{ actionMeta(log.action).shortLabel }}
               </span>
             </span>
 

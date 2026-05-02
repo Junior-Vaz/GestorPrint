@@ -41,6 +41,21 @@ export class SettingsController {
     return this.settingsService.getSettings(tenantId);
   }
 
+  /**
+   * GET /settings/public — subconjunto liberado pra qualquer role autenticada
+   * (sem `@CanAccess('settings','view')`). Retorna companyName, logoUrl,
+   * phone, cnpj e businessHours. Necessário porque o Kanban exibido pra
+   * PRODUCTION operator usa companyName na mensagem do WhatsApp do cliente,
+   * mas PRODUCTION não tem permissão pra ver Settings completas.
+   *
+   * Declarado ANTES de qualquer @Get(':id') ou outras rotas dinâmicas pra
+   * evitar conflito de match.
+   */
+  @Get('public')
+  getPublicSettings(@CurrentTenant() tenantId: number) {
+    return this.settingsService.getPublicSettings(tenantId);
+  }
+
   @Patch()
   @CanAccess('settings', 'edit')
   updateSettings(@Body() updateData: UpdateSettingsDto, @CurrentTenant() tenantId: number) {

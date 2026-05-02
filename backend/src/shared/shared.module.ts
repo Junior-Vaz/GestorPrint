@@ -6,6 +6,7 @@ import { ENTITLEMENT_REPOSITORY } from '../application/entitlement/entitlement-r
 import { FeatureGuard } from './guards/feature.guard';
 import { PlatformSettingsService } from './platform-settings.service';
 import { CredentialEncryptor } from './credential-encryptor.service';
+import { AuditService } from '../interface/http/audit/audit.service';
 // ai-provider.factory.ts não tem @Injectable — exporta funções puras.
 // Outros services importam direto do path quando precisam.
 
@@ -17,6 +18,10 @@ import { CredentialEncryptor } from './credential-encryptor.service';
  *  - FeatureGuard → Guard usado pelo @RequireFeature decorator
  *  - PlatformSettingsService → leitura/escrita de configs (Asaas, SMTP, etc.)
  *  - CredentialEncryptor → AES-256-GCM pra geminiKey/evolutionKey/etc
+ *  - AuditService → logAction(...) chamado por TODOS os modules que mutam
+ *    estado sensível (auth, users, payments, etc). Disponibilizado aqui
+ *    pra evitar boilerplate de importar AuditModule em cada caller +
+ *    dependência circular com AuthModule.
  *
  * Por ser @Global(), basta importar SharedModule no AppModule.
  */
@@ -32,6 +37,7 @@ import { CredentialEncryptor } from './credential-encryptor.service';
     FeatureGuard,
     PlatformSettingsService,
     CredentialEncryptor,
+    AuditService,
   ],
   exports: [
     CheckFeatureUseCase,
@@ -39,6 +45,7 @@ import { CredentialEncryptor } from './credential-encryptor.service';
     PrismaService,
     PlatformSettingsService,
     CredentialEncryptor,
+    AuditService,
   ],
 })
 export class SharedModule {}

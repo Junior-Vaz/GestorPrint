@@ -1,13 +1,19 @@
 import { Module } from '@nestjs/common';
-import { AuditService } from './audit.service';
 import { AuditController } from './audit.controller';
-import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { AuthModule } from '../auth/auth.module';
+import { PlatformUsersModule } from '../platform-users/platform-users.module';
 
+/**
+ * AuditModule — só hospeda o controller (endpoints findAll/findOne/platform).
+ * O AuditService que outros módulos consomem vive no SharedModule global.
+ * Isso evita boilerplate (todo módulo importando AuditModule) e quebra
+ * potencial de ciclo com AuthModule.
+ *
+ * PlatformUsersModule é importado pra trazer o PlatformOnlyGuard usado em
+ * /audit/platform — endpoint reservado pra super admin via SaaS Admin.
+ */
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, PlatformUsersModule],
   controllers: [AuditController],
-  providers: [AuditService, PrismaService],
-  exports: [AuditService],
 })
 export class AuditModule {}

@@ -13,6 +13,7 @@ import { SettingsService } from '../settings/settings.service';
 import { PaymentsService } from '../payments/payments.service';
 import { CheckFeatureUseCase } from '../../../application/entitlement/check-feature.usecase';
 import { FeatureKey } from '../../../domain/entitlement/feature-key.enum';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class EstimatesService {
@@ -23,6 +24,7 @@ export class EstimatesService {
     private readonly settingsService: SettingsService,
     private readonly paymentsService: PaymentsService,
     private readonly checkFeature: CheckFeatureUseCase,
+    private readonly audit: AuditService,
   ) {}
 
   async create(createEstimateDto: CreateEstimateDto, tenantId: number) {
@@ -30,10 +32,23 @@ export class EstimatesService {
     // (plotter/cutting/embroidery) exigem feature ativa no plano.
     await this.assertEstimateTypeAllowed(tenantId, (createEstimateDto as any).estimateType);
     await this.assertFkOwnership(createEstimateDto, tenantId);
-    return this.prisma.estimate.create({
+    const created = await this.prisma.estimate.create({
       data: { ...createEstimateDto, tenantId } as any,
       include: { customer: true },
     });
+    await this.audit.logAction(
+      null,
+      'CREATE',
+      'Estimate',
+      created.id,
+      {
+        estimateType: (created as any).estimateType,
+        totalPrice: (created as any).totalPrice,
+        customerId: (created as any).customerId,
+      },
+      tenantId,
+    );
+    return created;
   }
 
   /**
@@ -86,29 +101,58 @@ export class EstimatesService {
     });
   }
 
-  update(id: number, updateEstimateDto: UpdateEstimateDto, tenantId: number) {
-    return (this.prisma.estimate as any).updateMany({
+  async update(id: number, updateEstimateDto: UpdateEstimateDto, tenantId: number) {
+    const result = await (this.prisma.estimate as any).updateMany({
       where: { id, tenantId },
       data: updateEstimateDto as any,
     });
+    await this.audit.logAction(
+      null,
+      'UPDATE',
+      'Estimate',
+      id,
+      { changedFields: Object.keys(updateEstimateDto || {}) },
+      tenantId,
+    );
+    return result;
   }
 
-  convertToOrder(id: number, tenantId: number, opts: { deliveryDate?: string | null; priority?: string } = {}) {
-    return this.convertEstimate.execute(id, tenantId, opts);
+  async convertToOrder(id: number, tenantId: number, opts: { deliveryDate?: string | null; priority?: string } = {}) {
+    const result = await this.convertEstimate.execute(id, tenantId, opts);
+    await this.audit.logAction(
+      null,
+      'APPROVE',
+      'Estimate',
+      id,
+      { orderId: (result as any)?.order?.id, source: 'erp' },
+      tenantId,
+    );
+    return result;
   }
 
   async reject(id: number, reason: string, tenantId: number) {
-    return (this.prisma.estimate as any).updateMany({
+    const result = await (this.prisma.estimate as any).updateMany({
       where: { id, tenantId },
       data: { status: 'REJECTED', rejectedReason: reason } as any,
     });
+    await this.audit.logAction(
+      null,
+      'REJECT',
+      'Estimate',
+      id,
+      { reason, source: 'erp' },
+      tenantId,
+    );
+    return result;
   }
 
   async markSent(id: number, tenantId: number) {
-    return (this.prisma.estimate as any).updateMany({
+    const result = await (this.prisma.estimate as any).updateMany({
       where: { id, tenantId },
       data: { status: 'SENT', sentAt: new Date() } as any,
     });
+    await this.audit.logAction(null, 'SEND', 'Estimate', id, {}, tenantId);
+    return result;
   }
 
   // Public link de aprovacao
@@ -174,6 +218,15 @@ export class EstimatesService {
       throw new Error('Orcamento expirou.');
     }
     const result = await this.convertEstimate.execute(estimate.id, estimate.tenantId);
+    // Aprovação via link público — userId=null, source=public_link.
+    await this.audit.logAction(
+      null,
+      'APPROVE',
+      'Estimate',
+      estimate.id,
+      { orderId: result.order.id, source: 'public_link' },
+      estimate.tenantId,
+    );
     return { ok: true, orderId: result.order.id };
   }
 
@@ -187,6 +240,14 @@ export class EstimatesService {
       where: { id: estimate.id },
       data: { status: 'REJECTED', rejectedReason: reason || 'Recusado pelo cliente' } as any,
     });
+    await this.audit.logAction(
+      null,
+      'REJECT',
+      'Estimate',
+      estimate.id,
+      { reason: reason || 'Recusado pelo cliente', source: 'public_link' },
+      estimate.tenantId,
+    );
     return { ok: true };
   }
 

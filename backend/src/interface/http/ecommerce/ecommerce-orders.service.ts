@@ -6,6 +6,7 @@ import { FeatureKey } from '../../../domain/entitlement/feature-key.enum';
 import { EcommerceMailerService } from './ecommerce-mailer.service';
 import { CouponsService } from './coupons.service';
 import { LoyaltyService } from '../loyalty/loyalty.service';
+import { AuditService } from '../audit/audit.service';
 
 export interface CreateEcommerceOrderInput {
   tenantId: number;
@@ -57,6 +58,7 @@ export class EcommerceOrdersService {
     private readonly coupons: CouponsService,
     private readonly checkFeature: CheckFeatureUseCase,
     private readonly loyalty: LoyaltyService,
+    private readonly audit: AuditService,
   ) {}
 
   async createOrder(input: CreateEcommerceOrderInput) {
@@ -625,6 +627,23 @@ export class EcommerceOrdersService {
     } catch (e: any) {
       console.warn('[refundOrder] falha ao enviar email:', e?.message);
     }
+
+    // 5) Audit — refund é evento financeiro crítico, sempre logar.
+    await this.audit.logAction(
+      null,
+      'REFUND',
+      'Order',
+      order.id,
+      {
+        refundId: mpResult.id,
+        amount: mpResult.amount,
+        isFull,
+        newPaymentStatus,
+        reason: opts.reason || null,
+        mpStatus: mpResult.paymentStatus,
+      },
+      tenantId,
+    );
 
     return {
       ok:            true,

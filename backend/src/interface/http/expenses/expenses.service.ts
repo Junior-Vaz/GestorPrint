@@ -4,12 +4,14 @@ import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaginationDto, PaginatedResult, paginateResult } from '../../../shared/dto/pagination.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ExpensesService {
   constructor(
     private prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly audit: AuditService,
   ) {}
 
   async create(createExpenseDto: CreateExpenseDto, tenantId: number) {
@@ -27,6 +29,15 @@ export class ExpensesService {
       message: `Registrada uma saída de R$ ${createExpenseDto.amount.toFixed(2)}: ${createExpenseDto.description}`,
       type:    createExpenseDto.category === 'Sangria' ? 'ALERTA' : 'INFO',
     });
+
+    await this.audit.logAction(
+      null,
+      'CREATE',
+      'Expense',
+      expense.id,
+      { description: expense.description, amount: expense.amount, category: expense.category },
+      tenantId,
+    );
 
     return expense;
   }
@@ -60,19 +71,30 @@ export class ExpensesService {
   }
 
   async update(id: number, updateExpenseDto: UpdateExpenseDto, tenantId: number) {
-    return (this.prisma as any).expense.updateMany({
+    const result = await (this.prisma as any).expense.updateMany({
       where: { id, tenantId },
       data: {
         ...updateExpenseDto,
         date: updateExpenseDto.date ? new Date(updateExpenseDto.date) : undefined,
       },
     });
+    await this.audit.logAction(
+      null,
+      'UPDATE',
+      'Expense',
+      id,
+      { changedFields: Object.keys(updateExpenseDto), amount: updateExpenseDto.amount },
+      tenantId,
+    );
+    return result;
   }
 
   async remove(id: number, tenantId: number) {
-    return (this.prisma as any).expense.deleteMany({
+    const result = await (this.prisma as any).expense.deleteMany({
       where: { id, tenantId },
     });
+    await this.audit.logAction(null, 'DELETE', 'Expense', id, {}, tenantId);
+    return result;
   }
 
   // Categories

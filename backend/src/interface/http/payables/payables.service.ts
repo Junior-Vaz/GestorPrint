@@ -5,12 +5,16 @@ import { CreatePayableDto } from './dto/create-payable.dto';
 import { UpdatePayableDto } from './dto/update-payable.dto';
 import { PayPayableDto } from './dto/pay-payable.dto';
 import { PaginationDto, paginateResult } from '../../../shared/dto/pagination.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class PayablesService {
   private readonly logger = new Logger(PayablesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async create(dto: CreatePayableDto, tenantId: number) {
     return (this.prisma as any).bill.create({
@@ -67,7 +71,7 @@ export class PayablesService {
 
   async markAsPaid(id: number, dto: PayPayableDto, tenantId: number) {
     await this.findOne(id, tenantId);
-    return (this.prisma as any).bill.update({
+    const result = await (this.prisma as any).bill.update({
       where: { id },
       data: {
         status: 'PAID',
@@ -75,18 +79,30 @@ export class PayablesService {
         paidAt: dto.paidAt ? new Date(dto.paidAt) : new Date(),
       },
     });
+    await this.audit.logAction(
+      null,
+      'MARK_PAID',
+      'Bill',
+      id,
+      { paidAmount: dto.paidAmount },
+      tenantId,
+    );
+    return result;
   }
 
   async cancel(id: number, tenantId: number) {
     await this.findOne(id, tenantId);
-    return (this.prisma as any).bill.update({
+    const result = await (this.prisma as any).bill.update({
       where: { id },
       data: { status: 'CANCELLED' },
     });
+    await this.audit.logAction(null, 'CANCEL', 'Bill', id, {}, tenantId);
+    return result;
   }
 
   async remove(id: number, tenantId: number) {
     await this.findOne(id, tenantId);
+    await this.audit.logAction(null, 'DELETE', 'Bill', id, {}, tenantId);
     return (this.prisma as any).bill.delete({ where: { id } });
   }
 

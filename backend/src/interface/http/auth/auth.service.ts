@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit, UnauthorizedException, ForbiddenExcep
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -10,6 +11,7 @@ export class AuthService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -136,6 +138,17 @@ export class AuthService implements OnModuleInit {
       where: { email, userType: expectedType },
     });
     if (!user || !(await bcrypt.compare(pass, user.password))) {
+      // Audit de tentativa falhada — útil pra detectar brute force.
+      // tenantId fallback=1 quando não encontrou user (não dá pra saber qual
+      // tenant ele estava tentando atingir; vai pro log da plataforma).
+      await this.audit.logAction(
+        null,
+        'LOGIN_FAILED',
+        'User',
+        user?.id,
+        { email, expectedType, reason: user ? 'invalid_password' : 'user_not_found' },
+        user?.tenantId ?? 1,
+      );
       return null;
     }
 
@@ -171,6 +184,15 @@ export class AuthService implements OnModuleInit {
       userType:     user.userType ?? 'TENANT',
       isSuperAdmin: isPlatform,
     };
+    // Audit de login bem-sucedido — registra entrada de cada user.
+    await this.audit.logAction(
+      user.id,
+      'LOGIN',
+      'User',
+      user.id,
+      { email: user.email, role: user.role, userType: user.userType ?? 'TENANT' },
+      user.tenantId ?? 1,
+    );
     return {
       access_token: this.jwtService.sign(payload),
       user: {

@@ -102,4 +102,73 @@ export class AuditService {
       },
     });
   }
+
+  /**
+   * Variante "global" pra super admin — vê audits de TODOS os tenants.
+   * Não roda CheckFeature porque PLATFORM users são isentos de feature gate
+   * (não pertencem a um tenant operacional). Anexa nome do tenant em cada
+   * registro pra UI conseguir mostrar "Gráfica X · Cliente João editado".
+   *
+   * Por que NÃO usa Prisma `include: { tenant }`: alguns ambientes têm o
+   * AuditLog.tenantId default=1 sem o relation populado se o índice/FK não
+   * estiver consistente — dá runtime error genérico. Faço query manual
+   * defensiva: busca os logs, depois busca tenants pelos IDs únicos, mescla.
+   */
+  async findAllPlatform(dto: PaginationDto, tenantFilter?: string): Promise<PaginatedResult<any>> {
+    const page = Number(dto.page) || 1;
+    const limit = Number(dto.limit) || 20;
+    const { search, status: action, startDate, endDate } = dto;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (tenantFilter) where.tenantId = Number(tenantFilter);
+    if (search && search.trim()) {
+      where.entity = { contains: search.trim(), mode: 'insensitive' };
+    }
+    if (action) where.action = action;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(`${startDate}T00:00:00.000Z`);
+      if (endDate)   where.createdAt.lte = new Date(`${endDate}T23:59:59.999Z`);
+    }
+
+    try {
+      const [logs, total] = await Promise.all([
+        (this.prisma as any).auditLog.findMany({
+          where,
+          include: {
+            user: { select: { id: true, name: true, email: true, role: true, userType: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        (this.prisma as any).auditLog.count({ where }),
+      ]);
+
+      // Busca tenants em batch e mescla — evita include problemático.
+      const tenantIds = Array.from(new Set(logs.map((l: any) => l.tenantId).filter(Boolean)));
+      const tenants = tenantIds.length > 0
+        ? await (this.prisma as any).tenant.findMany({
+            where: { id: { in: tenantIds } },
+            select: { id: true, name: true, slug: true },
+          })
+        : [];
+      const tenantMap = new Map(tenants.map((t: any) => [t.id, t]));
+      const data = logs.map((l: any) => ({ ...l, tenant: tenantMap.get(l.tenantId) || null }));
+
+      return paginateResult(data, total, page, limit);
+    } catch (err: any) {
+      // Loga stack completo pra ajudar diagnosticar — mensagem sozinha
+      // não diz qual operação Prisma quebrou.
+      console.error('[AuditService.findAllPlatform] query failed:', {
+        message: err?.message,
+        code:    err?.code,
+        meta:    err?.meta,
+        stack:   err?.stack?.split('\n').slice(0, 5).join('\n'),
+        where,
+      });
+      throw err; // re-lança pra o NestJS retornar 500 com mensagem útil
+    }
+  }
 }

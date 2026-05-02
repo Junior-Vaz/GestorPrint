@@ -3,10 +3,14 @@ import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { PaginationDto, PaginatedResult, paginateResult } from '../../../shared/dto/pagination.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class CustomersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async create(createCustomerDto: CreateCustomerDto, tenantId: number) {
     // ── Enforce plan limits ────────────────────────────────────────────────
@@ -26,7 +30,16 @@ export class CustomersService {
     // ──────────────────────────────────────────────────────────────────────
     const data: any = { ...createCustomerDto, tenantId };
     this.normalize(data);
-    return this.prisma.customer.create({ data });
+    const created = await this.prisma.customer.create({ data });
+    await this.audit.logAction(
+      null,
+      'CREATE',
+      'Customer',
+      created.id,
+      { name: created.name, email: created.email, phone: created.phone },
+      tenantId,
+    );
+    return created;
   }
 
   /**
@@ -97,12 +110,22 @@ export class CustomersService {
       data,
     });
     if (result.count === 0) throw new NotFoundException('Cliente não encontrado');
+    await this.audit.logAction(
+      null,
+      'UPDATE',
+      'Customer',
+      id,
+      { changedFields: Object.keys(data) },
+      tenantId,
+    );
     return this.prisma.customer.findUnique({ where: { id } });
   }
 
-  remove(id: number, tenantId: number) {
-    return this.prisma.customer.deleteMany({
+  async remove(id: number, tenantId: number) {
+    const result = await this.prisma.customer.deleteMany({
       where: { id, tenantId },
     });
+    await this.audit.logAction(null, 'DELETE', 'Customer', id, {}, tenantId);
+    return result;
   }
 }

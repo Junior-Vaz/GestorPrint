@@ -13,6 +13,7 @@ import { ExpensesService } from '../expenses/expenses.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { CredentialEncryptor } from '../../../shared/credential-encryptor.service';
+import { AuditService } from '../audit/audit.service';
 
 /**
  * McpService — backend das ferramentas que o agente IA usa via /mcp/rpc.
@@ -51,6 +52,7 @@ export class McpService {
     private readonly messagingService:     MessagingService,
     private readonly prisma:               PrismaService,
     private readonly cryptor:              CredentialEncryptor,
+    private readonly audit:                AuditService,
   ) {}
 
   // ════════════════════════════════════════════════════════════════════════
@@ -2564,6 +2566,16 @@ export class McpService {
     const code        = d.code || d.qrcode?.code || null;
     const pairingCode = d.pairingCode || d.qrcode?.pairingCode || null;
 
+    // Audit — conexão WhatsApp é evento sensível (canal de atendimento ao
+    // cliente final). Não loga o QR code em si pra não inflar o registro.
+    try {
+      await this.audit?.logAction(
+        null, 'CONNECT', 'EvolutionInstance', undefined,
+        { hasQrCode: !!base64, hasPairingCode: !!pairingCode },
+        tenantId,
+      );
+    } catch { /* audit silencioso, nunca quebra fluxo */ }
+
     return {
       ok: true,
       base64: base64 && !String(base64).startsWith('data:') ? `data:image/png;base64,${base64}` : base64,
@@ -2573,11 +2585,21 @@ export class McpService {
 
   async logoutEvolution(tenantId: number) {
     const res = await this.evolutionFetch(tenantId, `/instance/logout/{instance}`, { method: 'DELETE' });
+    if (res.ok) {
+      try {
+        await this.audit?.logAction(null, 'DISCONNECT', 'EvolutionInstance', undefined, {}, tenantId);
+      } catch { /* idem */ }
+    }
     return res.ok ? { ok: true } : { ok: false, error: res.data?.message || res.data?.error };
   }
 
   async restartEvolution(tenantId: number) {
     const res = await this.evolutionFetch(tenantId, `/instance/restart/{instance}`, { method: 'POST' });
+    if (res.ok) {
+      try {
+        await this.audit?.logAction(null, 'RESTART', 'EvolutionInstance', undefined, {}, tenantId);
+      } catch { /* idem */ }
+    }
     return res.ok ? { ok: true } : { ok: false, error: res.data?.message || res.data?.error };
   }
 }

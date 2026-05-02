@@ -5,12 +5,16 @@ import { CreateReceivableDto } from './dto/create-receivable.dto';
 import { UpdateReceivableDto } from './dto/update-receivable.dto';
 import { PayReceivableDto } from './dto/pay-receivable.dto';
 import { PaginationDto, paginateResult } from '../../../shared/dto/pagination.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ReceivablesService {
   private readonly logger = new Logger(ReceivablesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async create(dto: CreateReceivableDto, tenantId: number) {
     return (this.prisma as any).invoice.create({
@@ -70,7 +74,7 @@ export class ReceivablesService {
 
   async markAsPaid(id: number, dto: PayReceivableDto, tenantId: number) {
     await this.findOne(id, tenantId);
-    return (this.prisma as any).invoice.update({
+    const result = await (this.prisma as any).invoice.update({
       where: { id },
       data: {
         status: 'PAID',
@@ -78,18 +82,30 @@ export class ReceivablesService {
         paidAt: dto.paidAt ? new Date(dto.paidAt) : new Date(),
       },
     });
+    await this.audit.logAction(
+      null,
+      'MARK_PAID',
+      'Invoice',
+      id,
+      { paidAmount: dto.paidAmount },
+      tenantId,
+    );
+    return result;
   }
 
   async cancel(id: number, tenantId: number) {
     await this.findOne(id, tenantId);
-    return (this.prisma as any).invoice.update({
+    const result = await (this.prisma as any).invoice.update({
       where: { id },
       data: { status: 'CANCELLED' },
     });
+    await this.audit.logAction(null, 'CANCEL', 'Invoice', id, {}, tenantId);
+    return result;
   }
 
   async remove(id: number, tenantId: number) {
     await this.findOne(id, tenantId);
+    await this.audit.logAction(null, 'DELETE', 'Invoice', id, {}, tenantId);
     return (this.prisma as any).invoice.delete({ where: { id } });
   }
 

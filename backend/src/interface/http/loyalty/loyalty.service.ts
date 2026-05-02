@@ -3,6 +3,7 @@ import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma
 import { CheckFeatureUseCase } from '../../../application/entitlement/check-feature.usecase';
 import { FeatureKey } from '../../../domain/entitlement/feature-key.enum';
 import { LoyaltyMailerService } from './loyalty-mailer.service';
+import { AuditService } from '../audit/audit.service';
 import {
   UpdateLoyaltyConfigDto, AdjustLoyaltyDto, PreviewRedeemDto, LoyaltyTierDto,
 } from './dto/loyalty-config.dto';
@@ -33,6 +34,7 @@ export class LoyaltyService {
     private readonly prisma: PrismaService,
     private readonly checkFeature: CheckFeatureUseCase,
     private readonly mailer: LoyaltyMailerService,
+    private readonly audit: AuditService,
   ) {}
 
   // ─── Config (Settings.loyaltyConfig JSON) ─────────────────────────────────
@@ -87,11 +89,33 @@ export class LoyaltyService {
     }
     if (dto.tiers.length === 0) throw new BadRequestException('Pelo menos 1 tier é necessário');
 
+    // Captura config anterior pra detectar toggle on/off — evento mais relevante
+    // pra auditoria que qualquer outra alteração isolada de regra.
+    const before = await this.getConfig(tenantId);
+
     await (this.prisma as any).settings.upsert({
       where:  { tenantId },
       update: { loyaltyConfig: dto as any },
       create: { tenantId, loyaltyConfig: dto as any },
     });
+
+    const action = before.enabled !== dto.enabled
+      ? (dto.enabled ? 'ENABLE' : 'DISABLE')
+      : 'UPDATE';
+    await this.audit.logAction(
+      null,
+      action,
+      'LoyaltyConfig',
+      tenantId,
+      {
+        enabled: dto.enabled,
+        pointsPerReal: dto.pointsPerReal,
+        cashbackPercent: dto.cashbackPercent,
+        tiersCount: dto.tiers?.length ?? 0,
+      },
+      tenantId,
+    );
+
     return dto;
   }
 
@@ -443,6 +467,22 @@ export class LoyaltyService {
         },
       });
     });
+
+    // Audit — ajuste manual de saldo é alvo de fraude clássico
+    // (admin colocando crédito pra ele mesmo). Sempre registra.
+    await this.audit.logAction(
+      null,
+      'ADJUST',
+      'LoyaltyTransaction',
+      customerId,
+      {
+        customerId,
+        points: dto.points,
+        cashback: dto.cashback,
+        reason: dto.reason,
+      },
+      tenantId,
+    );
 
     return { ok: true };
   }
